@@ -1100,6 +1100,91 @@
             "testStrategy": "Test folder tree renders hierarchy correctly, verify create folder adds to store, test folder selection filters grid, validate delete removes folder and moves assets, test drag-and-drop moves assets, verify asset counts are accurate"
           }
         ]
+      },
+      {
+        "id": 13,
+        "title": "Implement Timeline UI Integration into Project Editor Page",
+        "description": "Wire up Timeline component into ProjectEditorPage to enable complete timeline editing functionality at route /projects/:projectId/editor",
+        "details": "Integrate Timeline component into ProjectEditorPage with complete TimelineStore connection for interactive timeline editing. Import Timeline component and useTimelineStore hook from contexts. Replace placeholder timeline div (lines 68-75) with actual Timeline component rendering. Initialize default tracks (video, audio, text) on component mount using TimelineStore.addTrack if no tracks exist. Wire up all Timeline props to TimelineStore: tracks array, clips Map, selectedClipIds array, playhead position, zoom level, duration, and fps. Connect Timeline event handlers to store actions: onPlayheadChange calls TimelineStore.setPlayhead, onZoomChange calls setZoom, onClipSelect calls selectClip, onClipMove calls moveClip, onTrackUpdate calls updateTrack, onAddTrack calls addTrack. Ensure proper layout integration maintaining preview area above and properties panel on right side. Follow React best practices from DeepWiki research: use Zustand selectors with useShallow for optimal performance, prevent unnecessary re-renders by selecting only needed state slices, ensure immutable state updates in all store actions. Verify Timeline is fully interactive at route /projects/:projectId/editor with proper store synchronization.",
+        "testStrategy": "Test Timeline component renders in ProjectEditorPage at route /projects/:projectId/editor, verify all timeline interactions (playhead drag, zoom, clip selection, track management) update TimelineStore correctly, validate store state changes trigger Timeline re-renders, test default tracks initialize on first mount, verify layout integration with preview and properties panels, test performance with useShallow selectors prevents unnecessary re-renders, validate immutable state updates throughout",
+        "priority": "high",
+        "dependencies": [
+          3,
+          4
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Import Timeline component and useTimelineStore hook into ProjectEditorPage",
+            "description": "Add necessary imports for Timeline component and TimelineStore context hook to enable integration",
+            "dependencies": [],
+            "details": "In ProjectEditorPage.tsx, add import statement for Timeline component from '../components/timeline'. Import useTimelineStore hook from '../contexts/StoreContext'. Import useEffect and useCallback hooks from React for component lifecycle and event handlers. Verify imports are correctly typed with TypeScript. Ensure no import errors and all paths resolve correctly.",
+            "status": "pending",
+            "testStrategy": "Test file compiles without import errors, verify Timeline component type is recognized, validate useTimelineStore hook provides correct store interface"
+          },
+          {
+            "id": 2,
+            "title": "Initialize default tracks using TimelineStore on component mount",
+            "description": "Add useEffect to initialize default video, audio, and text tracks when ProjectEditorPage first mounts",
+            "dependencies": [
+              1
+            ],
+            "details": "Create useEffect hook in ProjectEditorPage that runs once on mount (empty dependency array). Get timelineStore instance using useTimelineStore(). Check if timelineStore.tracks.length === 0 to determine if initialization needed. If no tracks exist, call timelineStore.addTrack three times to create default tracks: 1) Video track with type 'video', name 'Video 1', height 80, order 0, 2) Audio track with type 'audio', name 'Audio 1', height 60, order 1, 3) Text track with type 'text', name 'Text/Titles', height 60, order 2. Follow same pattern as TimelinePage.tsx for consistency. Set all tracks with locked: false, hidden: false, muted: false initially.",
+            "status": "pending",
+            "testStrategy": "Test tracks are created on first component mount, verify tracks not recreated on subsequent renders, validate track properties match expected defaults, test TimelineStore.tracks array contains exactly 3 tracks after initialization"
+          },
+          {
+            "id": 3,
+            "title": "Replace placeholder timeline div with Timeline component",
+            "description": "Remove placeholder timeline UI and render actual Timeline component with proper layout structure",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "In ProjectEditorPage.tsx, locate placeholder timeline div at lines 68-75. Delete entire placeholder div including parent container. Add Timeline component in same location within the timeline area container. Maintain h-64 height class on parent div for consistent layout. Keep bg-zinc-900 and border-t border-zinc-800 styling on timeline container. Remove p-4 padding since Timeline handles its own internal spacing. Ensure Timeline component is properly nested within the main editor layout structure, appearing below the preview area and properties panel.",
+            "status": "pending",
+            "testStrategy": "Test placeholder is completely removed, verify Timeline component renders in correct position, validate layout maintains proper spacing and sizing, test timeline area has correct height and background styling"
+          },
+          {
+            "id": 4,
+            "title": "Wire up Timeline props to TimelineStore state using selectors",
+            "description": "Connect all Timeline component props to TimelineStore state using optimized Zustand selectors with useShallow",
+            "dependencies": [
+              2,
+              3
+            ],
+            "details": "Import useShallow from 'zustand/react/shallow' for optimal selector performance. Use useTimelineStore with useShallow to select multiple state properties: const { tracks, clips, selectedClipIds, playhead, zoom, fps } = useTimelineStore(useShallow((state) => ({ tracks: state.tracks, clips: state.clips, selectedClipIds: state.selectedClipIds, playhead: state.playhead, zoom: state.zoom, fps: state.fps }))). Calculate duration: const duration = timelineStore.duration > 0 ? timelineStore.duration : timelineStore.fps * 300 (5 minutes default, matching TimelinePage pattern). Pass all props to Timeline component: tracks={tracks}, clips={clips}, selectedClipIds={selectedClipIds}, playhead={playhead}, zoom={zoom}, duration={duration}, fps={fps}. This ensures Timeline only re-renders when these specific state slices change, following DeepWiki best practices.",
+            "status": "pending",
+            "testStrategy": "Test Timeline receives correct state values from store, verify useShallow prevents unnecessary re-renders, validate duration calculation works correctly, test Timeline re-renders only when selected state changes"
+          },
+          {
+            "id": 5,
+            "title": "Connect Timeline event handlers to TimelineStore actions",
+            "description": "Wire up all Timeline event handler props to corresponding TimelineStore actions using useCallback for performance",
+            "dependencies": [
+              4
+            ],
+            "details": "Get store instance with const timelineStore = useTimelineStore(). Create event handler for adding tracks: const handleAddTrack = useCallback(() => { const trackNumber = timelineStore.tracks.length + 1; timelineStore.addTrack({ type: 'video', name: `Track ${trackNumber}`, height: 80, locked: false, hidden: false, muted: false, order: timelineStore.tracks.length }); }, [timelineStore]). Wire up Timeline event props: onPlayheadChange={timelineStore.setPlayhead}, onZoomChange={timelineStore.setZoom}, onClipSelect={timelineStore.selectClip}, onClipMove={timelineStore.moveClip}, onTrackUpdate={timelineStore.updateTrack}, onAddTrack={handleAddTrack}. Use useCallback only for complex handlers like handleAddTrack; simple store method references don't need wrapping per DeepWiki guidance.",
+            "status": "pending",
+            "testStrategy": "Test playhead changes update store when dragging timeline, verify zoom controls modify store zoom level, validate clip selection updates selectedClipIds in store, test clip dragging calls moveClip with correct parameters, verify track updates persist to store, test add track button creates new track in store"
+          },
+          {
+            "id": 6,
+            "title": "Verify Timeline integration and route accessibility",
+            "description": "Test complete Timeline integration in ProjectEditorPage accessible at /projects/:projectId/editor route",
+            "dependencies": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "details": "Start development server and navigate to /projects/test-project-123/editor route (or any valid projectId). Verify Timeline component renders with default tracks visible. Test all interactive features: drag playhead and confirm it moves smoothly, use zoom controls and verify timeline scales correctly, click clips to select them and see selection highlight, drag clips between tracks and verify position updates, click Add Track button and confirm new track appears. Monitor React DevTools to ensure no excessive re-renders occur. Verify TimelineStore state updates reflected in Timeline UI immediately. Test browser back/forward navigation preserves timeline state. Confirm layout looks correct with preview area above, properties panel on right, and timeline at bottom.",
+            "status": "pending",
+            "testStrategy": "Test route /projects/:projectId/editor loads ProjectEditorPage with Timeline, verify all Timeline interactions work correctly and update store, validate no console errors or warnings, test performance with React DevTools profiler shows minimal re-renders, verify layout responsive and maintains proper structure"
+          }
+        ]
       }
     ],
     "metadata": {
