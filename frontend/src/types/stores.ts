@@ -331,3 +331,60 @@ export interface WebSocketActions {
 }
 
 export type WebSocketStore = WebSocketState & WebSocketActions
+
+// ============================================================================
+// AI Generation Store Types
+// ============================================================================
+
+export type GenerationType = 'image' | 'video'
+export type QualityTier = 'draft' | 'production'
+export type GenerationStatus = 'queued' | 'generating' | 'completed' | 'failed' | 'cancelled'
+
+export interface GenerationRequest {
+  id: string
+  type: GenerationType
+  prompt: string
+  qualityTier: QualityTier
+  aspectRatio: '16:9' | '9:16' | '1:1' | '4:3'
+  status: GenerationStatus
+  progress?: number
+  jobId?: string
+  resultUrl?: string
+  error?: string
+  createdAt: Date
+  completedAt?: Date
+  metadata?: Record<string, unknown>
+}
+
+export interface GenerationHistory {
+  id: string
+  request: GenerationRequest
+  assetId?: string // ID of imported media asset
+  isFavorite: boolean
+}
+
+export interface AIGenerationState {
+  activeGenerations: Map<string, GenerationRequest>
+  generationHistory: GenerationHistory[]
+  maxConcurrentGenerations: number
+}
+
+export interface AIGenerationActions {
+  // Generation operations
+  queueGeneration: (request: Omit<GenerationRequest, 'id' | 'status' | 'createdAt'>) => string
+  updateGenerationStatus: (generationId: string, status: GenerationStatus, updates?: Partial<GenerationRequest>) => void
+  updateGenerationProgress: (generationId: string, progress: number) => void
+  cancelGeneration: (generationId: string) => void
+  removeGeneration: (generationId: string) => void
+
+  // History operations
+  addToHistory: (generation: GenerationRequest, assetId?: string) => void
+  removeFromHistory: (historyId: string) => void
+  toggleFavorite: (historyId: string) => void
+  searchHistory: (query: string) => GenerationHistory[]
+
+  // Utility
+  reset: () => void
+}
+
+export type AIGenerationStore = AIGenerationState & AIGenerationActions
