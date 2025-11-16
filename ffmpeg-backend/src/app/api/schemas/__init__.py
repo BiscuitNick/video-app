@@ -42,6 +42,17 @@ from .media import (
     ThumbnailGenerationResponse,
     UploadParams,
 )
+from .project import (
+    ProjectCreateRequest,
+    ProjectDeleteResponse,
+    ProjectDuplicateResponse,
+    ProjectListItemResponse,
+    ProjectListResponse,
+    ProjectResponse,
+    ProjectRestoreResponse,
+    ProjectUpdateRequest,
+    ProjectVersionResponse,
+)
 from .replicate import (
     NanoBananaErrorResponse,
     NanoBananaRequest,
@@ -107,6 +118,16 @@ __all__ = [
     "MediaBatchMoveResponse",
     "ThumbnailGenerationRequest",
     "ThumbnailGenerationResponse",
+    # Project schemas
+    "ProjectCreateRequest",
+    "ProjectUpdateRequest",
+    "ProjectResponse",
+    "ProjectListItemResponse",
+    "ProjectListResponse",
+    "ProjectDuplicateResponse",
+    "ProjectDeleteResponse",
+    "ProjectVersionResponse",
+    "ProjectRestoreResponse",
     # Replicate schemas
     "NanoBananaRequest",
     "NanoBananaResponse",
