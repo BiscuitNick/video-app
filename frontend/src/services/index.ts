@@ -41,3 +41,17 @@ export { UploadManager } from './uploadManager'
 
 // WebSocket Service
 export { WebSocketService, getWebSocketService } from './WebSocketService'
+
+// Export Service
+export {
+  exportComposition,
+  exportCompositionWithRetry,
+  getExportJobStatus,
+  cancelExportJob,
+} from './exportService'
+export {
+  ExportError,
+  ValidationError,
+  NetworkError,
+} from './exportService'
+export type { ExportJobResponse } from './exportService'
