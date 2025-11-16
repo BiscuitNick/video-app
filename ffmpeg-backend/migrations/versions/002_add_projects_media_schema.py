@@ -169,32 +169,48 @@ def upgrade() -> None:
     )
 
     # Subtask 14.3: Create media_assets table with comprehensive metadata
+    # Create media_asset_type and media_asset_status enums
+    op.execute("CREATE TYPE media_asset_type AS ENUM ('image', 'video', 'audio');")
+    op.execute("CREATE TYPE media_asset_status AS ENUM ('pending_upload', 'uploading', 'ready', 'failed', 'deleted');")
+
     op.create_table(
         "media_assets",
         sa.Column("id", postgresql.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), nullable=False),
-        sa.Column("owner_user_id", postgresql.UUID(as_uuid=True), nullable=False),
+        sa.Column("user_id", postgresql.UUID(as_uuid=True), nullable=False),
+        sa.Column("name", sa.String(length=500), nullable=False),
+        sa.Column("file_size", sa.BigInteger(), nullable=False),
         sa.Column(
-            "type",
+            "file_type",
             postgresql.ENUM(
+                "image",
                 "video",
                 "audio",
-                "image",
-                name="media_type",
+                name="media_asset_type",
                 create_type=False,
             ),
             nullable=False,
         ),
-        sa.Column("url", sa.String(length=1024), nullable=False),
-        sa.Column("thumbnail_url", sa.String(length=1024), nullable=True),
-        sa.Column("filename", sa.String(length=500), nullable=False),
-        sa.Column("size_bytes", sa.BigInteger(), nullable=False),
-        sa.Column("duration_seconds", sa.Numeric(precision=10, scale=2), nullable=True),
-        sa.Column("width", sa.Integer(), nullable=True),
-        sa.Column("height", sa.Integer(), nullable=True),
-        sa.Column("frame_rate", sa.Numeric(precision=5, scale=2), nullable=True),
-        sa.Column("codec", sa.String(length=100), nullable=True),
-        sa.Column("tags", postgresql.ARRAY(sa.String()), nullable=False, server_default="{}"),
+        sa.Column("s3_key", sa.String(length=1024), nullable=False, unique=True),
+        sa.Column("thumbnail_s3_key", sa.String(length=1024), nullable=True),
+        sa.Column(
+            "status",
+            postgresql.ENUM(
+                "pending_upload",
+                "uploading",
+                "ready",
+                "failed",
+                "deleted",
+                name="media_asset_status",
+                create_type=False,
+            ),
+            nullable=False,
+            server_default="pending_upload",
+        ),
+        sa.Column("checksum", sa.String(length=128), nullable=False),
+        sa.Column("file_metadata", postgresql.JSONB(astext_type=sa.Text()), nullable=False, server_default="{}"),
         sa.Column("folder_id", postgresql.UUID(as_uuid=True), nullable=True),
+        sa.Column("tags", postgresql.ARRAY(sa.String()), nullable=False, server_default="{}"),
+        sa.Column("is_deleted", sa.Boolean(), nullable=False, server_default="false"),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),
@@ -208,9 +224,9 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.ForeignKeyConstraint(
-            ["owner_user_id"],
+            ["user_id"],
             ["users.id"],
-            name=op.f("fk_media_assets_owner_user_id_users"),
+            name=op.f("fk_media_assets_user_id_users"),
             ondelete="CASCADE",
         ),
         sa.ForeignKeyConstraint(
@@ -220,11 +236,21 @@ def upgrade() -> None:
             ondelete="SET NULL",
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_media_assets")),
+        sa.CheckConstraint("file_size > 0", name=op.f("ck_media_assets_file_size_positive")),
     )
-    op.create_index(op.f("ix_media_assets_owner_user_id"), "media_assets", ["owner_user_id"], unique=False)
+    op.create_index(op.f("ix_media_assets_user_id"), "media_assets", ["user_id"], unique=False)
+    op.create_index(op.f("ix_media_assets_file_type"), "media_assets", ["file_type"], unique=False)
+    op.create_index(op.f("ix_media_assets_status"), "media_assets", ["status"], unique=False)
     op.create_index(op.f("ix_media_assets_folder_id"), "media_assets", ["folder_id"], unique=False)
-    op.create_index(op.f("ix_media_assets_type"), "media_assets", ["type"], unique=False)
+    op.create_index(op.f("ix_media_assets_is_deleted"), "media_assets", ["is_deleted"], unique=False)
     op.create_index(op.f("ix_media_assets_created_at"), "media_assets", ["created_at"], unique=False)
+    op.create_index(
+        "ix_media_assets_file_metadata",
+        "media_assets",
+        ["file_metadata"],
+        unique=False,
+        postgresql_using="gin",
+    )
     op.create_index(
         "ix_media_assets_tags",
         "media_assets",
@@ -232,6 +258,12 @@ def upgrade() -> None:
         unique=False,
         postgresql_using="gin",
     )
+    # Composite indexes
+    op.create_index("ix_media_assets_user_type", "media_assets", ["user_id", "file_type"], unique=False)
+    op.create_index("ix_media_assets_user_status", "media_assets", ["user_id", "status"], unique=False)
+    op.create_index("ix_media_assets_user_deleted", "media_assets", ["user_id", "is_deleted"], unique=False)
+    op.create_index("ix_media_assets_folder_deleted", "media_assets", ["folder_id", "is_deleted"], unique=False)
+    op.create_index("ix_media_assets_status_created", "media_assets", ["status", "created_at"], unique=False)
 
     # Create trigger for media_assets
     op.execute(

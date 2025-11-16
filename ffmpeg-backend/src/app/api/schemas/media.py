@@ -124,7 +124,12 @@ class MediaAssetResponse(BaseModel):
     thumbnail_s3_key: str | None = Field(None, description="Thumbnail S3 object key")
     status: MediaStatus = Field(..., description="Current processing status")
     checksum: str = Field(..., description="File checksum")
-    metadata: dict[str, Any] = Field(default_factory=dict, description="Technical metadata")
+    file_metadata: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Technical metadata",
+        serialization_alias="metadata",
+        validation_alias="metadata"
+    )
     folder_id: UUID | None = Field(None, description="Parent folder ID")
     tags: list[str] = Field(default_factory=list, description="Asset tags")
     is_deleted: bool = Field(..., description="Soft delete flag")

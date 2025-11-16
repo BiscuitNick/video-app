@@ -767,8 +767,8 @@ async def get_folder_contents(
 @router.delete("/{folder_id}", response_model=FolderDeleteResponse)
 async def delete_folder(
     folder_id: uuid.UUID,
-    cascade: bool = False,
     db: Annotated[AsyncSession, Depends(get_db)],
+    cascade: bool = False,
 ) -> FolderDeleteResponse:
     """Delete a folder and optionally cascade to children.
 

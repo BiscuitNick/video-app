@@ -55,7 +55,7 @@ class MediaAsset(BaseModel):
         thumbnail_s3_key: S3 object key for thumbnail (optional)
         status: Current processing status
         checksum: File checksum (e.g., MD5, SHA256) for integrity
-        metadata: JSONB field storing technical metadata (duration, dimensions, codec, etc.)
+        file_metadata: JSONB field storing technical metadata (duration, dimensions, codec, etc.)
         folder_id: Optional foreign key to folders table for organization
         tags: Array of string tags for categorization
         is_deleted: Soft delete flag
@@ -104,7 +104,7 @@ class MediaAsset(BaseModel):
     checksum: Mapped[str] = mapped_column(String(128), nullable=False)
 
     # Technical metadata (duration, width, height, frame_rate, codec, bitrate, etc.)
-    metadata: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    file_metadata: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
 
     # Organization
     folder_id: Mapped[uuid.UUID | None] = mapped_column(
@@ -130,8 +130,8 @@ class MediaAsset(BaseModel):
     __table_args__ = (
         # GIN index for JSONB metadata queries
         Index(
-            "ix_media_assets_metadata",
-            "metadata",
+            "ix_media_assets_file_metadata",
+            "file_metadata",
             postgresql_using="gin",
         ),
         # GIN index for array tags

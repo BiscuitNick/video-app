@@ -240,7 +240,7 @@ async def confirm_media_upload(
             )
 
         # Update metadata and status
-        media_asset.metadata = metadata_update.metadata.model_dump(exclude_none=True)
+        media_asset.file_metadata = metadata_update.metadata.model_dump(exclude_none=True)
         media_asset.status = MediaAssetStatus(metadata_update.status.value)
         media_asset.updated_at = datetime.utcnow()
 
