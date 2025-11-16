@@ -479,6 +479,68 @@ class S3Manager:
             )
             raise
 
+    def generate_presigned_post(
+        self,
+        s3_key: str,
+        expiration: int = 900,
+        content_type: str | None = None,
+        max_file_size: int | None = None,
+    ) -> dict[str, Any]:
+        """Generate a presigned POST for uploading a file to S3.
+
+        Args:
+            s3_key: S3 object key for the uploaded file
+            expiration: URL expiration time in seconds (default 15 minutes)
+            content_type: Optional content type restriction
+            max_file_size: Optional maximum file size in bytes
+
+        Returns:
+            dict: Presigned POST data with 'url' and 'fields' keys
+
+        Raises:
+            ClientError: If presigned POST generation fails
+        """
+        try:
+            conditions = []
+
+            # Add content type condition if specified
+            if content_type:
+                conditions.append(["starts-with", "$Content-Type", content_type.split("/")[0]])
+
+            # Add file size limit if specified
+            if max_file_size:
+                conditions.append(["content-length-range", 1, max_file_size])
+
+            fields = {"key": s3_key}
+            if content_type:
+                fields["Content-Type"] = content_type
+
+            presigned_post = self.s3_client.generate_presigned_post(
+                Bucket=self.bucket_name,
+                Key=s3_key,
+                Fields=fields,
+                Conditions=conditions if conditions else None,
+                ExpiresIn=expiration,
+            )
+
+            logger.info(
+                f"Generated presigned POST for upload: {s3_key}",
+                extra={
+                    "s3_key": s3_key,
+                    "expiration_seconds": expiration,
+                    "max_size_bytes": max_file_size,
+                },
+            )
+
+            return presigned_post
+
+        except Exception as e:
+            logger.exception(
+                f"Failed to generate presigned POST: {s3_key}",
+                extra={"s3_key": s3_key, "error": str(e)},
+            )
+            raise
+
     def get_object_metadata(self, s3_key: str) -> dict[str, Any]:
         """Get metadata for an S3 object.
 

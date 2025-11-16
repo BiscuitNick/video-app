@@ -1194,7 +1194,7 @@
         "testStrategy": "Test migration upgrades successfully, verify all tables created with correct schema, test foreign key constraints, validate indexes created, test migration downgrades cleanly, verify no data loss with existing compositions",
         "priority": "high",
         "dependencies": [],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -1202,7 +1202,7 @@
             "description": "Implement the users table as the foundation for ownership relationships across all other tables, including UUID primary key and timestamp fields",
             "dependencies": [],
             "details": "Create users table in the migration with id (UUID primary key using gen_random_uuid()), created_at (timestamp with timezone, server default now()), and updated_at (timestamp with timezone, server default now()). Apply the update_updated_at_column trigger to automatically manage updated_at. Create indexes on created_at for query performance. This table will serve as the base reference for owner_user_id foreign keys throughout the schema. Follow the existing migration pattern from 001_initial_schema.py using PostgreSQL-specific features.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Verify users table creation with correct UUID generation, test trigger function updates updated_at on record modification, validate indexes are created, ensure table can be referenced by foreign keys"
           },
           {
@@ -1213,7 +1213,7 @@
               1
             ],
             "details": "Create projects table with id (UUID PK), owner_user_id (UUID FK to users.id with CASCADE delete), name (String 255), thumbnail_url (String 1024 nullable), last_modified_at (timestamp with timezone), created_at, and updated_at. Create folders table with id (UUID PK), name (String 255), parent_id (UUID self-FK nullable for hierarchy), path (String 1024 for materialized path), owner_user_id (UUID FK), created_at, and updated_at. Add indexes on owner_user_id and created_at for both tables, plus parent_id for folders. Apply update_updated_at_column trigger to both tables. Follow FK naming conventions from migration 001.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test foreign key constraints to users table, verify self-referential FK in folders works correctly, validate CASCADE delete behavior, test hierarchical folder structure queries"
           },
           {
@@ -1225,7 +1225,7 @@
               2
             ],
             "details": "Create media_assets table with id (UUID PK), owner_user_id (UUID FK), type (ENUM: video, audio, image), url (String 1024), thumbnail_url (String 1024 nullable), filename (String 500), size_bytes (BigInteger), duration_seconds (Numeric 10,2 nullable), width (Integer nullable), height (Integer nullable), frame_rate (Numeric 5,2 nullable), codec (String 100 nullable), tags (ARRAY of String), folder_id (UUID FK to folders.id nullable with SET NULL), created_at, and updated_at. Create the media_type enum using the idempotent DO $$ BEGIN pattern. Add indexes on owner_user_id, folder_id, type, created_at, and a GIN index on tags array. Apply naming conventions and trigger.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test enum type creation and usage, verify ARRAY column operations for tags, test nullable fields behavior, validate foreign key relationships, test GIN index performance on tags"
           },
           {
@@ -1238,7 +1238,7 @@
               3
             ],
             "details": "Create export_jobs table with id (UUID PK), project_id (UUID FK), composition_id (UUID FK to compositions.id), status (ENUM: pending, queued, processing, completed, failed, cancelled), progress (Integer 0-100), settings (JSONB), download_url (String 1024 nullable), error_code (String 100 nullable), error_message (Text nullable), created_at, and updated_at. Create ai_generation_jobs table with id (UUID PK), owner_user_id (UUID FK), job_type (ENUM: text_to_video, image_to_video, audio_generation), status (same enum), prompt (Text), settings (JSONB), media_asset_id (UUID FK nullable), error_message (Text nullable), created_at, and updated_at. Create enums using idempotent patterns. Add GIN indexes on JSONB columns and regular indexes on status, created_at, and foreign keys.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test both job status enums work correctly, verify JSONB column storage and querying, test foreign key relationships including nullable ones, validate progress constraints (0-100), test GIN index performance"
           },
           {
@@ -1250,7 +1250,7 @@
               2
             ],
             "details": "Use ALTER TABLE to add project_id (UUID FK to projects.id nullable initially), owner_user_id (UUID FK to users.id nullable initially), aspect_ratio (String 20 for ratios like '16:9', '9:16'), and timebase_fps (Integer default 30) to compositions table. Add indexes on new foreign key columns. In the downgrade() function, implement complete reversal: drop all 6 new tables in correct order (ai_generation_jobs, export_jobs, media_assets, folders, projects, users), remove new columns from compositions, drop all created enum types (job_status, ai_job_type, media_type), and ensure no orphaned objects remain. Test both upgrade and downgrade paths thoroughly.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test ALTER TABLE operations don't break existing data, verify new columns work with existing compositions, test complete downgrade removes all new objects cleanly, validate no data loss on existing compositions during migration"
           }
         ]
@@ -1265,7 +1265,7 @@
         "dependencies": [
           14
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -1273,7 +1273,7 @@
             "description": "Design and implement the MediaAsset SQLAlchemy model with all required fields, relationships, and enum types for media asset storage in the database",
             "dependencies": [],
             "details": "Create ffmpeg-backend/src/db/models/media.py with MediaAsset model including fields: id (UUID), user_id, name, file_size, file_type (enum: IMAGE/VIDEO/AUDIO), s3_key, thumbnail_s3_key, status (enum: PENDING_UPLOAD/UPLOADING/READY/FAILED/DELETED), checksum, metadata (JSON with duration, width, height, frame_rate, codec), folder_id (FK), tags (array), created_at, updated_at, is_deleted. Define MediaAssetType and MediaAssetStatus enums. Add proper indexes for performance on commonly queried fields (user_id, folder_id, status, is_deleted). Update db/models/__init__.py to export the new model and enums.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Unit tests for model creation, field validation, enum constraints, and database migrations"
           },
           {
@@ -1282,7 +1282,7 @@
             "description": "Define Pydantic models for all request/response schemas needed by the media asset API endpoints",
             "dependencies": [],
             "details": "Create ffmpeg-backend/src/app/api/schemas/media.py with Pydantic models: MediaUploadRequest (name, size, type, checksum), MediaUploadResponse (id, presigned_url, upload_params), MediaAssetResponse (full asset data), MediaListResponse (paginated list), MediaMetadataUpdate (metadata fields from FFprobe), MediaBatchDeleteRequest (asset_ids array), MediaBatchTagRequest (asset_ids, tags, operation), MediaBatchMoveRequest (asset_ids, folder_id). Include proper validation for file sizes (100MB images, 1GB videos, 500MB audio), allowed file types, and checksum format. Export all schemas in app/api/schemas/__init__.py.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test schema validation, serialization, field constraints, and edge cases with invalid data"
           },
           {
@@ -1294,7 +1294,7 @@
               2
             ],
             "details": "Create ffmpeg-backend/src/app/api/v1/media.py with FastAPI router. Implement POST /media/upload endpoint that: validates file metadata against size limits and allowed types, checks checksum format validity, generates presigned S3 URL using boto3 with 15-minute expiration and proper CORS headers, creates MediaAsset record with PENDING_UPLOAD status using AsyncSession, returns presigned URL with upload parameters (method, headers, fields). Add helper function generate_presigned_post_url in S3Manager class that handles multipart upload initialization for large files. Include proper error handling for S3 failures, database errors, and validation issues with custom error codes (INVALID_FILE_TYPE, FILE_TOO_LARGE).",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test presigned URL generation, S3 mock responses, file validation logic, database transaction handling"
           },
           {
@@ -1307,7 +1307,7 @@
               3
             ],
             "details": "Implement PATCH /media/{id} endpoint that: confirms upload completion by checking S3 object exists using head_object, runs FFprobe to extract metadata (duration, width, height, frame_rate, codec, bitrate) using existing InputFileManager class from services/ffmpeg/input_manager.py, updates MediaAsset status from PENDING_UPLOAD to READY and stores metadata in JSON field, enqueues RQ worker job for thumbnail generation using existing worker.enqueue_job function with job parameters (media_id, s3_key, media_type). Create helper function extract_media_metadata that wraps InputFileManager.get_file_info and handles both local files and S3 URLs. Handle edge cases: missing files, corrupted media, FFprobe failures with appropriate error responses.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test FFprobe integration, metadata extraction for various formats, worker job enqueuing, error handling for corrupted files"
           },
           {
@@ -1319,7 +1319,7 @@
               2
             ],
             "details": "Implement GET /media endpoint with: pagination using page/per_page parameters (max 100 per page), filtering by type/folder_id/tag/search query using SQLAlchemy queries, sorting by created_at/updated_at/name with proper indexes, lightweight response without full metadata. Implement GET /media/{id} returning complete asset with metadata. Implement DELETE /media/{id} with soft delete setting is_deleted=true and scheduling S3 cleanup worker job. Implement POST /media/batch/delete accepting array of IDs for bulk soft delete in single transaction. Implement POST /media/batch/tag for adding/removing tags from multiple assets. Implement POST /media/batch/move to update folder_id for multiple assets. Follow existing patterns from compositions.py for query building, pagination, and error handling.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test pagination logic, filtering combinations, batch operation atomicity, soft delete behavior, concurrent request handling"
           }
         ]
