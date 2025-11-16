@@ -479,6 +479,66 @@ class S3Manager:
             )
             raise
 
+    def generate_presigned_upload_url(
+        self,
+        s3_key: str,
+        content_type: str | None = None,
+        expiration: int = 3600,
+        metadata: dict[str, str] | None = None,
+    ) -> str:
+        """Generate a presigned URL for uploading a file to S3.
+
+        Args:
+            s3_key: S3 object key for the upload
+            content_type: Content type of the file being uploaded
+            expiration: URL expiration time in seconds (default 1 hour)
+            metadata: Optional custom metadata to attach to the object
+
+        Returns:
+            str: Presigned upload URL
+
+        Raises:
+            ClientError: If presigned URL generation fails
+        """
+        try:
+            params = {
+                "Bucket": self.bucket_name,
+                "Key": s3_key,
+            }
+
+            # Add content type if provided
+            if content_type:
+                params["ContentType"] = content_type
+
+            # Add metadata if provided
+            if metadata:
+                params["Metadata"] = metadata
+
+            presigned_url = self.s3_client.generate_presigned_url(
+                "put_object",
+                Params=params,
+                ExpiresIn=expiration,
+                HttpMethod="PUT",
+            )
+
+            logger.info(
+                f"Generated presigned upload URL for {s3_key}",
+                extra={
+                    "s3_key": s3_key,
+                    "content_type": content_type,
+                    "expiration_seconds": expiration,
+                },
+            )
+
+            return presigned_url
+
+        except Exception as e:
+            logger.exception(
+                f"Failed to generate presigned upload URL: {s3_key}",
+                extra={"s3_key": s3_key, "error": str(e)},
+            )
+            raise
+
     def get_object_metadata(self, s3_key: str) -> dict[str, Any]:
         """Get metadata for an S3 object.
 

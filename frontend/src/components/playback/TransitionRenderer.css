@@ -1,0 +1,35 @@
+/* TransitionRenderer CSS */
+
+.transition-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Hardware acceleration for better performance */
+.transition-layer {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: opacity, clip-path, transform;
+}
+
+/* Optimize rendering */
+.transition-fade {
+  transition: opacity 16ms linear;
+}
+
+.transition-wipe {
+  transition: clip-path 16ms linear;
+}
+
+.transition-dissolve {
+  transition: opacity 16ms linear, filter 16ms linear;
+}
+
+/* Prevent flickering during transitions */
+@media (prefers-reduced-motion: reduce) {
+  .transition-layer {
+    transition: none !important;
+  }
+}

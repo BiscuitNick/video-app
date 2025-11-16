@@ -129,6 +129,28 @@ class Settings(BaseSettings):
     max_upload_size: int = Field(
         default=1024 * 1024 * 1024, description="Max upload size in bytes (1GB default)"
     )
+
+    # Media upload size limits (in MB)
+    max_video_upload_size_mb: int = Field(
+        default=500, description="Maximum video upload size in MB"
+    )
+    max_audio_upload_size_mb: int = Field(
+        default=100, description="Maximum audio upload size in MB"
+    )
+    max_image_upload_size_mb: int = Field(
+        default=10, description="Maximum image upload size in MB"
+    )
+
+    # Default user ID for media uploads
+    default_user_id: str = Field(
+        default="default-user", description="Default user ID for media uploads"
+    )
+
+    # Presigned URL expiration time
+    presigned_url_expiration: int = Field(
+        default=3600, description="Presigned URL expiration time in seconds (default 1 hour)"
+    )
+
     supported_video_formats: Annotated[list[str], NoDecode] = Field(
         default_factory=lambda: ["mp4", "mov", "avi", "mkv", "webm"],
         description="Supported video file formats",
@@ -158,6 +180,14 @@ class Settings(BaseSettings):
     jwt_expiration_minutes: int = Field(
         default=60,
         description="JWT token expiration time in minutes",
+    )
+
+    # Thumbnail generation settings
+    enable_thumbnail_generation: bool = Field(
+        default=True, description="Enable automatic thumbnail generation for media assets"
+    )
+    thumbnail_generation_timeout_seconds: int = Field(
+        default=60, ge=10, description="Timeout for thumbnail generation in seconds"
     )
 
     # Feature Flags

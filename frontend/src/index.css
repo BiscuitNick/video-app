@@ -4,6 +4,33 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* Custom Breakpoints */
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+
+  /* Touch Target Sizes */
+  --touch-target-min: 44px;
+  --touch-target-comfortable: 48px;
+
+  /* Mobile Spacing */
+  --spacing-mobile-xs: 0.5rem;
+  --spacing-mobile-sm: 1rem;
+  --spacing-mobile-md: 1.5rem;
+  --spacing-mobile-lg: 2rem;
+  --spacing-mobile-xl: 3rem;
+
+  /* Mobile Typography */
+  --font-size-mobile-xs: 0.75rem;
+  --font-size-mobile-sm: 0.875rem;
+  --font-size-mobile-base: 1rem;
+  --font-size-mobile-lg: 1.125rem;
+  --font-size-mobile-xl: 1.25rem;
+  --font-size-mobile-2xl: 1.5rem;
+
+  /* Existing theme variables */
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -116,5 +143,77 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Mobile Utilities */
+@layer utilities {
+  /* Touch Targets */
+  .touch-target-min {
+    min-width: var(--touch-target-min);
+    min-height: var(--touch-target-min);
+  }
+
+  .touch-target {
+    min-width: var(--touch-target-comfortable);
+    min-height: var(--touch-target-comfortable);
+  }
+
+  /* Mobile Spacing */
+  .mobile-p-xs { padding: var(--spacing-mobile-xs); }
+  .mobile-p-sm { padding: var(--spacing-mobile-sm); }
+  .mobile-p-md { padding: var(--spacing-mobile-md); }
+  .mobile-p-lg { padding: var(--spacing-mobile-lg); }
+  .mobile-p-xl { padding: var(--spacing-mobile-xl); }
+
+  /* Mobile Typography */
+  .mobile-text-xs { font-size: var(--font-size-mobile-xs); }
+  .mobile-text-sm { font-size: var(--font-size-mobile-sm); }
+  .mobile-text-base { font-size: var(--font-size-mobile-base); }
+  .mobile-text-lg { font-size: var(--font-size-mobile-lg); }
+  .mobile-text-xl { font-size: var(--font-size-mobile-xl); }
+  .mobile-text-2xl { font-size: var(--font-size-mobile-2xl); }
+
+  /* Momentum Scrolling */
+  .momentum-scroll {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+
+  /* Safe Area Insets */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .safe-left {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .safe-right {
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Container Queries */
+  @container (max-width: 640px) {
+    .cq-mobile\:hidden {
+      display: none;
+    }
+  }
+
+  /* Disable text selection for better touch UX */
+  .no-select {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  /* Timeline Marquee Selection */
+  .marquee-selecting {
+    @apply ring-2 ring-blue-400 border-blue-400;
+    transition: all 50ms ease-out;
   }
 }
