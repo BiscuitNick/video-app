@@ -1,6 +1,22 @@
-import { memo, useMemo, useRef, useState } from 'react'
+import { memo, useMemo, useRef, useState, useEffect } from 'react'
 import type { Clip, TrackType } from '../../types/stores'
-import { framesToPixels } from '../../lib/timebase'
+import { framesToPixels, pixelsToFrames } from '../../lib/timebase'
+import { getSnapTargets, snapClipPosition } from '../../lib/snapping'
+
+/**
+ * Helper function to snap clip to nearby targets
+ */
+function snapClipToTargets(
+  startTime: number,
+  duration: number,
+  clipId: string,
+  allClips: Map<string, Clip>,
+  playhead: number
+): number {
+  const targets = getSnapTargets(allClips, playhead, [clipId], [])
+  const snapResult = snapClipPosition(startTime, duration, targets)
+  return snapResult.snapFrame
+}
 
 interface ClipRendererProps {
   clip: Clip
@@ -10,6 +26,9 @@ interface ClipRendererProps {
   trackHeight: number
   trackType: TrackType
   isLocked: boolean
+  trackId: string
+  allClips?: Map<string, Clip>
+  playhead?: number
   onSelect?: (clipId: string, addToSelection: boolean) => void
   onMove?: (clipId: string, trackId: string, startTime: number) => void
 }
@@ -21,10 +40,16 @@ export const ClipRenderer = memo(function ClipRenderer({
   zoom,
   trackType,
   isLocked,
+  trackId,
+  allClips,
+  playhead,
   onSelect,
+  onMove,
 }: ClipRendererProps) {
   const clipRef = useRef<HTMLDivElement>(null)
   const [isDragging, setIsDragging] = useState(false)
+  const [dragOffset, setDragOffset] = useState(0)
+  const dragStartPosRef = useRef({ x: 0, startTime: 0 })
 
   // Calculate clip position and dimensions
   const left = useMemo(
@@ -46,7 +71,7 @@ export const ClipRenderer = memo(function ClipRenderer({
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation()
-    if (!isLocked) {
+    if (!isLocked && !isDragging) {
       onSelect?.(clip.id, e.shiftKey)
     }
   }
@@ -55,9 +80,85 @@ export const ClipRenderer = memo(function ClipRenderer({
     if (isLocked) return
 
     e.stopPropagation()
+    e.preventDefault()
+
+    // Store initial drag position
+    dragStartPosRef.current = {
+      x: e.clientX,
+      startTime: clip.startTime,
+    }
+
     setIsDragging(true)
-    // Future: implement drag and drop here
   }
+
+  // Handle mouse move for dragging
+  useEffect(() => {
+    if (!isDragging) return
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaX = e.clientX - dragStartPosRef.current.x
+
+      // Convert pixel delta to frame delta
+      const frameDelta = pixelsToFrames(deltaX, fps, zoom)
+
+      // Calculate new start time
+      let newStartTime = dragStartPosRef.current.startTime + frameDelta
+
+      // Apply snapping if we have clip data
+      if (allClips && playhead !== undefined) {
+        newStartTime = snapClipToTargets(
+          newStartTime,
+          clip.duration,
+          clip.id,
+          allClips,
+          playhead
+        )
+      }
+
+      // Ensure clip doesn't go negative
+      newStartTime = Math.max(0, Math.round(newStartTime))
+
+      // Update drag offset for visual feedback
+      setDragOffset(framesToPixels(newStartTime - clip.startTime, fps, zoom))
+    }
+
+    const handleMouseUp = () => {
+      if (isDragging) {
+        // Calculate final position
+        const frameDelta = pixelsToFrames(dragOffset, fps, zoom)
+        let newStartTime = clip.startTime + frameDelta
+
+        // Apply snapping
+        if (allClips && playhead !== undefined) {
+          newStartTime = snapClipToTargets(
+            newStartTime,
+            clip.duration,
+            clip.id,
+            allClips,
+            playhead
+          )
+        }
+
+        newStartTime = Math.max(0, Math.round(newStartTime))
+
+        // Only update if position changed
+        if (newStartTime !== clip.startTime) {
+          onMove?.(clip.id, trackId, newStartTime)
+        }
+
+        setIsDragging(false)
+        setDragOffset(0)
+      }
+    }
+
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [isDragging, clip.id, clip.startTime, clip.duration, fps, zoom, trackId, allClips, playhead, onMove, dragOffset])
 
   // Show clip duration in readable format
   const durationText = useMemo(() => {
@@ -76,13 +177,13 @@ export const ClipRenderer = memo(function ClipRenderer({
         absolute top-1 bottom-1 rounded
         ${clipColor}
         ${isSelected ? 'ring-2 ring-blue-400 ring-offset-1 ring-offset-zinc-950' : ''}
-        ${isDragging ? 'opacity-70 cursor-grabbing' : 'cursor-pointer hover:brightness-110'}
+        ${isDragging ? 'opacity-70 cursor-grabbing z-50' : 'cursor-pointer hover:brightness-110'}
         ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}
-        transition-all duration-75
+        ${!isDragging ? 'transition-all duration-75' : ''}
         overflow-hidden
       `}
       style={{
-        left: `${left}px`,
+        left: `${left + (isDragging ? dragOffset : 0)}px`,
         width: `${Math.max(width, 4)}px`, // Minimum 4px width
         opacity: clip.opacity,
       }}

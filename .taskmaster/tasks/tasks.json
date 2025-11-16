@@ -261,7 +261,7 @@
         "dependencies": [
           3
         ],
-        "status": "in-progress",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -356,7 +356,7 @@
               5
             ],
             "details": "Implement clip selection with click, shift-click for multiple selection, and marquee selection. Add magnetic snapping to other clips, markers, and playhead with configurable snap threshold. Create drag-and-drop system using HTML5 drag API or custom mouse events. Implement clip movement constraints within track bounds. Add visual feedback during dragging with ghost preview. Store selection state in TimelineStore.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test selection logic with various interaction patterns, verify snapping accuracy at different zoom levels, test drag-and-drop across tracks, validate undo/redo for clip movements"
           }
         ]
@@ -379,7 +379,7 @@
             "description": "Build the main MediaUpload React component with drag-and-drop functionality, file picker, and visual feedback for drag states",
             "dependencies": [],
             "details": "Create MediaUpload.tsx component using React hooks. Implement drag-and-drop zone with onDragEnter, onDragLeave, onDragOver, and onDrop handlers. Add file input element with multiple file selection support. Create visual feedback states (idle, drag-over, uploading) using Tailwind classes. Include drop zone UI with upload icon and instructional text. Integrate with Shadcn UI components for consistent styling. Handle both drag-and-drop and click-to-browse file selection methods.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test drag event handlers with mock files, verify file input works for multiple selections, test visual state transitions, validate component renders correctly with dark theme"
           },
           {
@@ -388,7 +388,7 @@
             "description": "Create validation logic to check uploaded files against configured limits for file size and supported media types",
             "dependencies": [],
             "details": "Build validateFile function that checks against environment-configured limits: 100MB for images (jpg, png, webp, gif), 1GB for videos (mp4, webm, mov, avi), 500MB for audio (mp3, wav, ogg, m4a). Create FileValidationError class with specific error types (INVALID_TYPE, FILE_TOO_LARGE). Implement batch validation for multiple files. Add user-friendly error messages for each validation failure. Store validation rules in a configuration object for easy maintenance. Return detailed validation results including which files passed/failed and why.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Unit test validation logic with various file sizes and types, test edge cases at size boundaries, verify error messages are descriptive, test batch validation with mixed valid/invalid files"
           },
           {
@@ -399,7 +399,7 @@
               2
             ],
             "details": "Create uploadService.ts with requestPresignedUrl function. Make POST request to /api/v1/media/upload with file metadata (name, size, type, checksum). Handle authentication headers if required. Parse response containing presigned URL, S3 key, and upload parameters. Implement retry logic with exponential backoff for failed requests. Add request timeout handling (30 seconds). Cache presigned URLs temporarily with expiration tracking. Handle various error responses (401, 403, 413, 429, 500) with appropriate user messaging.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Mock API responses for success and error cases, test retry logic with network failures, verify request payload structure, test timeout handling, validate error response parsing"
           },
           {
@@ -410,7 +410,7 @@
               3
             ],
             "details": "Create S3Uploader class using XMLHttpRequest for direct browser-to-S3 uploads. Implement upload method that takes presigned URL and file. Set up progress event listeners to track upload percentage in real-time. Configure proper CORS headers for S3 requests. Handle upload.onload for success confirmation and upload.onerror for failures. Implement chunk-based uploading for large files if needed. Add abort functionality to cancel in-progress uploads. Parse S3 response headers for ETag verification. Send completion confirmation to backend with S3 key and ETag.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Mock XMLHttpRequest for unit tests, test progress event calculations, verify abort functionality works correctly, test error handling for network failures, validate S3 response parsing"
           },
           {
