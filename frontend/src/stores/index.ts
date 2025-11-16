@@ -12,3 +12,6 @@ export { createEditorStore } from './editorStore'
 export type { EditorStoreInstance } from './editorStore'
 
 export { createWebSocketStore } from './webSocketStore'
+
+export { createAIGenerationStore } from './aiGenerationStore'
+export type { AIGenerationStoreInstance } from './aiGenerationStore'

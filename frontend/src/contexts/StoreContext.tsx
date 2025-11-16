@@ -17,7 +17,11 @@ import {
   type EditorStoreInstance,
 } from '../stores/editorStore'
 import { createWebSocketStore } from '../stores/webSocketStore'
-import type { TimelineStore, MediaStore, ProjectStore, EditorStore, WebSocketStore } from '../types/stores'
+import {
+  createAIGenerationStore,
+  type AIGenerationStoreInstance,
+} from '../stores/aiGenerationStore'
+import type { TimelineStore, MediaStore, ProjectStore, EditorStore, WebSocketStore, AIGenerationStore } from '../types/stores'
 import type { StoreApi } from 'zustand/vanilla'
 
 // Type for WebSocket store instance
@@ -29,6 +33,7 @@ const MediaStoreContext = createContext<MediaStoreInstance | null>(null)
 const ProjectStoreContext = createContext<ProjectStoreInstance | null>(null)
 const EditorStoreContext = createContext<EditorStoreInstance | null>(null)
 const WebSocketStoreContext = createContext<WebSocketStoreInstance | null>(null)
+const AIGenerationStoreContext = createContext<AIGenerationStoreInstance | null>(null)
 
 // Provider props
 interface StoreProviderProps {
@@ -43,6 +48,7 @@ export function StoreProvider({ children }: StoreProviderProps) {
   const projectStore = useRef<ProjectStoreInstance>()
   const editorStore = useRef<EditorStoreInstance>()
   const webSocketStore = useRef<WebSocketStoreInstance>()
+  const aiGenerationStore = useRef<AIGenerationStoreInstance>()
 
   if (!timelineStore.current) {
     timelineStore.current = createTimelineStore()
@@ -59,6 +65,9 @@ export function StoreProvider({ children }: StoreProviderProps) {
   if (!webSocketStore.current) {
     webSocketStore.current = createWebSocketStore()
   }
+  if (!aiGenerationStore.current) {
+    aiGenerationStore.current = createAIGenerationStore()
+  }
 
   return (
     <TimelineStoreContext.Provider value={timelineStore.current}>
@@ -66,7 +75,9 @@ export function StoreProvider({ children }: StoreProviderProps) {
         <ProjectStoreContext.Provider value={projectStore.current}>
           <EditorStoreContext.Provider value={editorStore.current}>
             <WebSocketStoreContext.Provider value={webSocketStore.current}>
-              {children}
+              <AIGenerationStoreContext.Provider value={aiGenerationStore.current}>
+                {children}
+              </AIGenerationStoreContext.Provider>
             </WebSocketStoreContext.Provider>
           </EditorStoreContext.Provider>
         </ProjectStoreContext.Provider>
@@ -182,6 +193,27 @@ export function useWebSocketStore<T = WebSocketStore>(
   return useStore(store, selector || ((state) => state as T))
 }
 
+/**
+ * Hook to access the AI Generation store
+ * @param selector - Optional selector function to pick specific state
+ * @returns Selected state or entire store
+ * @example
+ * // Get entire store
+ * const aiGenerationStore = useAIGenerationStore()
+ *
+ * // Get specific state with selector
+ * const activeGenerations = useAIGenerationStore((state) => Array.from(state.activeGenerations.values()))
+ */
+export function useAIGenerationStore<T = AIGenerationStore>(
+  selector?: (state: AIGenerationStore) => T
+): T {
+  const store = useContext(AIGenerationStoreContext)
+  if (!store) {
+    throw new Error('useAIGenerationStore must be used within StoreProvider')
+  }
+  return useStore(store, selector || ((state) => state as T))
+}
+
 // Export context for advanced use cases
 export {
   TimelineStoreContext,
@@ -189,4 +221,5 @@ export {
   ProjectStoreContext,
   EditorStoreContext,
   WebSocketStoreContext,
+  AIGenerationStoreContext,
 }
