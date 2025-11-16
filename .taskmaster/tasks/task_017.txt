@@ -1,0 +1,43 @@
+# Task ID: 17
+# Title: Implement Project API Endpoints
+# Status: pending
+# Dependencies: 14, 15, 16
+# Priority: high
+# Description: Create FastAPI routes for project CRUD operations, autosave, duplication, and versioning per API specification
+# Details:
+Create ffmpeg-backend/src/app/api/v1/projects.py with FastAPI router. Implement POST /projects endpoint: create project with name/aspect_ratio/timebase_fps, automatically create linked Composition with matching settings in same transaction, return full Project with nested composition. Implement GET /projects endpoint: list projects with pagination (page, per_page), search by name query parameter, sort by last_modified_at or created_at, return lightweight project list without full composition data for performance. Implement GET /projects/{id} endpoint: get single project with full composition including tracks/clips/transitions JSONB data, return complete project structure. Implement PUT /projects/{id} endpoint (autosave): accept project name, thumbnail_url, and full composition object with tracks/clips/transitions, update last_modified_at timestamp, implement optimistic locking using updated_at comparison to prevent concurrent edit conflicts, return updated project. Implement DELETE /projects/{id} endpoint: soft delete with is_deleted flag, preserve data for recovery. Implement POST /projects/{id}/duplicate endpoint: deep copy project and composition, append 'Copy' to project name, generate new UUIDs, return duplicated project. Implement GET /projects/{id}/versions endpoint: return version history if versioning implemented (future feature). Implement POST /projects/{id}/versions/{v}/restore endpoint: restore project to previous version (future feature). Use AsyncSession for all operations, proper error handling, integrate with existing Composition model, handle project-composition one-to-one relationship carefully in transactions.
+
+# Test Strategy:
+Test project creation with composition, verify list pagination and search, test autosave with optimistic locking, validate duplicate creates independent copy, test soft delete, verify version endpoints return not implemented status, test concurrent autosave conflict handling
+
+# Subtasks:
+## 1. Create Project database model and migrations [pending]
+### Dependencies: None
+### Description: Design and implement the Project SQLAlchemy model with all necessary fields and establish the one-to-one relationship with Composition model
+### Details:
+Create ffmpeg-backend/src/db/models/project.py defining Project model with fields: id (UUID primary key), name (string, required, indexed), user_id (UUID, indexed), thumbnail_url (string, nullable), aspect_ratio (string with validation for formats like '16:9'), timebase_fps (integer, default 30), composition_id (UUID, unique foreign key to Composition.id), is_deleted (boolean, default False for soft deletes), created_at, updated_at, last_modified_at (indexed for sorting). Establish bidirectional one-to-one relationship with Composition model using relationship() with back_populates. Create Alembic migration script to add projects table with proper indexes and constraints. Update db/models/__init__.py to export Project model.
+
+## 2. Create Project schemas and validation [pending]
+### Dependencies: 17.1
+### Description: Implement Pydantic schemas for Project API request/response validation including creation, updates, and list responses
+### Details:
+Create ffmpeg-backend/src/app/api/schemas/project.py with comprehensive schemas: ProjectCreateRequest (name, aspect_ratio with regex validation for formats, timebase_fps with range 1-120), ProjectUpdateRequest (name optional, thumbnail_url optional, composition with full nested structure), ProjectResponse (all fields plus nested CompositionResponse), ProjectListItemResponse (lightweight without full composition data), ProjectListResponse (paginated with items, total, page, per_page), ProjectDuplicateResponse, ProjectVersionResponse (placeholder for future). Add custom validators for aspect_ratio format (e.g., '16:9', '4:3', '1:1'), ensure timebase_fps is reasonable (1-120), validate composition structure if provided. Import and use existing CompositionResponse and related schemas from composition.py.
+
+## 3. Implement core Project CRUD endpoints [pending]
+### Dependencies: 17.1, 17.2
+### Description: Create the main Project API router with POST, GET (list and single), PUT, and DELETE endpoints following existing patterns
+### Details:
+Create ffmpeg-backend/src/app/api/v1/projects.py FastAPI router. Implement POST /projects: create project with automatic Composition creation in same transaction using async context manager, validate input, generate UUIDs, set matching aspect_ratio and timebase_fps in composition_config JSONB, return full ProjectResponse with nested composition. Implement GET /projects: support pagination (page, per_page parameters), search by name using ILIKE query, sort by last_modified_at or created_at, exclude deleted projects, return ProjectListResponse without full composition data for performance. Implement GET /projects/{id}: fetch single project with eager loading of composition using selectinload, return 404 if not found or soft deleted, return complete ProjectResponse. Implement DELETE /projects/{id}: set is_deleted=True, update last_modified_at, keep data for recovery, return success confirmation. Follow existing error handling patterns with try-catch blocks and proper HTTP status codes.
+
+## 4. Implement autosave and optimistic locking [pending]
+### Dependencies: 17.1, 17.2, 17.3
+### Description: Create the PUT endpoint for project autosave with optimistic locking to prevent concurrent edit conflicts
+### Details:
+Implement PUT /projects/{id} endpoint in projects.py for autosave functionality. Accept ProjectUpdateRequest with optional name, thumbnail_url, and full composition object containing tracks/clips/transitions JSONB structure. Implement optimistic locking: include updated_at in request, compare with database value before update, return 409 Conflict if timestamps don't match indicating concurrent edit. Update project fields if provided, update composition.composition_config with new tracks/clips/transitions structure if provided, set last_modified_at to current time. Use database transaction to ensure atomic updates of both project and composition. Return updated ProjectResponse with fresh updated_at for next autosave. Add proper error handling for database conflicts and validation errors. Consider implementing debouncing logic documentation for frontend.
+
+## 5. Implement duplication and versioning placeholders [pending]
+### Dependencies: 17.1, 17.2, 17.3
+### Description: Create project duplication endpoint and placeholder endpoints for future versioning feature
+### Details:
+Implement POST /projects/{id}/duplicate: deep copy project and composition in transaction, generate new UUIDs for both project and composition, append ' (Copy)' to project name with incrementing number if duplicate exists, copy all composition_config JSONB data maintaining structure, reset timestamps to current time, clear any output_url or processing status, return new ProjectDuplicateResponse. Implement GET /projects/{id}/versions: return 501 Not Implemented with message about future feature, document expected response structure in schema. Implement POST /projects/{id}/versions/{version_id}/restore: return 501 Not Implemented, document expected behavior in comments. Update router registration in v1/__init__.py to include new projects router. Add comprehensive logging for all operations especially duplication for debugging.
+

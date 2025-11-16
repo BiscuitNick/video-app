@@ -1,0 +1,11 @@
+# Task ID: 19
+# Title: Wire Frontend Stores to Backend APIs
+# Status: pending
+# Dependencies: 3, 5, 7, 15, 16, 17
+# Priority: high
+# Description: Implement backend integration for projectStore and mediaStore with autosave, upload flow, and WebSocket job updates
+# Details:
+In frontend/src/stores/projectStore.ts: replace TODO in saveProject() with PUT /projects/{id} API call using fetch, implement loadProject() with GET /projects/{id}, implement exportProject() with POST /compositions/, add autosave debouncing with 2-second delay using custom hook or lodash debounce per state diagram spec, update metadata.updatedAt on every change. In frontend/src/stores/mediaStore.ts: implement upload flow: call POST /media/upload to get presigned S3 URL, upload file to S3 using PUT with XMLHttpRequest for progress tracking, confirm upload with PATCH /media/{id}, add asset listing with GET /media using pagination, implement delete with DELETE /media/{id}, fetch thumbnails from backend thumbnail_url field. Integrate WebSocket job updates: in projectStore add listeners for export job updates (job.update events), update export job status map (queued/running/succeeded/failed), in mediaStore add listeners for thumbnail generation and AI generation job updates, update store state when jobs complete/fail with asset IDs. Follow React best practices: async/await with try-catch error handling, loading state flags (isLoading, isSaving), toast notifications on success/error using Shadcn toast. Use Zustand immutable updates with immer middleware. Test end-to-end: create project -> autosave -> load project -> upload media -> trigger export.
+
+# Test Strategy:
+Test saveProject API integration, verify autosave debouncing works, test loadProject fetches data, verify upload flow with S3, test WebSocket job updates, validate error handling and toasts, test loading states update correctly

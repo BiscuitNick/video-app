@@ -1185,11 +1185,227 @@
             "testStrategy": "Test route /projects/:projectId/editor loads ProjectEditorPage with Timeline, verify all Timeline interactions work correctly and update store, validate no console errors or warnings, test performance with React DevTools profiler shows minimal re-renders, verify layout responsive and maintains proper structure"
           }
         ]
+      },
+      {
+        "id": 14,
+        "title": "Create Database Schema Migration for Projects and Media",
+        "description": "Implement Alembic migration 002_add_projects_media_schema.py to add database tables for users, projects, media_assets, folders, export_jobs, and ai_generation_jobs",
+        "details": "Create Alembic migration file 002_add_projects_media_schema.py in ffmpeg-backend/migrations/versions/. Add users table (id UUID PK, created_at, updated_at). Add projects table (id UUID PK, owner_user_id FK, name, thumbnail_url, last_modified_at, created_at, updated_at). Add media_assets table (id UUID PK, owner_user_id FK, type enum, url, thumbnail_url, filename, size_bytes, duration_seconds, width, height, frame_rate, codec, tags ARRAY, folder_id FK nullable, created_at, updated_at). Add folders table (id UUID PK, name, parent_id self-FK nullable, path, owner_user_id FK, created_at, updated_at). Add export_jobs table (id UUID PK, project_id FK, composition_id FK, status enum, progress int, settings JSONB, download_url, error_code, error_message, created_at, updated_at). Add ai_generation_jobs table (id UUID PK, owner_user_id FK, job_type enum, status enum, prompt, settings JSONB, media_asset_id FK nullable, error_message, created_at, updated_at). Update compositions table to add project_id FK, owner_user_id FK, aspect_ratio, timebase_fps columns. Keep tracks/clips/transitions as JSONB initially. Add indexes on foreign keys and frequently queried columns (owner_user_id, created_at). Follow SQLAlchemy 2.0 async patterns and Pydantic v2 for models.",
+        "testStrategy": "Test migration upgrades successfully, verify all tables created with correct schema, test foreign key constraints, validate indexes created, test migration downgrades cleanly, verify no data loss with existing compositions",
+        "priority": "high",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create users table with base authentication structure",
+            "description": "Implement the users table as the foundation for ownership relationships across all other tables, including UUID primary key and timestamp fields",
+            "dependencies": [],
+            "details": "Create users table in the migration with id (UUID primary key using gen_random_uuid()), created_at (timestamp with timezone, server default now()), and updated_at (timestamp with timezone, server default now()). Apply the update_updated_at_column trigger to automatically manage updated_at. Create indexes on created_at for query performance. This table will serve as the base reference for owner_user_id foreign keys throughout the schema. Follow the existing migration pattern from 001_initial_schema.py using PostgreSQL-specific features.",
+            "status": "pending",
+            "testStrategy": "Verify users table creation with correct UUID generation, test trigger function updates updated_at on record modification, validate indexes are created, ensure table can be referenced by foreign keys"
+          },
+          {
+            "id": 2,
+            "title": "Implement projects and folders tables with hierarchical structure",
+            "description": "Create projects table for video project management and folders table with self-referential relationships for organizing media assets",
+            "dependencies": [
+              1
+            ],
+            "details": "Create projects table with id (UUID PK), owner_user_id (UUID FK to users.id with CASCADE delete), name (String 255), thumbnail_url (String 1024 nullable), last_modified_at (timestamp with timezone), created_at, and updated_at. Create folders table with id (UUID PK), name (String 255), parent_id (UUID self-FK nullable for hierarchy), path (String 1024 for materialized path), owner_user_id (UUID FK), created_at, and updated_at. Add indexes on owner_user_id and created_at for both tables, plus parent_id for folders. Apply update_updated_at_column trigger to both tables. Follow FK naming conventions from migration 001.",
+            "status": "pending",
+            "testStrategy": "Test foreign key constraints to users table, verify self-referential FK in folders works correctly, validate CASCADE delete behavior, test hierarchical folder structure queries"
+          },
+          {
+            "id": 3,
+            "title": "Create media_assets table with comprehensive metadata schema",
+            "description": "Implement media_assets table to store video, audio, and image assets with detailed technical metadata and organizational features",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Create media_assets table with id (UUID PK), owner_user_id (UUID FK), type (ENUM: video, audio, image), url (String 1024), thumbnail_url (String 1024 nullable), filename (String 500), size_bytes (BigInteger), duration_seconds (Numeric 10,2 nullable), width (Integer nullable), height (Integer nullable), frame_rate (Numeric 5,2 nullable), codec (String 100 nullable), tags (ARRAY of String), folder_id (UUID FK to folders.id nullable with SET NULL), created_at, and updated_at. Create the media_type enum using the idempotent DO $$ BEGIN pattern. Add indexes on owner_user_id, folder_id, type, created_at, and a GIN index on tags array. Apply naming conventions and trigger.",
+            "status": "pending",
+            "testStrategy": "Test enum type creation and usage, verify ARRAY column operations for tags, test nullable fields behavior, validate foreign key relationships, test GIN index performance on tags"
+          },
+          {
+            "id": 4,
+            "title": "Implement job tracking tables for exports and AI generation",
+            "description": "Create export_jobs and ai_generation_jobs tables to track asynchronous processing tasks with status management and error handling",
+            "dependencies": [
+              1,
+              2,
+              3
+            ],
+            "details": "Create export_jobs table with id (UUID PK), project_id (UUID FK), composition_id (UUID FK to compositions.id), status (ENUM: pending, queued, processing, completed, failed, cancelled), progress (Integer 0-100), settings (JSONB), download_url (String 1024 nullable), error_code (String 100 nullable), error_message (Text nullable), created_at, and updated_at. Create ai_generation_jobs table with id (UUID PK), owner_user_id (UUID FK), job_type (ENUM: text_to_video, image_to_video, audio_generation), status (same enum), prompt (Text), settings (JSONB), media_asset_id (UUID FK nullable), error_message (Text nullable), created_at, and updated_at. Create enums using idempotent patterns. Add GIN indexes on JSONB columns and regular indexes on status, created_at, and foreign keys.",
+            "status": "pending",
+            "testStrategy": "Test both job status enums work correctly, verify JSONB column storage and querying, test foreign key relationships including nullable ones, validate progress constraints (0-100), test GIN index performance"
+          },
+          {
+            "id": 5,
+            "title": "Update compositions table and implement downgrade logic",
+            "description": "Alter existing compositions table to add new columns for project association and implement complete downgrade migration for rollback safety",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Use ALTER TABLE to add project_id (UUID FK to projects.id nullable initially), owner_user_id (UUID FK to users.id nullable initially), aspect_ratio (String 20 for ratios like '16:9', '9:16'), and timebase_fps (Integer default 30) to compositions table. Add indexes on new foreign key columns. In the downgrade() function, implement complete reversal: drop all 6 new tables in correct order (ai_generation_jobs, export_jobs, media_assets, folders, projects, users), remove new columns from compositions, drop all created enum types (job_status, ai_job_type, media_type), and ensure no orphaned objects remain. Test both upgrade and downgrade paths thoroughly.",
+            "status": "pending",
+            "testStrategy": "Test ALTER TABLE operations don't break existing data, verify new columns work with existing compositions, test complete downgrade removes all new objects cleanly, validate no data loss on existing compositions during migration"
+          }
+        ]
+      },
+      {
+        "id": 15,
+        "title": "Implement Media Asset API Endpoints",
+        "description": "Create FastAPI routes for media asset management including upload, list, get, delete, and batch operations per API specification",
+        "details": "Create ffmpeg-backend/src/app/api/v1/media.py with FastAPI router. Implement POST /media/upload endpoint: validate file metadata (name, size, type, checksum), check file size limits (100MB images, 1GB videos, 500MB audio), generate presigned S3 URL using boto3 with 15-minute expiration, create MediaAsset record with PENDING_UPLOAD status, return presigned URL and upload parameters. Implement PATCH /media/{id} endpoint: confirm upload completion, run FFmpeg probe to extract metadata (duration, width, height, frame_rate, codec), update MediaAsset status to READY, enqueue thumbnail generation worker job. Implement GET /media endpoint: list assets with pagination (page, per_page), filter by type/folder_id/tag/search query, sort by created_at/updated_at/name, return lightweight asset list. Implement GET /media/{id}: return single asset with full metadata. Implement DELETE /media/{id}: soft delete with is_deleted flag, schedule S3 cleanup worker job. Implement POST /media/{id}/thumbnail: enqueue RQ worker job for thumbnail regeneration. Implement POST /media/batch/delete: bulk soft delete with asset IDs array. Implement POST /media/batch/tag: add/remove tags from multiple assets. Implement POST /media/batch/move: move assets to folder_id. Use AsyncSession for all database operations, async boto3 for S3, proper error handling with custom error codes (INVALID_FILE_TYPE, FILE_TOO_LARGE, UPLOAD_FAILED). Follow patterns from existing compositions.py endpoint.",
+        "testStrategy": "Test presigned URL generation and S3 upload flow, verify FFmpeg metadata extraction, test pagination and filtering, validate soft delete and cleanup, test batch operations, verify error handling for invalid inputs, test concurrent uploads",
+        "priority": "high",
+        "dependencies": [
+          14
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 16,
+        "title": "Implement Folder API Endpoints",
+        "description": "Create FastAPI routes for folder management with tree structure support and media organization per API specification",
+        "details": "Create ffmpeg-backend/src/app/api/v1/folders.py with FastAPI router. Implement POST /folders endpoint: create folder with name and optional parent_id, compute materialized path from parent hierarchy (/parent/child format), validate no circular references, return created folder. Implement GET /folders endpoint: list all user folders as tree structure with children arrays, use recursive CTE or eager loading for hierarchy, return sorted by path. Implement GET /folders/{id} endpoint: get single folder details with asset count. Implement PATCH /folders/{id} endpoint: rename folder (update name), move folder (change parent_id), recalculate paths for all descendants when moving, validate no circular references on move. Implement DELETE /folders/{id} endpoint: check if folder empty or cascade delete to children based on policy, update affected media_assets to null folder_id or move to parent, return deletion status. Implement GET /folders/{id}/contents endpoint: get folder media assets and subfolders with pagination, optional include_subfolders parameter for recursive listing, return assets and folders arrays. Use AsyncSession for database operations, implement efficient tree traversal with materialized path pattern, validate folder operations don't create orphaned data, follow patterns from existing API endpoints.",
+        "testStrategy": "Test folder creation with parent hierarchy, verify tree structure queries, test folder renaming and moving, validate path recalculation for descendants, test delete with empty/non-empty folders, verify circular reference prevention, test contents listing with pagination",
+        "priority": "high",
+        "dependencies": [
+          14,
+          15
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 17,
+        "title": "Implement Project API Endpoints",
+        "description": "Create FastAPI routes for project CRUD operations, autosave, duplication, and versioning per API specification",
+        "details": "Create ffmpeg-backend/src/app/api/v1/projects.py with FastAPI router. Implement POST /projects endpoint: create project with name/aspect_ratio/timebase_fps, automatically create linked Composition with matching settings in same transaction, return full Project with nested composition. Implement GET /projects endpoint: list projects with pagination (page, per_page), search by name query parameter, sort by last_modified_at or created_at, return lightweight project list without full composition data for performance. Implement GET /projects/{id} endpoint: get single project with full composition including tracks/clips/transitions JSONB data, return complete project structure. Implement PUT /projects/{id} endpoint (autosave): accept project name, thumbnail_url, and full composition object with tracks/clips/transitions, update last_modified_at timestamp, implement optimistic locking using updated_at comparison to prevent concurrent edit conflicts, return updated project. Implement DELETE /projects/{id} endpoint: soft delete with is_deleted flag, preserve data for recovery. Implement POST /projects/{id}/duplicate endpoint: deep copy project and composition, append 'Copy' to project name, generate new UUIDs, return duplicated project. Implement GET /projects/{id}/versions endpoint: return version history if versioning implemented (future feature). Implement POST /projects/{id}/versions/{v}/restore endpoint: restore project to previous version (future feature). Use AsyncSession for all operations, proper error handling, integrate with existing Composition model, handle project-composition one-to-one relationship carefully in transactions.",
+        "testStrategy": "Test project creation with composition, verify list pagination and search, test autosave with optimistic locking, validate duplicate creates independent copy, test soft delete, verify version endpoints return not implemented status, test concurrent autosave conflict handling",
+        "priority": "high",
+        "dependencies": [
+          14,
+          15,
+          16
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create Project database model and migrations",
+            "description": "Design and implement the Project SQLAlchemy model with all necessary fields and establish the one-to-one relationship with Composition model",
+            "dependencies": [],
+            "details": "Create ffmpeg-backend/src/db/models/project.py defining Project model with fields: id (UUID primary key), name (string, required, indexed), user_id (UUID, indexed), thumbnail_url (string, nullable), aspect_ratio (string with validation for formats like '16:9'), timebase_fps (integer, default 30), composition_id (UUID, unique foreign key to Composition.id), is_deleted (boolean, default False for soft deletes), created_at, updated_at, last_modified_at (indexed for sorting). Establish bidirectional one-to-one relationship with Composition model using relationship() with back_populates. Create Alembic migration script to add projects table with proper indexes and constraints. Update db/models/__init__.py to export Project model.",
+            "status": "pending",
+            "testStrategy": "Test model creation with valid and invalid data, verify relationship constraints, test soft delete behavior, validate unique composition_id constraint, test cascade behavior when deleting projects"
+          },
+          {
+            "id": 2,
+            "title": "Create Project schemas and validation",
+            "description": "Implement Pydantic schemas for Project API request/response validation including creation, updates, and list responses",
+            "dependencies": [
+              1
+            ],
+            "details": "Create ffmpeg-backend/src/app/api/schemas/project.py with comprehensive schemas: ProjectCreateRequest (name, aspect_ratio with regex validation for formats, timebase_fps with range 1-120), ProjectUpdateRequest (name optional, thumbnail_url optional, composition with full nested structure), ProjectResponse (all fields plus nested CompositionResponse), ProjectListItemResponse (lightweight without full composition data), ProjectListResponse (paginated with items, total, page, per_page), ProjectDuplicateResponse, ProjectVersionResponse (placeholder for future). Add custom validators for aspect_ratio format (e.g., '16:9', '4:3', '1:1'), ensure timebase_fps is reasonable (1-120), validate composition structure if provided. Import and use existing CompositionResponse and related schemas from composition.py.",
+            "status": "pending",
+            "testStrategy": "Test schema validation with valid and invalid inputs, verify aspect ratio validation accepts common formats, test fps range validation, ensure nested composition validation works, test serialization and deserialization"
+          },
+          {
+            "id": 3,
+            "title": "Implement core Project CRUD endpoints",
+            "description": "Create the main Project API router with POST, GET (list and single), PUT, and DELETE endpoints following existing patterns",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Create ffmpeg-backend/src/app/api/v1/projects.py FastAPI router. Implement POST /projects: create project with automatic Composition creation in same transaction using async context manager, validate input, generate UUIDs, set matching aspect_ratio and timebase_fps in composition_config JSONB, return full ProjectResponse with nested composition. Implement GET /projects: support pagination (page, per_page parameters), search by name using ILIKE query, sort by last_modified_at or created_at, exclude deleted projects, return ProjectListResponse without full composition data for performance. Implement GET /projects/{id}: fetch single project with eager loading of composition using selectinload, return 404 if not found or soft deleted, return complete ProjectResponse. Implement DELETE /projects/{id}: set is_deleted=True, update last_modified_at, keep data for recovery, return success confirmation. Follow existing error handling patterns with try-catch blocks and proper HTTP status codes.",
+            "status": "pending",
+            "testStrategy": "Test project creation with composition in single transaction, verify list endpoint pagination and search filters, test single project retrieval with full composition data, validate soft delete preserves data, test 404 responses for missing projects"
+          },
+          {
+            "id": 4,
+            "title": "Implement autosave and optimistic locking",
+            "description": "Create the PUT endpoint for project autosave with optimistic locking to prevent concurrent edit conflicts",
+            "dependencies": [
+              1,
+              2,
+              3
+            ],
+            "details": "Implement PUT /projects/{id} endpoint in projects.py for autosave functionality. Accept ProjectUpdateRequest with optional name, thumbnail_url, and full composition object containing tracks/clips/transitions JSONB structure. Implement optimistic locking: include updated_at in request, compare with database value before update, return 409 Conflict if timestamps don't match indicating concurrent edit. Update project fields if provided, update composition.composition_config with new tracks/clips/transitions structure if provided, set last_modified_at to current time. Use database transaction to ensure atomic updates of both project and composition. Return updated ProjectResponse with fresh updated_at for next autosave. Add proper error handling for database conflicts and validation errors. Consider implementing debouncing logic documentation for frontend.",
+            "status": "pending",
+            "testStrategy": "Test successful autosave with composition updates, verify optimistic locking prevents concurrent updates, test 409 conflict response with stale updated_at, validate partial updates work correctly, test transaction rollback on errors"
+          },
+          {
+            "id": 5,
+            "title": "Implement duplication and versioning placeholders",
+            "description": "Create project duplication endpoint and placeholder endpoints for future versioning feature",
+            "dependencies": [
+              1,
+              2,
+              3
+            ],
+            "details": "Implement POST /projects/{id}/duplicate: deep copy project and composition in transaction, generate new UUIDs for both project and composition, append ' (Copy)' to project name with incrementing number if duplicate exists, copy all composition_config JSONB data maintaining structure, reset timestamps to current time, clear any output_url or processing status, return new ProjectDuplicateResponse. Implement GET /projects/{id}/versions: return 501 Not Implemented with message about future feature, document expected response structure in schema. Implement POST /projects/{id}/versions/{version_id}/restore: return 501 Not Implemented, document expected behavior in comments. Update router registration in v1/__init__.py to include new projects router. Add comprehensive logging for all operations especially duplication for debugging.",
+            "status": "pending",
+            "testStrategy": "Test project duplication creates independent copy with new IDs, verify duplicate name handling with incrementing numbers, test version endpoints return 501 status, validate deep copy includes all nested composition data, ensure no references to original project remain"
+          }
+        ]
+      },
+      {
+        "id": 18,
+        "title": "Complete Export API per Specification",
+        "description": "Enhance existing /api/v1/compositions endpoints with download, cancel, and cancel-all functionality matching API contract",
+        "details": "Update ffmpeg-backend/src/app/api/v1/compositions.py to complete export API. Add GET /compositions/{id}/download endpoint: check composition status is SUCCEEDED, generate presigned S3 download URL using boto3 with 15-minute expiration, return {download_url, expires_at} response. Add POST /compositions/{id}/cancel endpoint: check job status is QUEUED or RUNNING, update status to CANCELLED in database, terminate worker process using RQ job.cancel() or worker signal, return cancelled composition. Add POST /compositions/cancel-all endpoint: accept optional project_id and status_in filters (array of statuses), find matching compositions, cancel all jobs using bulk operations, return {canceled_count, composition_ids} response. Update CompositionResponse Pydantic model: add optional download_url field, add optional error_code field (enum: FFMPEG_ERROR, S3_ERROR, INVALID_INPUT, etc.), add optional error_message field for detailed errors. Ensure export job status transitions follow spec: queued -> running -> succeeded/failed. Update WebSocket job.update messages in ffmpeg-backend/src/app/websocket.py to include download_url, error_code, error_message fields in payload. Use existing compositions.py patterns, integrate with RQ worker cancellation logic, handle edge cases like cancelling already completed jobs.",
+        "testStrategy": "Test download URL generation for succeeded exports, verify presigned URL expiration, test cancel stops running job, validate cancel-all with filters, test error fields populate correctly, verify WebSocket updates include new fields, test concurrent cancel operations",
+        "priority": "medium",
+        "dependencies": [
+          14
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 19,
+        "title": "Wire Frontend Stores to Backend APIs",
+        "description": "Implement backend integration for projectStore and mediaStore with autosave, upload flow, and WebSocket job updates",
+        "details": "In frontend/src/stores/projectStore.ts: replace TODO in saveProject() with PUT /projects/{id} API call using fetch, implement loadProject() with GET /projects/{id}, implement exportProject() with POST /compositions/, add autosave debouncing with 2-second delay using custom hook or lodash debounce per state diagram spec, update metadata.updatedAt on every change. In frontend/src/stores/mediaStore.ts: implement upload flow: call POST /media/upload to get presigned S3 URL, upload file to S3 using PUT with XMLHttpRequest for progress tracking, confirm upload with PATCH /media/{id}, add asset listing with GET /media using pagination, implement delete with DELETE /media/{id}, fetch thumbnails from backend thumbnail_url field. Integrate WebSocket job updates: in projectStore add listeners for export job updates (job.update events), update export job status map (queued/running/succeeded/failed), in mediaStore add listeners for thumbnail generation and AI generation job updates, update store state when jobs complete/fail with asset IDs. Follow React best practices: async/await with try-catch error handling, loading state flags (isLoading, isSaving), toast notifications on success/error using Shadcn toast. Use Zustand immutable updates with immer middleware. Test end-to-end: create project -> autosave -> load project -> upload media -> trigger export.",
+        "testStrategy": "Test saveProject API integration, verify autosave debouncing works, test loadProject fetches data, verify upload flow with S3, test WebSocket job updates, validate error handling and toasts, test loading states update correctly",
+        "priority": "high",
+        "dependencies": [
+          3,
+          5,
+          7,
+          15,
+          16,
+          17
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 20,
+        "title": "Implement Missing Frontend Stores",
+        "description": "Create useAuthStore and useUiStore for user authentication and UI state management per state diagram specification",
+        "details": "Create frontend/src/stores/authStore.ts with Zustand vanilla store: manage user identity (userId, email, name), shadow user ID for anonymous sessions using crypto.randomUUID(), authentication tokens (access_token, refresh_token), login/logout actions with API integration, session persistence using persist middleware with IndexedDB, token refresh logic with expiration checking, isAuthenticated computed property. Create frontend/src/stores/uiStore.ts with Zustand vanilla store: manage modal states as Map<string, ModalState> for stacking support (isExportModalOpen, isUploadModalOpen, isSettingsOpen), toast notifications queue (max 5 toasts) with auto-dismiss using setTimeout and cleanup, panel visibility states (isPropertiesPanelOpen, isMediaLibraryOpen, isTimelineExpanded), theme state integration (may overlap with existing dark mode, coordinate carefully), active tool/mode state for editor, keyboard shortcuts Map for customizable bindings. Use Zustand vanilla store pattern with createStore like existing stores. Implement persist middleware for settings persistence. Add TypeScript types to types/stores.ts for AuthState, AuthActions, UiState, UiActions. Integrate authStore with shadow user cookie handling per backend spec. Wire useUiStore to existing UI components (modals, panels, toasts) for centralized state management. Follow patterns from existing projectStore, mediaStore, timelineStore implementations with Context Provider and hooks.",
+        "testStrategy": "Test auth store login/logout flow, verify shadow user ID generation, test token persistence and refresh, validate UI store modal management, test toast auto-dismiss and queue limits, verify panel state toggles, test keyboard shortcut registration",
+        "priority": "medium",
+        "dependencies": [
+          2,
+          3,
+          5
+        ],
+        "status": "pending",
+        "subtasks": []
       }
     ],
     "metadata": {
       "created": "2025-11-16T19:03:27.919Z",
-      "updated": "2025-11-16T23:45:00.000Z",
+      "updated": "2025-11-16T23:59:00.000Z",
       "description": "Tasks for master context"
     }
   }

@@ -1,6 +1,6 @@
 # Task ID: 7
 # Title: Create WebSocket Real-time Updates System
-# Status: pending
+# Status: done
 # Dependencies: 3
 # Priority: medium
 # Description: Implement WebSocket connection management for receiving job updates, export progress, and AI generation status
@@ -11,49 +11,49 @@ Create WebSocketService class with reconnection logic and heartbeat management. 
 Test reconnection logic with network interruptions, verify message parsing and state updates, test authentication flow, validate heartbeat mechanism, test message queuing during disconnections
 
 # Subtasks:
-## 1. Create WebSocketService class with connection management [pending]
+## 1. Create WebSocketService class with connection management [done]
 ### Dependencies: None
 ### Description: Build the core WebSocketService singleton class that manages WebSocket connections, handles connect/disconnect events, and provides a clean API for message sending and receiving
 ### Details:
 Create src/services/WebSocketService.ts with singleton pattern. Implement connect() method that establishes WebSocket connection to backend URL from environment config. Add disconnect() method for clean shutdown. Create message send queue and event emitter for incoming messages. Handle WebSocket readyState transitions. Store connection instance and provide getters for connection status.
 
-## 2. Implement reconnection logic with exponential backoff [pending]
+## 2. Implement reconnection logic with exponential backoff [done]
 ### Dependencies: 7.1
 ### Description: Add automatic reconnection capability with exponential backoff strategy to handle network interruptions and server restarts gracefully
 ### Details:
 Implement reconnection strategy with initial delay of 1 second, max delay of 30 seconds, and backoff multiplier of 1.5. Add reconnectAttempts counter and maxReconnectAttempts limit (default 10). Create handleConnectionLost() method that triggers backoff timer. Implement resetBackoff() on successful connection. Add reconnection events for UI updates. Handle permanent failure scenarios with error callbacks.
 
-## 3. Build heartbeat/ping-pong mechanism [pending]
+## 3. Build heartbeat/ping-pong mechanism [done]
 ### Dependencies: 7.1
 ### Description: Implement heartbeat system to detect connection health and trigger reconnection when the server becomes unresponsive
 ### Details:
 Create heartbeat interval timer (default 30 seconds) that sends ping messages. Implement pong timeout detection (5 seconds). Add heartbeatInterval and pongTimeout configuration options. Create startHeartbeat() and stopHeartbeat() methods. Handle missing pong responses by triggering reconnection. Ensure heartbeat stops during disconnection and resumes after reconnection. Add heartbeat status to connection health metrics.
 
-## 4. Create message handlers for job.update events [pending]
+## 4. Create message handlers for job.update events [done]
 ### Dependencies: 7.1
 ### Description: Implement typed message handlers for all job lifecycle events including queued, running, succeeded, failed, and canceled states
 ### Details:
 Create src/types/websocket.ts with JobUpdateMessage interface matching backend schema. Implement message router that dispatches based on event type. Create handlers for job.queued, job.running, job.succeeded, job.failed, job.canceled events. Add progress update handling for export and AI generation tasks. Implement message validation and error handling for malformed messages. Create type guards for message type checking.
 
-## 5. Integrate with Zustand stores for state updates [pending]
+## 5. Integrate with Zustand stores for state updates [done]
 ### Dependencies: 7.4
 ### Description: Connect WebSocket message handlers to Zustand stores to automatically update application state when real-time events are received
 ### Details:
 Create useWebSocketStore for connection status management. Integrate job update messages with existing job/export stores. Implement store update methods for each job event type. Add optimistic updates with rollback capability. Create subscription mechanism for components to listen to specific event types. Ensure store updates are batched for performance. Handle race conditions between REST API and WebSocket updates.
 
-## 6. Implement connection status indicator UI [pending]
+## 6. Implement connection status indicator UI [done]
 ### Dependencies: 7.1, 7.5
 ### Description: Create a visual connection status indicator component that shows WebSocket connection state and reconnection attempts to users
 ### Details:
 Create ConnectionStatus.tsx component with visual indicators (green=connected, yellow=connecting, red=disconnected). Add to application header or status bar. Show reconnection attempt counter during reconnection. Implement tooltip with detailed connection info (latency, last message time). Add subtle animations for state transitions. Create optional verbose mode showing message count and data transfer stats. Use Shadcn UI components for consistent styling.
 
-## 7. Handle authentication and session management [pending]
+## 7. Handle authentication and session management [done]
 ### Dependencies: 7.1
 ### Description: Implement WebSocket authentication using tokens and handle session expiration with automatic re-authentication
 ### Details:
 Add authentication token to WebSocket connection URL or as first message after connection. Implement token refresh mechanism when receiving auth error messages. Handle session expiration by acquiring new token and reconnecting. Store authentication state in WebSocketService. Create auth error handlers with user notification. Implement secure token storage and transmission. Add logout handling to close WebSocket connection cleanly.
 
-## 8. Add message queuing for offline scenarios [pending]
+## 8. Add message queuing for offline scenarios [done]
 ### Dependencies: 7.1, 7.2
 ### Description: Implement message queue system to buffer outgoing messages during disconnection and send them when connection is restored
 ### Details:

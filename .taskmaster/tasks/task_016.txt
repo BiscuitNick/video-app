@@ -1,0 +1,11 @@
+# Task ID: 16
+# Title: Implement Folder API Endpoints
+# Status: pending
+# Dependencies: 14, 15
+# Priority: high
+# Description: Create FastAPI routes for folder management with tree structure support and media organization per API specification
+# Details:
+Create ffmpeg-backend/src/app/api/v1/folders.py with FastAPI router. Implement POST /folders endpoint: create folder with name and optional parent_id, compute materialized path from parent hierarchy (/parent/child format), validate no circular references, return created folder. Implement GET /folders endpoint: list all user folders as tree structure with children arrays, use recursive CTE or eager loading for hierarchy, return sorted by path. Implement GET /folders/{id} endpoint: get single folder details with asset count. Implement PATCH /folders/{id} endpoint: rename folder (update name), move folder (change parent_id), recalculate paths for all descendants when moving, validate no circular references on move. Implement DELETE /folders/{id} endpoint: check if folder empty or cascade delete to children based on policy, update affected media_assets to null folder_id or move to parent, return deletion status. Implement GET /folders/{id}/contents endpoint: get folder media assets and subfolders with pagination, optional include_subfolders parameter for recursive listing, return assets and folders arrays. Use AsyncSession for database operations, implement efficient tree traversal with materialized path pattern, validate folder operations don't create orphaned data, follow patterns from existing API endpoints.
+
+# Test Strategy:
+Test folder creation with parent hierarchy, verify tree structure queries, test folder renaming and moving, validate path recalculation for descendants, test delete with empty/non-empty folders, verify circular reference prevention, test contents listing with pagination

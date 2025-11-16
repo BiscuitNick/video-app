@@ -1,0 +1,11 @@
+# Task ID: 18
+# Title: Complete Export API per Specification
+# Status: pending
+# Dependencies: 14
+# Priority: medium
+# Description: Enhance existing /api/v1/compositions endpoints with download, cancel, and cancel-all functionality matching API contract
+# Details:
+Update ffmpeg-backend/src/app/api/v1/compositions.py to complete export API. Add GET /compositions/{id}/download endpoint: check composition status is SUCCEEDED, generate presigned S3 download URL using boto3 with 15-minute expiration, return {download_url, expires_at} response. Add POST /compositions/{id}/cancel endpoint: check job status is QUEUED or RUNNING, update status to CANCELLED in database, terminate worker process using RQ job.cancel() or worker signal, return cancelled composition. Add POST /compositions/cancel-all endpoint: accept optional project_id and status_in filters (array of statuses), find matching compositions, cancel all jobs using bulk operations, return {canceled_count, composition_ids} response. Update CompositionResponse Pydantic model: add optional download_url field, add optional error_code field (enum: FFMPEG_ERROR, S3_ERROR, INVALID_INPUT, etc.), add optional error_message field for detailed errors. Ensure export job status transitions follow spec: queued -> running -> succeeded/failed. Update WebSocket job.update messages in ffmpeg-backend/src/app/websocket.py to include download_url, error_code, error_message fields in payload. Use existing compositions.py patterns, integrate with RQ worker cancellation logic, handle edge cases like cancelling already completed jobs.
+
+# Test Strategy:
+Test download URL generation for succeeded exports, verify presigned URL expiration, test cancel stops running job, validate cancel-all with filters, test error fields populate correctly, verify WebSocket updates include new fields, test concurrent cancel operations

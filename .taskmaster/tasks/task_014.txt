@@ -1,0 +1,43 @@
+# Task ID: 14
+# Title: Create Database Schema Migration for Projects and Media
+# Status: pending
+# Dependencies: None
+# Priority: high
+# Description: Implement Alembic migration 002_add_projects_media_schema.py to add database tables for users, projects, media_assets, folders, export_jobs, and ai_generation_jobs
+# Details:
+Create Alembic migration file 002_add_projects_media_schema.py in ffmpeg-backend/migrations/versions/. Add users table (id UUID PK, created_at, updated_at). Add projects table (id UUID PK, owner_user_id FK, name, thumbnail_url, last_modified_at, created_at, updated_at). Add media_assets table (id UUID PK, owner_user_id FK, type enum, url, thumbnail_url, filename, size_bytes, duration_seconds, width, height, frame_rate, codec, tags ARRAY, folder_id FK nullable, created_at, updated_at). Add folders table (id UUID PK, name, parent_id self-FK nullable, path, owner_user_id FK, created_at, updated_at). Add export_jobs table (id UUID PK, project_id FK, composition_id FK, status enum, progress int, settings JSONB, download_url, error_code, error_message, created_at, updated_at). Add ai_generation_jobs table (id UUID PK, owner_user_id FK, job_type enum, status enum, prompt, settings JSONB, media_asset_id FK nullable, error_message, created_at, updated_at). Update compositions table to add project_id FK, owner_user_id FK, aspect_ratio, timebase_fps columns. Keep tracks/clips/transitions as JSONB initially. Add indexes on foreign keys and frequently queried columns (owner_user_id, created_at). Follow SQLAlchemy 2.0 async patterns and Pydantic v2 for models.
+
+# Test Strategy:
+Test migration upgrades successfully, verify all tables created with correct schema, test foreign key constraints, validate indexes created, test migration downgrades cleanly, verify no data loss with existing compositions
+
+# Subtasks:
+## 1. Create users table with base authentication structure [pending]
+### Dependencies: None
+### Description: Implement the users table as the foundation for ownership relationships across all other tables, including UUID primary key and timestamp fields
+### Details:
+Create users table in the migration with id (UUID primary key using gen_random_uuid()), created_at (timestamp with timezone, server default now()), and updated_at (timestamp with timezone, server default now()). Apply the update_updated_at_column trigger to automatically manage updated_at. Create indexes on created_at for query performance. This table will serve as the base reference for owner_user_id foreign keys throughout the schema. Follow the existing migration pattern from 001_initial_schema.py using PostgreSQL-specific features.
+
+## 2. Implement projects and folders tables with hierarchical structure [pending]
+### Dependencies: 14.1
+### Description: Create projects table for video project management and folders table with self-referential relationships for organizing media assets
+### Details:
+Create projects table with id (UUID PK), owner_user_id (UUID FK to users.id with CASCADE delete), name (String 255), thumbnail_url (String 1024 nullable), last_modified_at (timestamp with timezone), created_at, and updated_at. Create folders table with id (UUID PK), name (String 255), parent_id (UUID self-FK nullable for hierarchy), path (String 1024 for materialized path), owner_user_id (UUID FK), created_at, and updated_at. Add indexes on owner_user_id and created_at for both tables, plus parent_id for folders. Apply update_updated_at_column trigger to both tables. Follow FK naming conventions from migration 001.
+
+## 3. Create media_assets table with comprehensive metadata schema [pending]
+### Dependencies: 14.1, 14.2
+### Description: Implement media_assets table to store video, audio, and image assets with detailed technical metadata and organizational features
+### Details:
+Create media_assets table with id (UUID PK), owner_user_id (UUID FK), type (ENUM: video, audio, image), url (String 1024), thumbnail_url (String 1024 nullable), filename (String 500), size_bytes (BigInteger), duration_seconds (Numeric 10,2 nullable), width (Integer nullable), height (Integer nullable), frame_rate (Numeric 5,2 nullable), codec (String 100 nullable), tags (ARRAY of String), folder_id (UUID FK to folders.id nullable with SET NULL), created_at, and updated_at. Create the media_type enum using the idempotent DO $$ BEGIN pattern. Add indexes on owner_user_id, folder_id, type, created_at, and a GIN index on tags array. Apply naming conventions and trigger.
+
+## 4. Implement job tracking tables for exports and AI generation [pending]
+### Dependencies: 14.1, 14.2, 14.3
+### Description: Create export_jobs and ai_generation_jobs tables to track asynchronous processing tasks with status management and error handling
+### Details:
+Create export_jobs table with id (UUID PK), project_id (UUID FK), composition_id (UUID FK to compositions.id), status (ENUM: pending, queued, processing, completed, failed, cancelled), progress (Integer 0-100), settings (JSONB), download_url (String 1024 nullable), error_code (String 100 nullable), error_message (Text nullable), created_at, and updated_at. Create ai_generation_jobs table with id (UUID PK), owner_user_id (UUID FK), job_type (ENUM: text_to_video, image_to_video, audio_generation), status (same enum), prompt (Text), settings (JSONB), media_asset_id (UUID FK nullable), error_message (Text nullable), created_at, and updated_at. Create enums using idempotent patterns. Add GIN indexes on JSONB columns and regular indexes on status, created_at, and foreign keys.
+
+## 5. Update compositions table and implement downgrade logic [pending]
+### Dependencies: 14.1, 14.2
+### Description: Alter existing compositions table to add new columns for project association and implement complete downgrade migration for rollback safety
+### Details:
+Use ALTER TABLE to add project_id (UUID FK to projects.id nullable initially), owner_user_id (UUID FK to users.id nullable initially), aspect_ratio (String 20 for ratios like '16:9', '9:16'), and timebase_fps (Integer default 30) to compositions table. Add indexes on new foreign key columns. In the downgrade() function, implement complete reversal: drop all 6 new tables in correct order (ai_generation_jobs, export_jobs, media_assets, folders, projects, users), remove new columns from compositions, drop all created enum types (job_status, ai_job_type, media_type), and ensure no orphaned objects remain. Test both upgrade and downgrade paths thoroughly.
+

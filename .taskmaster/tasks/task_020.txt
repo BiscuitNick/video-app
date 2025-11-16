@@ -1,0 +1,11 @@
+# Task ID: 20
+# Title: Implement Missing Frontend Stores
+# Status: pending
+# Dependencies: 2, 3, 5
+# Priority: medium
+# Description: Create useAuthStore and useUiStore for user authentication and UI state management per state diagram specification
+# Details:
+Create frontend/src/stores/authStore.ts with Zustand vanilla store: manage user identity (userId, email, name), shadow user ID for anonymous sessions using crypto.randomUUID(), authentication tokens (access_token, refresh_token), login/logout actions with API integration, session persistence using persist middleware with IndexedDB, token refresh logic with expiration checking, isAuthenticated computed property. Create frontend/src/stores/uiStore.ts with Zustand vanilla store: manage modal states as Map<string, ModalState> for stacking support (isExportModalOpen, isUploadModalOpen, isSettingsOpen), toast notifications queue (max 5 toasts) with auto-dismiss using setTimeout and cleanup, panel visibility states (isPropertiesPanelOpen, isMediaLibraryOpen, isTimelineExpanded), theme state integration (may overlap with existing dark mode, coordinate carefully), active tool/mode state for editor, keyboard shortcuts Map for customizable bindings. Use Zustand vanilla store pattern with createStore like existing stores. Implement persist middleware for settings persistence. Add TypeScript types to types/stores.ts for AuthState, AuthActions, UiState, UiActions. Integrate authStore with shadow user cookie handling per backend spec. Wire useUiStore to existing UI components (modals, panels, toasts) for centralized state management. Follow patterns from existing projectStore, mediaStore, timelineStore implementations with Context Provider and hooks.
+
+# Test Strategy:
+Test auth store login/logout flow, verify shadow user ID generation, test token persistence and refresh, validate UI store modal management, test toast auto-dismiss and queue limits, verify panel state toggles, test keyboard shortcut registration

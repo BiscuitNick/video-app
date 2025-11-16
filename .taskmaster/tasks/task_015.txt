@@ -1,0 +1,11 @@
+# Task ID: 15
+# Title: Implement Media Asset API Endpoints
+# Status: pending
+# Dependencies: 14
+# Priority: high
+# Description: Create FastAPI routes for media asset management including upload, list, get, delete, and batch operations per API specification
+# Details:
+Create ffmpeg-backend/src/app/api/v1/media.py with FastAPI router. Implement POST /media/upload endpoint: validate file metadata (name, size, type, checksum), check file size limits (100MB images, 1GB videos, 500MB audio), generate presigned S3 URL using boto3 with 15-minute expiration, create MediaAsset record with PENDING_UPLOAD status, return presigned URL and upload parameters. Implement PATCH /media/{id} endpoint: confirm upload completion, run FFmpeg probe to extract metadata (duration, width, height, frame_rate, codec), update MediaAsset status to READY, enqueue thumbnail generation worker job. Implement GET /media endpoint: list assets with pagination (page, per_page), filter by type/folder_id/tag/search query, sort by created_at/updated_at/name, return lightweight asset list. Implement GET /media/{id}: return single asset with full metadata. Implement DELETE /media/{id}: soft delete with is_deleted flag, schedule S3 cleanup worker job. Implement POST /media/{id}/thumbnail: enqueue RQ worker job for thumbnail regeneration. Implement POST /media/batch/delete: bulk soft delete with asset IDs array. Implement POST /media/batch/tag: add/remove tags from multiple assets. Implement POST /media/batch/move: move assets to folder_id. Use AsyncSession for all database operations, async boto3 for S3, proper error handling with custom error codes (INVALID_FILE_TYPE, FILE_TOO_LARGE, UPLOAD_FAILED). Follow patterns from existing compositions.py endpoint.
+
+# Test Strategy:
+Test presigned URL generation and S3 upload flow, verify FFmpeg metadata extraction, test pagination and filtering, validate soft delete and cleanup, test batch operations, verify error handling for invalid inputs, test concurrent uploads
