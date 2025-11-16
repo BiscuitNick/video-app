@@ -25,6 +25,9 @@ from .replicate import (
     NanoBananaErrorResponse,
     NanoBananaRequest,
     NanoBananaResponse,
+    WanVideoI2VErrorResponse,
+    WanVideoI2VRequest,
+    WanVideoI2VResponse,
 )
 from .websocket import (
     ConnectionState,
@@ -70,6 +73,9 @@ __all__ = [
     "NanoBananaRequest",
     "NanoBananaResponse",
     "NanoBananaErrorResponse",
+    "WanVideoI2VRequest",
+    "WanVideoI2VResponse",
+    "WanVideoI2VErrorResponse",
     # WebSocket schemas
     "WSMessageType",
     "WSBaseMessage",
