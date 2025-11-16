@@ -27,12 +27,17 @@ export interface UploadProgress {
 export type UploadProgressCallback = (progress: UploadProgress) => void
 
 export class UploadError extends Error {
+  statusCode?: number
+  retryable: boolean
+
   constructor(
     message: string,
-    public statusCode?: number,
-    public retryable: boolean = false
+    statusCode?: number,
+    retryable: boolean = false
   ) {
     super(message)
+    this.statusCode = statusCode
+    this.retryable = retryable
     this.name = 'UploadError'
   }
 }

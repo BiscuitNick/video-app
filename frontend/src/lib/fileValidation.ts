@@ -5,19 +5,26 @@
 
 export type MediaFileType = 'image' | 'video' | 'audio' | 'unknown'
 
-export enum ValidationErrorType {
-  INVALID_TYPE = 'INVALID_TYPE',
-  FILE_TOO_LARGE = 'FILE_TOO_LARGE',
-  INVALID_EXTENSION = 'INVALID_EXTENSION',
-}
+export const ValidationErrorType = {
+  INVALID_TYPE: 'INVALID_TYPE',
+  FILE_TOO_LARGE: 'FILE_TOO_LARGE',
+  INVALID_EXTENSION: 'INVALID_EXTENSION',
+} as const
+
+export type ValidationErrorType = typeof ValidationErrorType[keyof typeof ValidationErrorType]
 
 export class FileValidationError extends Error {
+  type: ValidationErrorType
+  fileName: string
+
   constructor(
-    public type: ValidationErrorType,
-    public fileName: string,
+    type: ValidationErrorType,
+    fileName: string,
     message: string
   ) {
     super(message)
+    this.type = type
+    this.fileName = fileName
     this.name = 'FileValidationError'
   }
 }
@@ -182,7 +189,8 @@ export function validateFiles(
     if (result.valid) {
       validFiles.push(file)
     } else {
-      invalidFiles.push({ file, error: result.error })
+      // Type guard: result.valid === false means error exists
+      invalidFiles.push({ file, error: result.error as FileValidationError })
     }
   }
 
@@ -209,7 +217,7 @@ export function formatFileSize(bytes: number): string {
 /**
  * Gets a user-friendly description of allowed file types
  */
-export function getAllowedTypesDescription(config: ValidationConfig = DEFAULT_VALIDATION_CONFIG): string {
+export function getAllowedTypesDescription(): string {
   const imageExts = 'JPG, PNG, WebP, GIF'
   const videoExts = 'MP4, WebM, MOV, AVI'
   const audioExts = 'MP3, WAV, OGG, M4A'
