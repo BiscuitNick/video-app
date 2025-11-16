@@ -42,7 +42,38 @@ All tunable system-wide constants MUST be configurable via environment variables
 
 # 3. Technical Architecture
 
-## 3.1 Frontend Stack
+## 3.1 Project Structure
+
+### Application Structure
+```
+video-app/
+├── frontend/           # React application - Chronos Editor Timeline UI
+│   ├── src/
+│   │   ├── components/ # React components
+│   │   ├── stores/     # Zustand state management
+│   │   ├── services/   # API clients and utilities
+│   │   └── types/      # TypeScript interfaces
+│   └── package.json
+│
+└── ffmpeg-backend/     # FastAPI backend service
+    ├── src/
+    │   ├── app/        # FastAPI application
+    │   │   └── api/
+    │   │       ├── v1/ # Public API endpoints
+    │   │       └── internal/ # Internal endpoints
+    │   ├── db/         # Database models and session
+    │   ├── services/   # Business logic
+    │   └── workers/    # RQ background workers
+    └── requirements.txt
+```
+
+### Development Flow
+- **Frontend** (`/frontend`): Contains all Chronos Editor UI development (timeline, media library, playback controls, export UI)
+- **Backend** (`/ffmpeg-backend`): Provides API endpoints for media upload, composition processing, and export rendering
+- **Communication**: Frontend calls backend REST API endpoints, receives real-time updates via WebSocket
+- **Storage**: All media assets stored in S3 bucket (configured in ffmpeg-backend)
+
+## 3.2 Frontend Stack
 - **Vite + React** (FC + hooks)
 - **TailwindCSS**
 - **shadcn/ui** components
@@ -51,7 +82,15 @@ All tunable system-wide constants MUST be configurable via environment variables
 - **IndexedDB** for caching thumbnails
 - **WebSocket** for job status updates
 
-## 3.2 Composition-Wide Timebase
+## 3.3 Backend Stack
+- **FastAPI** (Python async)
+- **PostgreSQL 17** with JSONB for flexible schemas
+- **Redis** for job queues and pub/sub
+- **RQ (Redis Queue)** for background job processing
+- **FFmpeg 6.x** for video processing
+- **AWS S3** for media asset storage
+
+## 3.4 Composition-Wide Timebase
 Chronos uses a **composition-level frame-based timebase**.
 
 ```ts
@@ -94,16 +133,51 @@ A high-performance but simplified preview system that approximates final export:
 
 # 5. Media Types & Ingestion
 
-## 5.1 Manual Ingestion
-Sources:
-- File picker  
-- Copy/paste  
-- URL ingestion  
-- Dropbox link integration  
+## 5.1 Manual Ingestion (User Uploads)
 
-Backend endpoint required:
+### Upload Sources
+- File picker (drag-and-drop support)
+- Copy/paste
+- URL ingestion
+- Dropbox link integration (future)
+
+### Upload Flow
+1. **Frontend**: User selects file(s) to upload
+2. **Frontend → Backend**: Request presigned S3 URL via `POST /api/v1/media/upload`
+3. **Backend**: Generates presigned URL for direct S3 upload, creates MediaAsset record
+4. **Frontend → S3**: Direct upload to S3 using presigned URL (client-side)
+5. **Frontend → Backend**: Confirm upload completion, update MediaAsset metadata
+6. **Backend**: Generates thumbnail (for videos), broadcasts WebSocket event
+
+### S3 Storage Structure
 ```
-POST /api/v1/media/upload
+s3://bucket-name/
+└── user-uploads/
+    └── {user_id}/              # Default user: "default-user"
+        ├── images/
+        │   └── {uuid}.{ext}
+        ├── videos/
+        │   └── {uuid}.{ext}
+        └── audio/
+            └── {uuid}.{ext}
+```
+
+### Environment Variables
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `MAX_IMAGE_UPLOAD_SIZE_MB` | `100` | Maximum image upload size |
+| `MAX_VIDEO_UPLOAD_SIZE_MB` | `1000` | Maximum video upload size (1GB) |
+| `MAX_AUDIO_UPLOAD_SIZE_MB` | `500` | Maximum audio upload size |
+| `DEFAULT_USER_ID` | `default-user` | User ID for demo/no-auth mode |
+
+### Required Backend Endpoints
+```
+POST /api/v1/media/upload          # Request presigned URL & create MediaAsset
+GET  /api/v1/media                 # List media with pagination/filtering
+GET  /api/v1/media/{id}            # Get single media asset details
+PATCH /api/v1/media/{id}           # Update metadata (tags, folder, name)
+DELETE /api/v1/media/{id}          # Delete media asset
+POST /api/v1/media/{id}/thumbnail  # Generate/regenerate thumbnail
 ```
 
 ## 5.2 AI Generation
@@ -462,25 +536,121 @@ interface Project {
 
 ---
 
-# 18. Backend API Gaps & Required Additions
+# 18. Backend API Requirements & Implementation
 
-The backend must add:
+## 18.1 Existing Backend Endpoints (ffmpeg-backend)
 
-- `POST /api/v1/media/upload`  
-- `GET /api/v1/media`  
-- `PATCH /api/v1/media/{id}`  
-- `DELETE /api/v1/media/{id}`  
-- Folder endpoints  
-- Project save/load endpoints  
-- WebSocket `/ws/v1/connect`  
+The following endpoints are **already implemented** in `/ffmpeg-backend`:
 
-Schemas must grow to support:
-- transitions  
-- scale  
-- x/y position  
-- opacity  
-- speed  
-- volume/mute  
+### Composition Endpoints (Video Export)
+```
+POST   /api/v1/compositions/                   # Create composition job
+GET    /api/v1/compositions/                   # List compositions with pagination
+GET    /api/v1/compositions/{id}               # Get composition details
+GET    /api/v1/compositions/{id}/status        # Get processing status
+GET    /api/v1/compositions/{id}/metadata      # Get detailed metadata
+GET    /api/v1/compositions/{id}/download      # Get presigned download URL
+POST   /api/v1/compositions/{id}/cancel        # Cancel composition
+POST   /api/v1/compositions/cancel-all         # Bulk cancel
+```
+
+### AI Generation Endpoints (Replicate)
+```
+POST   /api/v1/replicate/nano-banana          # Google's Nano-Banana image generation
+```
+
+Note: `/api/v1/replicate/wan-video-i2v` mentioned in PRD needs to be **added** if not present.
+
+### Health & Monitoring
+```
+GET    /health                                 # Basic health check
+GET    /health/detailed                        # Component status
+GET    /metrics                                # API metrics
+```
+
+### WebSocket
+```
+WS     /ws/compositions/{id}                   # Real-time composition progress updates
+```
+
+## 18.2 Required New Endpoints (To Be Implemented)
+
+### Media Asset Management
+```
+POST   /api/v1/media/upload                    # Request presigned S3 URL
+GET    /api/v1/media                           # List media (pagination, filtering, sorting)
+GET    /api/v1/media/{id}                      # Get single media asset
+PATCH  /api/v1/media/{id}                      # Update metadata (tags, folder, filename)
+DELETE /api/v1/media/{id}                      # Soft delete media asset
+POST   /api/v1/media/{id}/thumbnail            # Generate/regenerate thumbnail
+POST   /api/v1/media/batch/delete              # Bulk delete
+POST   /api/v1/media/batch/tag                 # Bulk tag operations
+POST   /api/v1/media/batch/move                # Bulk move to folder
+```
+
+### Folder Management
+```
+POST   /api/v1/folders                         # Create folder
+GET    /api/v1/folders                         # List folders (tree structure)
+GET    /api/v1/folders/{id}                    # Get folder details
+PATCH  /api/v1/folders/{id}                    # Update folder (rename, move)
+DELETE /api/v1/folders/{id}                    # Delete folder
+GET    /api/v1/folders/{id}/contents           # Get folder contents (paginated)
+```
+
+### Project Management (NEW)
+```
+POST   /api/v1/projects                        # Create new project
+GET    /api/v1/projects                        # List projects (pagination, sorting)
+GET    /api/v1/projects/{id}                   # Get project with composition data
+PUT    /api/v1/projects/{id}                   # Update project (auto-save)
+DELETE /api/v1/projects/{id}                   # Soft delete project
+POST   /api/v1/projects/{id}/duplicate         # Duplicate project
+GET    /api/v1/projects/{id}/versions          # Get version history
+POST   /api/v1/projects/{id}/versions/{v}/restore # Restore version
+```
+
+## 18.3 Database Models to Add
+
+### MediaAsset Model
+- Inherits from `BaseModel` (TimestampMixin + UUID PK)
+- Fields: `id`, `owner_user_id`, `type` (enum), `url`, `thumbnail_url`, `filename`, `original_filename`, `file_size_bytes`, `mime_type`, `duration_seconds`, `width`, `height`, `frame_rate`, `codec`, `folder_id` (FK), `tags` (many-to-many), `is_deleted`, `s3_key`, `created_at`, `updated_at`
+- Indexes: `type`, `folder_id`, `owner_user_id`, `created_at`, `is_deleted`
+- Relationships: `folder` (Many-to-One), `tags` (Many-to-Many)
+
+### Folder Model
+- Fields: `id`, `name`, `parent_id` (self-referential FK), `path` (materialized path), `owner_user_id`, `created_at`, `updated_at`
+- Indexes: `parent_id`, `path`, `owner_user_id`
+- Relationships: `parent` (self-referential), `media_assets` (One-to-Many)
+
+### Project Model
+- Inherits from `BaseModel`
+- Fields: `id`, `owner_user_id`, `name`, `thumbnail_url`, `project_data` (JSONB - stores composition config), `version`, `is_deleted`, `created_at`, `updated_at`, `last_modified_at`
+- Indexes: `owner_user_id`, `created_at`, `last_modified_at`, `is_deleted`
+- GIN Index: `project_data` (for JSONB queries)
+
+### Tag Model
+- Fields: `id`, `name` (unique, case-insensitive), `slug`, `color`, `usage_count`, `created_at`
+- Indexes: `name`, `slug`
+- Relationships: `media_assets` (Many-to-Many via MediaAssetTag)
+
+## 18.4 Schema Alignment
+
+The frontend Chronos schemas (Section 17) must align with backend schemas:
+
+### Backend → Frontend Mapping
+- `MediaAsset` (backend) → `MediaAsset` (frontend TypeScript interface)
+- `Project` (backend) → `Project` (frontend)
+- `Composition` (embedded in Project) → `Composition` (frontend)
+- `Clip` (in project_data JSONB) → `Clip` (frontend)
+- `Track` (in project_data JSONB) → `Track` (frontend)
+
+### Additional Frontend Properties (Not in Backend)
+These exist only in the frontend state and are serialized into `project_data` JSONB:
+- `Clip`: `transition_in_id`, `transition_out_id`, `speed`, `opacity`, `scale`, `position_x`, `position_y`
+- `TransitionConfig`: Full transition definitions
+
+The backend's `Composition` model (video export jobs) remains separate from the new `Project` model (timeline workspace).
 
 ---
 
@@ -498,4 +668,5 @@ Schemas must grow to support:
 # Change Log
 | Version | Date | Changes |
 |---------|------|---------|
-| 2.1 | Current | Added timebase, zoom, mobile layout, thumbnail LRU, dirty state, schemas, playback engine, splitting, env vars, AI concurrency, error taxonomy |
+| 2.2 | 2025-11-16 | **Architecture Clarification**: Added project structure section, clarified frontend/backend separation, detailed media upload flow with S3 presigned URLs, specified existing vs. required backend endpoints, added database models for MediaAsset/Project/Folder/Tag, aligned schemas between frontend and backend, added environment variables for upload limits |
+| 2.1 | 2024-11 | Added timebase, zoom, mobile layout, thumbnail LRU, dirty state, schemas, playback engine, splitting, env vars, AI concurrency, error taxonomy |

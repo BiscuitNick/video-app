@@ -20,7 +20,10 @@ Track 3 is the **Video Composition & Post-Processing Service** for the AI Video 
 
 ### 2.1 In Scope (MVP)
 
-- Composition API (`/api/v1/compositions`)
+- **Composition API** (`/api/v1/compositions`) - Video export/rendering jobs
+- **Media Asset API** (`/api/v1/media`) - User-uploaded media management (NEW)
+- **Project API** (`/api/v1/projects`) - Timeline workspace persistence (NEW)
+- **Folder API** (`/api/v1/folders`) - Media organization (NEW)
 - Internal clip-processing API (`/internal/v1/process-clips`)
 - FFmpeg-based processing:
   - Multi-clip composition with timeline support
@@ -178,7 +181,240 @@ Returns redirect to S3 presigned URL when ready.
 #### GET `/api/v1/compositions/{composition_id}/metadata`
 Get detailed processing metadata.
 
-### 5.2 Internal Service APIs
+### 5.2 Media Asset Management APIs (NEW)
+Base path: `/api/v1/media`
+
+#### POST `/api/v1/media/upload`
+Request presigned S3 URL for direct client-side upload.
+
+**Request:**
+```json
+{
+  "filename": "video.mp4",
+  "content_type": "video/mp4",
+  "file_size_bytes": 52428800,
+  "media_type": "video",
+  "folder_id": "uuid-string"
+}
+```
+
+**Response:**
+```json
+{
+  "media_asset_id": "uuid-string",
+  "upload_url": "https://s3.amazonaws.com/...",
+  "s3_key": "user-uploads/default-user/videos/uuid.mp4",
+  "expires_at": "2025-11-16T12:00:00Z",
+  "upload_fields": {
+    "key": "user-uploads/default-user/videos/uuid.mp4",
+    "bucket": "bucket-name"
+  }
+}
+```
+
+#### GET `/api/v1/media`
+List media assets with pagination, filtering, and sorting.
+
+**Query Parameters:**
+- `offset`: Pagination offset (default: 0)
+- `limit`: Items per page (default: 50, max: 100)
+- `type`: Filter by media type (image, video, audio, text)
+- `folder_id`: Filter by folder
+- `tags`: Comma-separated tag list
+- `sort_by`: Sort field (created_at, filename, file_size)
+- `sort_order`: asc or desc
+- `search`: Full-text search on filename
+
+**Response:**
+```json
+{
+  "media_assets": [
+    {
+      "id": "uuid",
+      "owner_user_id": "default-user",
+      "type": "video",
+      "url": "https://s3.../signed-url",
+      "thumbnail_url": "https://s3.../thumb.jpg",
+      "filename": "my-video.mp4",
+      "file_size_bytes": 52428800,
+      "duration_seconds": 30.5,
+      "width": 1920,
+      "height": 1080,
+      "frame_rate": 30,
+      "codec": "h264",
+      "tags": ["vacation", "2024"],
+      "folder_id": "uuid",
+      "created_at": "2025-11-16T10:00:00Z",
+      "updated_at": "2025-11-16T10:00:00Z"
+    }
+  ],
+  "total": 150,
+  "offset": 0,
+  "limit": 50
+}
+```
+
+#### GET `/api/v1/media/{id}`
+Get single media asset details.
+
+#### PATCH `/api/v1/media/{id}`
+Update media asset metadata.
+
+**Request:**
+```json
+{
+  "filename": "renamed-video.mp4",
+  "tags": ["vacation", "beach", "summer"],
+  "folder_id": "new-folder-uuid"
+}
+```
+
+#### DELETE `/api/v1/media/{id}`
+Soft delete media asset (sets `is_deleted=true`).
+
+#### POST `/api/v1/media/{id}/thumbnail`
+Generate or regenerate thumbnail for video asset.
+
+#### POST `/api/v1/media/batch/delete`
+Bulk delete multiple media assets.
+
+**Request:**
+```json
+{
+  "media_asset_ids": ["uuid1", "uuid2", "uuid3"]
+}
+```
+
+#### POST `/api/v1/media/batch/tag`
+Bulk tag operations.
+
+**Request:**
+```json
+{
+  "media_asset_ids": ["uuid1", "uuid2"],
+  "operation": "add",
+  "tags": ["new-tag", "another-tag"]
+}
+```
+
+#### POST `/api/v1/media/batch/move`
+Bulk move assets to folder.
+
+**Request:**
+```json
+{
+  "media_asset_ids": ["uuid1", "uuid2"],
+  "folder_id": "target-folder-uuid"
+}
+```
+
+### 5.3 Folder Management APIs (NEW)
+Base path: `/api/v1/folders`
+
+#### POST `/api/v1/folders`
+Create new folder.
+
+**Request:**
+```json
+{
+  "name": "My Folder",
+  "parent_id": "parent-uuid"
+}
+```
+
+#### GET `/api/v1/folders`
+List folders in tree structure.
+
+**Response:**
+```json
+{
+  "folders": [
+    {
+      "id": "uuid",
+      "name": "Root Folder",
+      "parent_id": null,
+      "path": "/Root Folder",
+      "children": [
+        {
+          "id": "uuid2",
+          "name": "Subfolder",
+          "parent_id": "uuid",
+          "path": "/Root Folder/Subfolder"
+        }
+      ]
+    }
+  ]
+}
+```
+
+#### GET `/api/v1/folders/{id}/contents`
+Get folder contents (subfolders + media assets) with pagination.
+
+#### PATCH `/api/v1/folders/{id}`
+Update folder (rename or move).
+
+#### DELETE `/api/v1/folders/{id}`
+Delete folder (must be empty or cascade).
+
+### 5.4 Project Management APIs (NEW)
+Base path: `/api/v1/projects`
+
+#### POST `/api/v1/projects`
+Create new project.
+
+**Request:**
+```json
+{
+  "name": "My First Video",
+  "project_data": {
+    "composition": {
+      "aspect_ratio": "16:9",
+      "timebase_fps": 30,
+      "tracks": [],
+      "clips": [],
+      "transitions": []
+    }
+  }
+}
+```
+
+#### GET `/api/v1/projects`
+List projects with pagination and sorting.
+
+#### GET `/api/v1/projects/{id}`
+Get project with full composition data.
+
+#### PUT `/api/v1/projects/{id}`
+Update project (auto-save endpoint).
+
+**Request:**
+```json
+{
+  "name": "Updated Name",
+  "project_data": {
+    "composition": { ... },
+    "tracks": [ ... ],
+    "clips": [ ... ]
+  },
+  "version": 5
+}
+```
+
+Uses optimistic locking with `version` field.
+
+#### DELETE `/api/v1/projects/{id}`
+Soft delete project.
+
+#### POST `/api/v1/projects/{id}/duplicate`
+Duplicate project.
+
+#### GET `/api/v1/projects/{id}/versions`
+Get version history.
+
+#### POST `/api/v1/projects/{id}/versions/{version}/restore`
+Restore specific version.
+
+### 5.5 Internal Service APIs
 Base path: `/internal/v1`
 
 #### POST `/internal/v1/process-clips`
@@ -197,7 +433,7 @@ Process clips from AI Backend.
 #### POST `/internal/v1/beat-detection` (Post-MVP)
 Analyze audio for beat alignment.
 
-### 5.3 Health & Monitoring
+### 5.6 Health & Monitoring
 
 #### GET `/health`
 Basic health check.
@@ -232,6 +468,46 @@ Real-time composition progress.
     "percentage": 65,
     "message": "Encoding video",
     "timestamp": "2025-11-14T10:00:45Z"
+  }
+}
+```
+
+### 5.7 WebSocket Events for Media (NEW)
+
+Media asset events are broadcast to `/ws/media` WebSocket connection.
+
+**Event Types:**
+```json
+{
+  "type": "media.uploaded",
+  "data": {
+    "media_asset_id": "uuid",
+    "filename": "video.mp4",
+    "type": "video",
+    "url": "https://s3.../presigned-url",
+    "thumbnail_url": "https://s3.../thumb.jpg",
+    "timestamp": "2025-11-16T10:00:00Z"
+  }
+}
+```
+
+```json
+{
+  "type": "media.thumbnail.ready",
+  "data": {
+    "media_asset_id": "uuid",
+    "thumbnail_url": "https://s3.../thumb.jpg",
+    "timestamp": "2025-11-16T10:00:30Z"
+  }
+}
+```
+
+```json
+{
+  "type": "media.deleted",
+  "data": {
+    "media_asset_id": "uuid",
+    "timestamp": "2025-11-16T10:05:00Z"
   }
 }
 ```
@@ -629,6 +905,15 @@ TMP_DIR=/tmp/videogen
 KEEP_TEMP_FILES=false
 RUN_FFPROBE_VALIDATION=true
 
+# Media Upload Configuration (NEW)
+DEFAULT_USER_ID=default-user
+MAX_IMAGE_UPLOAD_SIZE_MB=100
+MAX_VIDEO_UPLOAD_SIZE_MB=1000
+MAX_AUDIO_UPLOAD_SIZE_MB=500
+PRESIGNED_URL_EXPIRATION_SECONDS=3600
+ENABLE_THUMBNAIL_GENERATION=true
+THUMBNAIL_GENERATION_TIMEOUT_SECONDS=60
+
 # Feature Flags
 ENABLE_DEV_API=false
 ENABLE_BEAT_DETECTION=false
@@ -833,6 +1118,106 @@ CREATE TRIGGER update_compositions_updated_at
 
 CREATE TRIGGER update_processing_jobs_updated_at
     BEFORE UPDATE ON processing_jobs
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at();
+
+-- NEW TABLES FOR MEDIA ASSET MANAGEMENT --
+
+-- Media asset types enum
+CREATE TYPE media_asset_type AS ENUM ('image', 'video', 'audio', 'text');
+
+-- Media assets table
+CREATE TABLE media_assets (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    owner_user_id VARCHAR(255) NOT NULL DEFAULT 'default-user',
+    type media_asset_type NOT NULL,
+    url TEXT NOT NULL,
+    s3_key VARCHAR(1024) NOT NULL,
+    thumbnail_url TEXT,
+    thumbnail_s3_key VARCHAR(1024),
+    filename VARCHAR(500) NOT NULL,
+    original_filename VARCHAR(500) NOT NULL,
+    file_size_bytes BIGINT,
+    mime_type VARCHAR(100),
+    duration_seconds NUMERIC(10, 2),
+    width INTEGER,
+    height INTEGER,
+    frame_rate NUMERIC(10, 2),
+    codec VARCHAR(100),
+    folder_id UUID REFERENCES folders(id) ON DELETE SET NULL,
+    is_deleted BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT ck_file_size_positive CHECK (file_size_bytes >= 0)
+);
+
+CREATE INDEX idx_media_assets_owner ON media_assets(owner_user_id);
+CREATE INDEX idx_media_assets_type ON media_assets(type);
+CREATE INDEX idx_media_assets_folder ON media_assets(folder_id);
+CREATE INDEX idx_media_assets_created ON media_assets(created_at DESC);
+
+-- Folders table
+CREATE TABLE folders (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(255) NOT NULL,
+    parent_id UUID REFERENCES folders(id) ON DELETE CASCADE,
+    path TEXT NOT NULL,
+    owner_user_id VARCHAR(255) NOT NULL DEFAULT 'default-user',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_folders_parent ON folders(parent_id);
+CREATE INDEX idx_folders_owner ON folders(owner_user_id);
+
+-- Tags table
+CREATE TABLE tags (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(100) UNIQUE NOT NULL,
+    slug VARCHAR(100) UNIQUE NOT NULL,
+    color VARCHAR(7),
+    usage_count INTEGER DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- MediaAsset-Tag junction table
+CREATE TABLE media_asset_tags (
+    media_asset_id UUID REFERENCES media_assets(id) ON DELETE CASCADE,
+    tag_id UUID REFERENCES tags(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    PRIMARY KEY (media_asset_id, tag_id)
+);
+
+-- Projects table
+CREATE TABLE projects (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    owner_user_id VARCHAR(255) NOT NULL DEFAULT 'default-user',
+    name VARCHAR(255) NOT NULL,
+    thumbnail_url TEXT,
+    project_data JSONB NOT NULL DEFAULT '{}'::jsonb,
+    version INTEGER DEFAULT 1,
+    is_deleted BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    last_modified_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_projects_owner ON projects(owner_user_id);
+CREATE INDEX idx_projects_data ON projects USING GIN(project_data);
+
+-- Update triggers for new tables
+CREATE TRIGGER update_media_assets_updated_at
+    BEFORE UPDATE ON media_assets
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at();
+
+CREATE TRIGGER update_folders_updated_at
+    BEFORE UPDATE ON folders
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at();
+
+CREATE TRIGGER update_projects_updated_at
+    BEFORE UPDATE ON projects
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at();
 ```
@@ -1454,6 +1839,7 @@ class FFmpegCommandBuilder:
 
 | Version | Date | Changes | Author |
 |---------|------|---------|--------|
+| 2.2 | 2025-11-16 | **Media Asset Management**: Added media upload endpoints with presigned S3 URLs, folder management API, project workspace API (separate from compositions), tag management, database schemas for MediaAsset/Folder/Project/Tag models, WebSocket events for media operations, environment variables for upload limits | Team |
 | 2.1 | 2024-11-14 | Removed AWS deployment/monitoring, added comprehensive file structure | Team |
 | 2.0 | 2024-11-14 | Complete technical specification with all decisions finalized | Team |
 | 1.0 | 2024-11-01 | Initial PRD | Team |
