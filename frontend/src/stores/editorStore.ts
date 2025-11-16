@@ -54,7 +54,7 @@ const initialState = {
 export const createEditorStore = () => {
   return createStore<EditorStore>()(
     devtools(
-      immer((set, get) => ({
+      immer((set) => ({
       ...initialState,
 
       // Tool selection
