@@ -1,6 +1,7 @@
 import { createStore } from 'zustand/vanilla'
 import { immer } from 'zustand/middleware/immer'
 import { devtools } from 'zustand/middleware'
+import { temporal } from 'zundo'
 import type { TimelineStore, Clip, Track } from '../types/stores'
 
 // Initial state
@@ -14,12 +15,13 @@ const initialState = {
   fps: 30,
 }
 
-// Create the vanilla store with devtools and immer middleware
+// Create the vanilla store with devtools, immer, and temporal middleware
 export const createTimelineStore = () => {
   return createStore<TimelineStore>()(
-    devtools(
-      immer((set) => ({
-      ...initialState,
+    temporal(
+      devtools(
+        immer((set) => ({
+        ...initialState,
 
       // Clip operations
       addClip: (clip) =>
@@ -193,8 +195,18 @@ export const createTimelineStore = () => {
 
       // Utility
       reset: () => set(initialState),
-      })),
-      { name: 'TimelineStore' }
+        })),
+        { name: 'TimelineStore' }
+      ),
+      {
+        limit: 50, // Keep last 50 history states
+        equality: (a, b) => a === b,
+        // Exclude playhead and zoom from undo/redo history
+        partialize: (state) => {
+          const { playhead, zoom, selectedClipIds, ...rest } = state
+          return rest
+        },
+      }
     )
   )
 }

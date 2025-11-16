@@ -2,6 +2,7 @@ import { useRef, useState, useCallback, useEffect } from 'react'
 import { TimelineRuler } from './TimelineRuler'
 import { TrackList } from './TrackList'
 import { ZoomControls } from './ZoomControls'
+import { TimelineToolbar } from './TimelineToolbar'
 import type { Track, Clip } from '../../types/stores'
 import { Plus } from 'lucide-react'
 import { Button } from '../ui/button'
@@ -18,6 +19,10 @@ interface TimelineProps {
   onZoomChange: (zoom: number) => void
   onClipSelect?: (clipId: string, addToSelection: boolean) => void
   onClipMove?: (clipId: string, trackId: string, startTime: number) => void
+  onClipTrim?: (clipId: string, updates: Partial<Clip>) => void
+  onSplitClip?: (clipId: string, frame: number) => void
+  onDuplicateClips?: (clipIds: string[]) => void
+  onDeleteClips?: (clipIds: string[]) => void
   onTrackUpdate?: (trackId: string, updates: Partial<Track>) => void
   onAddTrack?: () => void
 }
@@ -34,6 +39,10 @@ export function Timeline({
   onZoomChange,
   onClipSelect,
   onClipMove,
+  onClipTrim,
+  onSplitClip,
+  onDuplicateClips,
+  onDeleteClips,
   onTrackUpdate,
   onAddTrack,
 }: TimelineProps) {
@@ -70,6 +79,31 @@ export function Timeline({
     return () => window.removeEventListener('resize', updateViewportWidth)
   }, [])
 
+  // Toolbar handlers
+  const handleSplitAtPlayhead = useCallback(() => {
+    if (selectedClipIds.length === 0) return
+
+    // Split first selected clip at playhead position
+    const clipId = selectedClipIds[0]
+    const clip = clips.get(clipId)
+
+    if (clip && playhead >= clip.startTime && playhead < clip.startTime + clip.duration) {
+      onSplitClip?.(clipId, playhead)
+    }
+  }, [selectedClipIds, clips, playhead, onSplitClip])
+
+  const handleDuplicateClips = useCallback(() => {
+    if (selectedClipIds.length > 0) {
+      onDuplicateClips?.(selectedClipIds)
+    }
+  }, [selectedClipIds, onDuplicateClips])
+
+  const handleDeleteClips = useCallback(() => {
+    if (selectedClipIds.length > 0) {
+      onDeleteClips?.(selectedClipIds)
+    }
+  }, [selectedClipIds, onDeleteClips])
+
   return (
     <div className="flex flex-col h-full bg-zinc-950 border-t border-zinc-700">
       {/* Timeline header with controls */}
@@ -91,6 +125,14 @@ export function Timeline({
 
         <ZoomControls zoom={zoom} onZoomChange={onZoomChange} />
       </div>
+
+      {/* Timeline toolbar */}
+      <TimelineToolbar
+        hasSelection={selectedClipIds.length > 0}
+        onSplitAtPlayhead={handleSplitAtPlayhead}
+        onDuplicateClips={handleDuplicateClips}
+        onDeleteClips={handleDeleteClips}
+      />
 
       {/* Timeline ruler (scrollable horizontally) */}
       <div
@@ -127,6 +169,7 @@ export function Timeline({
             scrollLeft={scrollLeft}
             onClipSelect={onClipSelect}
             onClipMove={onClipMove}
+            onClipTrim={onClipTrim}
             onTrackUpdate={onTrackUpdate}
           />
         </div>
