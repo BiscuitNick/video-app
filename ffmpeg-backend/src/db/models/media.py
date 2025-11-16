@@ -4,13 +4,16 @@ Media asset models for storing uploaded files and metadata.
 
 import enum
 import uuid
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import ARRAY, BigInteger, Boolean, CheckConstraint, Enum, ForeignKey, Index, String
 from sqlalchemy.dialects.postgresql import JSONB, UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from db.base import BaseModel
+
+if TYPE_CHECKING:
+    from db.models.folder import Folder
 
 
 class MediaAssetType(str, enum.Enum):
@@ -115,6 +118,13 @@ class MediaAsset(BaseModel):
 
     # Soft delete
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
+
+    # Relationships
+    folder: Mapped["Folder | None"] = relationship(
+        "Folder",
+        back_populates="media_assets",
+        foreign_keys=[folder_id],
+    )
 
     # Indexes and constraints
     __table_args__ = (

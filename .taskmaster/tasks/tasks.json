@@ -1335,7 +1335,7 @@
           14,
           15
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -1343,7 +1343,7 @@
             "description": "Define the Folder ORM model with materialized path support for efficient tree operations and parent-child relationships",
             "dependencies": [],
             "details": "Create ffmpeg-backend/src/db/models/folder.py defining the Folder SQLAlchemy model with id (UUID), name, parent_id (self-reference), path (materialized path like /parent/child), owner_user_id fields. Configure foreign key relationships to users and self-referential parent folder. Add relationship properties for parent, children, and owner navigation. Implement path computation logic in model methods. Add the model to db/models/__init__.py exports.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Unit tests for folder model creation, parent-child relationships, and path computation"
           },
           {
@@ -1352,7 +1352,7 @@
             "description": "Define comprehensive Pydantic schemas for folder CRUD operations, tree structures, and pagination responses",
             "dependencies": [],
             "details": "Create ffmpeg-backend/src/app/api/schemas/folder.py with FolderBase schema (name validation), FolderCreate (extends Base with optional parent_id), FolderUpdate (name, parent_id for move operations), FolderResponse (id, name, path, parent_id, asset_count, created_at, updated_at), FolderTreeNode (recursive schema with children array for tree representation), FolderListResponse (folders array with tree structure), FolderContentsResponse (paginated assets and subfolders arrays). Implement validators for circular reference prevention and name constraints.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Validate schema serialization, tree structure nesting, and field validation rules"
           },
           {
@@ -1364,7 +1364,7 @@
               2
             ],
             "details": "Create ffmpeg-backend/src/app/api/v1/folders.py with FastAPI router. Implement POST /folders to create folder with name/parent_id, compute materialized path from parent hierarchy, validate no circular references, return FolderResponse. Implement GET /folders/{id} to retrieve single folder with asset count aggregation. Implement PATCH /folders/{id} for rename (update name) and move (change parent_id) operations with path recalculation for descendants. Implement DELETE /folders/{id} with empty check or cascade policy, handle orphaned assets. Use AsyncSession dependency injection and proper error handling.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test each CRUD operation, validate path updates on moves, test cascade deletes"
           },
           {
@@ -1377,7 +1377,7 @@
               3
             ],
             "details": "In folders.py router, implement GET /folders endpoint to list all user folders as tree structure. Use recursive CTE query or eager loading with relationship joins to build hierarchy efficiently. Transform flat query results into nested tree structure with children arrays. Sort folders by materialized path for consistent ordering. Implement tree depth limiting and folder count aggregation. Return FolderTreeNode array with proper nesting. Handle empty trees gracefully.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test tree construction with multiple levels, verify sorting and performance with large hierarchies"
           },
           {
@@ -1390,7 +1390,7 @@
               3
             ],
             "details": "In folders.py, implement GET /folders/{id}/contents endpoint with pagination (page, per_page params). Query media_assets filtered by folder_id with optional include_subfolders parameter for recursive listing using path prefix matching. Return paginated FolderContentsResponse with assets and subfolders arrays. Add total counts and pagination metadata. Update ffmpeg-backend/src/app/api/v1/__init__.py to import and include folders router with /folders prefix and folders tag. Ensure proper async patterns and error handling throughout.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test pagination, recursive folder contents, verify router integration and API accessibility"
           }
         ]
