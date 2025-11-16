@@ -44,9 +44,9 @@ export default function SettingsPage() {
                 <label className="block text-sm font-medium text-zinc-300 mb-2">
                   Default Frame Rate
                 </label>
-                <select className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select defaultValue="30" className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
                   <option value="24">24 fps</option>
-                  <option value="30" selected>30 fps</option>
+                  <option value="30">30 fps</option>
                   <option value="60">60 fps</option>
                 </select>
               </div>
@@ -55,9 +55,9 @@ export default function SettingsPage() {
                 <label className="block text-sm font-medium text-zinc-300 mb-2">
                   Default Resolution
                 </label>
-                <select className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select defaultValue="1080p" className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
                   <option value="720p">720p (HD)</option>
-                  <option value="1080p" selected>1080p (Full HD)</option>
+                  <option value="1080p">1080p (Full HD)</option>
                   <option value="4k">4K (Ultra HD)</option>
                 </select>
               </div>
@@ -72,8 +72,8 @@ export default function SettingsPage() {
                 <label className="block text-sm font-medium text-zinc-300 mb-2">
                   Default Format
                 </label>
-                <select className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <option value="mp4" selected>MP4 (H.264)</option>
+                <select defaultValue="mp4" className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="mp4">MP4 (H.264)</option>
                   <option value="webm">WebM</option>
                 </select>
               </div>
@@ -82,9 +82,9 @@ export default function SettingsPage() {
                 <label className="block text-sm font-medium text-zinc-300 mb-2">
                   Quality Preset
                 </label>
-                <select className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select defaultValue="high" className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
                   <option value="draft">Draft</option>
-                  <option value="high" selected>High</option>
+                  <option value="high">High</option>
                   <option value="production">Production</option>
                 </select>
               </div>
