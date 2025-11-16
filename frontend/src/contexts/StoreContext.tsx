@@ -16,13 +16,19 @@ import {
   createEditorStore,
   type EditorStoreInstance,
 } from '../stores/editorStore'
-import type { TimelineStore, MediaStore, ProjectStore, EditorStore } from '../types/stores'
+import { createWebSocketStore } from '../stores/webSocketStore'
+import type { TimelineStore, MediaStore, ProjectStore, EditorStore, WebSocketStore } from '../types/stores'
+import type { StoreApi } from 'zustand/vanilla'
+
+// Type for WebSocket store instance
+type WebSocketStoreInstance = StoreApi<WebSocketStore>
 
 // Create contexts for each store
 const TimelineStoreContext = createContext<TimelineStoreInstance | null>(null)
 const MediaStoreContext = createContext<MediaStoreInstance | null>(null)
 const ProjectStoreContext = createContext<ProjectStoreInstance | null>(null)
 const EditorStoreContext = createContext<EditorStoreInstance | null>(null)
+const WebSocketStoreContext = createContext<WebSocketStoreInstance | null>(null)
 
 // Provider props
 interface StoreProviderProps {
@@ -36,6 +42,7 @@ export function StoreProvider({ children }: StoreProviderProps) {
   const mediaStore = useRef<MediaStoreInstance>()
   const projectStore = useRef<ProjectStoreInstance>()
   const editorStore = useRef<EditorStoreInstance>()
+  const webSocketStore = useRef<WebSocketStoreInstance>()
 
   if (!timelineStore.current) {
     timelineStore.current = createTimelineStore()
@@ -49,13 +56,18 @@ export function StoreProvider({ children }: StoreProviderProps) {
   if (!editorStore.current) {
     editorStore.current = createEditorStore()
   }
+  if (!webSocketStore.current) {
+    webSocketStore.current = createWebSocketStore()
+  }
 
   return (
     <TimelineStoreContext.Provider value={timelineStore.current}>
       <MediaStoreContext.Provider value={mediaStore.current}>
         <ProjectStoreContext.Provider value={projectStore.current}>
           <EditorStoreContext.Provider value={editorStore.current}>
-            {children}
+            <WebSocketStoreContext.Provider value={webSocketStore.current}>
+              {children}
+            </WebSocketStoreContext.Provider>
           </EditorStoreContext.Provider>
         </ProjectStoreContext.Provider>
       </MediaStoreContext.Provider>
@@ -149,10 +161,32 @@ export function useEditorStore<T = EditorStore>(
   return useStore(store, selector || ((state) => state as T))
 }
 
+/**
+ * Hook to access the WebSocket store
+ * @param selector - Optional selector function to pick specific state
+ * @returns Selected state or entire store
+ * @example
+ * // Get entire store
+ * const webSocketStore = useWebSocketStore()
+ *
+ * // Get specific state with selector
+ * const connectionStatus = useWebSocketStore((state) => state.connectionStatus)
+ */
+export function useWebSocketStore<T = WebSocketStore>(
+  selector?: (state: WebSocketStore) => T
+): T {
+  const store = useContext(WebSocketStoreContext)
+  if (!store) {
+    throw new Error('useWebSocketStore must be used within StoreProvider')
+  }
+  return useStore(store, selector || ((state) => state as T))
+}
+
 // Export context for advanced use cases
 export {
   TimelineStoreContext,
   MediaStoreContext,
   ProjectStoreContext,
   EditorStoreContext,
+  WebSocketStoreContext,
 }

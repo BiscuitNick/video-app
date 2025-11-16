@@ -10,3 +10,5 @@ export type { ProjectStoreInstance } from './projectStore'
 
 export { createEditorStore } from './editorStore'
 export type { EditorStoreInstance } from './editorStore'
+
+export { createWebSocketStore } from './webSocketStore'
