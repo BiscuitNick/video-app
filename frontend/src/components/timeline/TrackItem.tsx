@@ -13,6 +13,7 @@ interface TrackItemProps {
   duration: number
   playhead: number
   scrollLeft: number
+  allClips?: Map<string, Clip>
   onClipSelect?: (clipId: string, addToSelection: boolean) => void
   onClipMove?: (clipId: string, trackId: string, startTime: number) => void
   onTrackUpdate?: (trackId: string, updates: Partial<Track>) => void
@@ -26,6 +27,7 @@ export const TrackItem = memo(function TrackItem({
   zoom,
   duration,
   playhead,
+  allClips,
   onClipSelect,
   onClipMove,
   onTrackUpdate,
@@ -131,6 +133,9 @@ export const TrackItem = memo(function TrackItem({
               trackHeight={track.height}
               trackType={track.type}
               isLocked={track.locked}
+              trackId={track.id}
+              allClips={allClips}
+              playhead={playhead}
               onSelect={onClipSelect}
               onMove={onClipMove}
             />

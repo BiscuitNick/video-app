@@ -66,6 +66,7 @@ export function TrackList({
               duration={duration}
               playhead={playhead}
               scrollLeft={scrollLeft}
+              allClips={clips}
               onClipSelect={onClipSelect}
               onClipMove={onClipMove}
               onTrackUpdate={onTrackUpdate}
