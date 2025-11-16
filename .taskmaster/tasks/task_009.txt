@@ -1,0 +1,49 @@
+# Task ID: 9
+# Title: Build AI Generation Interface for Images and Videos
+# Status: pending
+# Dependencies: 5, 7
+# Priority: low
+# Description: Create UI for AI-powered media generation using Replicate models (Nano-Banana for images, Wan Video I2V for videos)
+# Details:
+Create AIGenerationPanel with prompt input and generation controls. Implement generation flow for images (POST /api/v1/replicate/nano-banana) and videos (POST /api/v1/replicate/wan-video-i2v). Add quality tier selection (draft vs production). Include aspect ratio selection in generation requests. Create generation queue visualization with MAX_GENERATIONS concurrency limit. Handle job lifecycle: submission, polling status via WebSocket, adding generated assets to media library. Implement generation history and re-run capability.
+
+# Test Strategy:
+Test API request formatting, verify aspect ratio handling, test concurrency limits, validate WebSocket status updates, test media library integration after generation
+
+# Subtasks:
+## 1. Create AIGenerationPanel UI Component with Layout Structure [pending]
+### Dependencies: None
+### Description: Build the main AIGenerationPanel component with proper layout for prompt input, generation controls, and queue visualization areas
+### Details:
+Create src/components/ai-generation/AIGenerationPanel.tsx with main container layout. Set up three sections: prompt/controls area at top, generation queue in middle, generation history at bottom. Use existing UI components from the design system. Add responsive layout with proper spacing. Include placeholder sections for each major feature area. Set up component state management hooks for UI interactions.
+
+## 2. Build Prompt Input and Generation Controls Interface [pending]
+### Dependencies: 9.1
+### Description: Implement the prompt input field with quality tier selector, aspect ratio picker, and generation type toggle between image and video
+### Details:
+Create PromptInput component with textarea for prompt entry, character counter, and prompt history dropdown. Add QualityTierSelector with draft/production options. Build AspectRatioSelector with common ratios (16:9, 4:3, 1:1, 9:16). Create GenerationTypeToggle for switching between image/video modes. Add validation for prompt length and required fields. Style components consistently with existing UI patterns.
+
+## 3. Implement Image Generation Flow with Nano-Banana API [pending]
+### Dependencies: 9.2
+### Description: Create the image generation workflow using Replicate's Nano-Banana model with proper API integration and error handling
+### Details:
+Create generateImage function in src/services/ai-generation.ts. Implement POST request to /api/v1/replicate/nano-banana with prompt, quality tier, and aspect ratio. Add request queue management respecting MAX_GENERATIONS limit. Create polling mechanism for job status updates. Handle success/error responses and update UI state accordingly. Add retry logic for failed generations. Store generation metadata for history tracking.
+
+## 4. Implement Video Generation Flow with Wan Video I2V API [pending]
+### Dependencies: 9.2
+### Description: Create the video generation workflow using Replicate's Wan Video I2V model with proper job lifecycle management
+### Details:
+Create generateVideo function in src/services/ai-generation.ts. Implement POST request to /api/v1/replicate/wan-video-i2v with prompt and generation parameters. Set up WebSocket listener for real-time status updates on generation progress. Handle video-specific parameters like duration and frame rate. Implement progress visualization showing generation stages. Add proper error handling for video-specific failures. Cache generated video URLs for quick re-access.
+
+## 5. Create Generation Queue Visualization with Concurrency Management [pending]
+### Dependencies: 9.3, 9.4
+### Description: Build the generation queue display showing active, pending, and completed jobs with proper concurrency limit enforcement
+### Details:
+Create GenerationQueue component showing job cards with status indicators. Implement queue state management tracking pending, active, completed, and failed jobs. Add MAX_GENERATIONS concurrency enforcement preventing excess simultaneous generations. Create job status indicators with progress bars for active jobs. Add cancel functionality for pending/active jobs. Implement queue persistence to localStorage for recovery. Add estimated time remaining calculations based on average generation times.
+
+## 6. Add Media Library Integration and Generation History [pending]
+### Dependencies: 9.5
+### Description: Integrate generated assets into the media library and implement generation history with re-run capability
+### Details:
+Create auto-import workflow adding completed generations to media library. Implement asset metadata tagging with generation parameters and prompts. Build GenerationHistory component showing past generations with thumbnails. Add re-run functionality copying previous generation parameters. Create bulk actions for history management (delete, export, favorite). Implement search/filter for generation history by prompt keywords or date. Set up automatic cleanup for old generation records based on configured retention policy.
+

@@ -1,0 +1,61 @@
+# Task ID: 3
+# Title: Build Core Zustand State Management Architecture
+# Status: done
+# Dependencies: 1
+# Priority: high
+# Description: Set up Zustand 5.x stores for managing editor state, timeline state, media library, and project data with proper TypeScript typing
+# Details:
+Install zustand@^5.0.0 with middleware (persist, devtools, immer). Create vanilla stores with React Context pattern: TimelineStore (clips, tracks, playhead, zoom), MediaStore (assets, folders, upload queue), ProjectStore (project metadata, dirty state, autosave), EditorStore (preview settings, tool selection). Implement proper TypeScript interfaces for all store states. Set up store providers and custom hooks (useTimelineStore, useMediaStore, etc). Configure IndexedDB persistence for thumbnails and local caching strategies.
+
+# Test Strategy:
+Unit test all store actions and selectors, test middleware functionality (persistence, devtools), verify store updates trigger proper React re-renders, test store reset and initialization
+
+# Subtasks:
+## 1. Install Zustand 5.x with Required Middleware Packages [done]
+### Dependencies: None
+### Description: Install zustand@^5.0.0 along with immer, persist, and devtools middleware packages, and set up the initial project structure for state management
+### Details:
+Run npm install zustand@^5.0.0 immer zustand/middleware. Create src/stores directory structure with subdirectories for each store type. Set up initial TypeScript configuration for Zustand with strict typing. Install @types/node for IndexedDB types if needed. Create a stores/index.ts barrel export file for centralized store access.
+
+## 2. Design and Implement TypeScript Interfaces for All Store States [done]
+### Dependencies: 3.1
+### Description: Create comprehensive TypeScript type definitions and interfaces for Timeline, Media, Project, and Editor store states with proper typing for all properties
+### Details:
+Create types/stores.ts with interfaces: ITimelineState (clips array, tracks array, playhead number, zoom level), IMediaState (assets map, folders array, uploadQueue array), IProjectState (metadata object, isDirty boolean, lastSaved timestamp), IEditorState (previewSettings object, selectedTool enum). Define action types for each store. Create utility types for common patterns like clips, tracks, and assets. Ensure all types are exported for use across stores.
+
+## 3. Implement TimelineStore with Clips, Tracks, and Playhead Management [done]
+### Dependencies: 3.2
+### Description: Build the TimelineStore using vanilla Zustand pattern with actions for managing clips, tracks, playhead position, and zoom level with proper reactivity
+### Details:
+Create stores/timelineStore.ts with createStore pattern. Implement state: clips (Map<string, Clip>), tracks (array with video/audio/text types), playhead (frame number), zoom (0.25-8x range). Add actions: addClip, removeClip, updateClip, moveClip, addTrack, removeTrack, setPlayhead, setZoom. Use immer for immutable updates. Implement computed values for visible clips based on viewport. Add selection state management for multi-clip operations.
+
+## 4. Create MediaStore for Assets and Upload Queue Management [done]
+### Dependencies: 3.2
+### Description: Develop the MediaStore to handle media assets, folder organization, upload queue, and thumbnail caching with efficient data structures
+### Details:
+Create stores/mediaStore.ts with asset management structure. Implement state: assets (Map<string, MediaAsset>), folders (hierarchical structure), uploadQueue (array with progress tracking), thumbnailCache (Map). Add actions: addAsset, removeAsset, moveAsset, createFolder, queueUpload, updateUploadProgress, cacheThumbnail. Include file type validation and size limits. Implement search/filter functionality for assets. Add batch operations support for multiple file handling.
+
+## 5. Build ProjectStore for Metadata and Autosave Functionality [done]
+### Dependencies: 3.2
+### Description: Implement ProjectStore to manage project metadata, dirty state tracking, and autosave functionality with proper persistence handling
+### Details:
+Create stores/projectStore.ts with project lifecycle management. Implement state: metadata (name, description, createdAt, updatedAt), settings (fps, resolution, duration), isDirty (boolean), lastSaved (timestamp), autosaveInterval (number). Add actions: updateMetadata, setDirty, saveProject, loadProject, exportProject. Implement autosave timer logic with configurable intervals. Add version tracking for project format migrations. Include project validation before save operations.
+
+## 6. Implement EditorStore for Preview and Tool Selection State [done]
+### Dependencies: 3.2
+### Description: Create EditorStore to manage editor UI state including preview settings, selected tools, and workspace configuration
+### Details:
+Create stores/editorStore.ts for editor UI state. Implement state: previewSettings (quality, resolution, fullscreen), selectedTool (enum: select, trim, split, text), workspace (panel visibility, layout), shortcuts (customizable keybindings). Add actions: setPreviewQuality, selectTool, togglePanel, updateLayout, registerShortcut. Include tool-specific state (brush size for text, selection mode). Implement workspace preset management for different editing workflows.
+
+## 7. Set Up Store Providers with React Context Pattern [done]
+### Dependencies: 3.3, 3.4, 3.5, 3.6
+### Description: Create React Context providers and custom hooks for all stores following Zustand 5.x vanilla store pattern with proper TypeScript typing
+### Details:
+Create contexts/StoreContext.tsx with createContext for each store. Implement StoreProvider component that initializes all stores and provides them via context. Create custom hooks: useTimelineStore, useMediaStore, useProjectStore, useEditorStore with useContext and useSyncExternalStore. Add selector support for performance optimization (useTimelineStore(state => state.playhead)). Implement store reset functionality for testing. Ensure proper TypeScript inference for all hooks.
+
+## 8. Configure IndexedDB Persistence and DevTools Integration [done]
+### Dependencies: 3.7
+### Description: Set up IndexedDB persistence for stores, configure Redux DevTools integration, and implement local caching strategies for thumbnails and project data
+### Details:
+Configure zustand/middleware persist with IndexedDB adapter for ProjectStore and MediaStore. Implement custom storage engine for thumbnail blob caching in IndexedDB. Set up Redux DevTools integration with proper action names and state snapshots. Create migration strategies for store schema changes. Implement cache invalidation logic for stale data. Add storage quota management and cleanup routines. Configure different persistence strategies per store (memory-only for EditorStore, persist for ProjectStore).
+

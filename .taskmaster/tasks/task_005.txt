@@ -1,0 +1,55 @@
+# Task ID: 5
+# Title: Implement Media Upload System with S3 Integration
+# Status: pending
+# Dependencies: 3
+# Priority: high
+# Description: Create direct-to-S3 upload system with presigned URLs, progress tracking, and media asset management
+# Details:
+Create MediaUpload component with drag-and-drop support and file picker. Implement upload flow: request presigned URL from backend POST /api/v1/media/upload, validate file size/type against environment limits (100MB images, 1GB videos, 500MB audio), upload directly to S3 with XMLHttpRequest for progress tracking, confirm upload completion with backend. Create upload queue management in MediaStore. Implement thumbnail generation requests post-upload. Add upload progress UI with cancel capability. Handle multiple concurrent uploads with proper error recovery.
+
+# Test Strategy:
+Test file validation logic, mock S3 uploads for unit tests, test progress tracking accuracy, verify error handling for failed uploads, test concurrent upload limits, validate presigned URL handling
+
+# Subtasks:
+## 1. Create MediaUpload Component with Drag-and-Drop Interface [done]
+### Dependencies: None
+### Description: Build the main MediaUpload React component with drag-and-drop functionality, file picker, and visual feedback for drag states
+### Details:
+Create MediaUpload.tsx component using React hooks. Implement drag-and-drop zone with onDragEnter, onDragLeave, onDragOver, and onDrop handlers. Add file input element with multiple file selection support. Create visual feedback states (idle, drag-over, uploading) using Tailwind classes. Include drop zone UI with upload icon and instructional text. Integrate with Shadcn UI components for consistent styling. Handle both drag-and-drop and click-to-browse file selection methods.
+
+## 2. Implement File Validation Against Size and Type Limits [done]
+### Dependencies: None
+### Description: Create validation logic to check uploaded files against configured limits for file size and supported media types
+### Details:
+Build validateFile function that checks against environment-configured limits: 100MB for images (jpg, png, webp, gif), 1GB for videos (mp4, webm, mov, avi), 500MB for audio (mp3, wav, ogg, m4a). Create FileValidationError class with specific error types (INVALID_TYPE, FILE_TOO_LARGE). Implement batch validation for multiple files. Add user-friendly error messages for each validation failure. Store validation rules in a configuration object for easy maintenance. Return detailed validation results including which files passed/failed and why.
+
+## 3. Request Presigned URLs from Backend API [done]
+### Dependencies: 5.2
+### Description: Implement API integration to request presigned URLs from the backend for direct S3 uploads
+### Details:
+Create uploadService.ts with requestPresignedUrl function. Make POST request to /api/v1/media/upload with file metadata (name, size, type, checksum). Handle authentication headers if required. Parse response containing presigned URL, S3 key, and upload parameters. Implement retry logic with exponential backoff for failed requests. Add request timeout handling (30 seconds). Cache presigned URLs temporarily with expiration tracking. Handle various error responses (401, 403, 413, 429, 500) with appropriate user messaging.
+
+## 4. Implement Direct-to-S3 Upload with XMLHttpRequest [done]
+### Dependencies: 5.3
+### Description: Build the core S3 upload functionality using XMLHttpRequest for progress tracking capabilities
+### Details:
+Create S3Uploader class using XMLHttpRequest for direct browser-to-S3 uploads. Implement upload method that takes presigned URL and file. Set up progress event listeners to track upload percentage in real-time. Configure proper CORS headers for S3 requests. Handle upload.onload for success confirmation and upload.onerror for failures. Implement chunk-based uploading for large files if needed. Add abort functionality to cancel in-progress uploads. Parse S3 response headers for ETag verification. Send completion confirmation to backend with S3 key and ETag.
+
+## 5. Build Upload Progress Tracking System [pending]
+### Dependencies: 5.1, 5.4
+### Description: Create a comprehensive progress tracking system with UI components showing upload status, speed, and time remaining
+### Details:
+Create UploadProgress component with progress bar, percentage display, upload speed (MB/s), and estimated time remaining. Implement progress calculation logic using XMLHttpRequest progress events. Add circular progress indicator for individual files and linear progress for overall batch. Calculate and display transfer rate using moving average algorithm. Show file name, size, and status (queued, uploading, completed, failed). Add pause/resume and cancel buttons for each upload. Create toast notifications for upload completion and failures. Implement smooth progress animations using CSS transitions.
+
+## 6. Create Upload Queue Management in MediaStore [pending]
+### Dependencies: 5.5
+### Description: Implement upload queue state management using Zustand store with queue operations and persistence
+### Details:
+Extend MediaStore with upload queue functionality: addToQueue, removeFromQueue, updateProgress, setStatus methods. Create UploadItem interface with id, file, progress, status, error, retryCount properties. Implement queue ordering with priority support. Add concurrent upload limit control (default 3 simultaneous uploads). Create queue persistence to localStorage for recovery after page refresh. Implement automatic queue processing when uploads complete. Add batch operations for queue management (clear completed, retry all failed). Track overall queue progress statistics. Integrate with React components using useMediaStore hook.
+
+## 7. Handle Concurrent Uploads with Error Recovery and Retry Logic [pending]
+### Dependencies: 5.4, 5.6
+### Description: Implement robust error handling, automatic retry mechanism, and management of multiple concurrent uploads
+### Details:
+Create UploadManager class to coordinate multiple concurrent uploads with configurable limit (max 3). Implement exponential backoff retry strategy (3 attempts, 2-4-8 second delays). Handle various error types: network failures, S3 errors, timeout errors, validation errors. Add automatic retry for transient errors (network, 503, 429). Implement manual retry option for permanent failures. Create error recovery mechanism to resume interrupted uploads. Add upload health monitoring to detect stuck uploads. Implement graceful degradation when S3 is unavailable. Log detailed error information for debugging. Provide clear user feedback for each error type with actionable messages.
+

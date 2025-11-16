@@ -1,0 +1,73 @@
+# Task ID: 6
+# Title: Build Playback Engine with DOM-based Preview
+# Status: pending
+# Dependencies: 4
+# Priority: medium
+# Description: Implement hybrid DOM and canvas-based preview engine for real-time playback of timeline compositions
+# Details:
+Create PlaybackEngine class managing playback state (play, pause, seek). Implement frame ticker using requestAnimationFrame for smooth playback. Build preview renderer: compute active clips at current frame, render video tracks using single video element with source switching, overlay images/text as positioned DOM layers, apply CSS transforms for opacity/scale/position. Add playback controls component with play/pause, frame stepping, speed control. Implement audio synchronization with Web Audio API. Handle preview quality settings and performance optimization. Ensure sub-100ms response for timeline interactions.
+
+# Test Strategy:
+Test playback accuracy at different speeds, verify frame calculations, test clip transition timing, validate audio sync, performance test with complex compositions, test memory management during playback
+
+# Subtasks:
+## 1. Create PlaybackEngine class with state management [pending]
+### Dependencies: None
+### Description: Build the core PlaybackEngine class with methods for play, pause, seek, and state management including current time, duration, and playback rate
+### Details:
+Create PlaybackEngine.ts class with TypeScript interfaces for PlaybackState (playing, paused, stopped), currentTime, duration, playbackRate. Implement methods: play(), pause(), stop(), seek(time), setPlaybackRate(rate). Use MobX or Zustand for reactive state management. Initialize with timeline reference and emit state change events.
+
+## 2. Implement requestAnimationFrame ticker system [pending]
+### Dependencies: 6.1
+### Description: Build frame ticker using requestAnimationFrame for smooth 30/60fps playback with precise timing calculations
+### Details:
+Create FrameTicker class managing requestAnimationFrame loop. Calculate delta time between frames for accurate playback timing. Implement start/stop controls tied to PlaybackEngine state. Handle tab visibility changes to pause/resume ticker. Maintain target FPS (30/60) with frame dropping for performance. Calculate current playback position based on elapsed time and playback rate.
+
+## 3. Build frame-to-clip resolver for timeline queries [pending]
+### Dependencies: 6.1
+### Description: Implement efficient algorithm to determine which clips are active at any given frame/timestamp on the timeline
+### Details:
+Create ClipResolver class with getActiveClips(timestamp) method. Build indexed data structure for O(log n) clip lookups. Handle overlapping clips across multiple tracks. Calculate clip local time based on in/out points. Support clip trimming offsets. Cache active clip sets for performance. Update resolver when timeline changes. Return sorted array by track z-index.
+
+## 4. Implement video element pool with source switching [pending]
+### Dependencies: 6.3
+### Description: Create video element management system for efficient source switching between video clips during playback
+### Details:
+Build VideoElementPool managing reusable video elements. Implement preloading strategy for upcoming clips. Handle seamless source switching without visual glitches. Synchronize video currentTime with playback position. Manage video element lifecycle (load, play, pause, seek). Implement buffering detection and handling. Support multiple video formats (mp4, webm). Handle video load errors gracefully.
+
+## 5. Create DOM layer compositor for overlays [pending]
+### Dependencies: 6.3
+### Description: Build DOM-based layer system for rendering images, text, and graphics overlays on top of video
+### Details:
+Create DOMCompositor class managing absolutely positioned div layers. Build layer stack matching timeline track order. Implement efficient DOM node reuse pool. Update only changed layers per frame. Handle layer visibility based on clip timing. Support different blend modes via CSS. Manage z-index ordering automatically. Clear unused layers from DOM.
+
+## 6. Apply CSS transforms for clip animations [pending]
+### Dependencies: 6.5
+### Description: Implement CSS transform application system for clip properties like position, scale, rotation, and opacity
+### Details:
+Create TransformEngine applying clip properties to DOM elements. Build transform matrix calculations for combined transforms. Implement smooth interpolation for keyframed properties. Apply CSS transforms via style.transform property. Handle opacity via style.opacity. Support transform origin adjustments. Optimize by batching transform updates. Use CSS will-change for performance.
+
+## 7. Build playback controls UI component [pending]
+### Dependencies: 6.2
+### Description: Create comprehensive playback controls including play/pause, scrubbing, frame stepping, and speed control
+### Details:
+Build PlaybackControls React component with Shadcn UI components. Implement play/pause toggle button with space bar shortcut. Create scrub bar with frame-accurate seeking. Add frame step buttons (arrow keys). Build playback speed selector (0.25x to 2x). Display current time and duration. Add volume control for audio. Implement keyboard shortcuts. Style with dark theme following design system.
+
+## 8. Implement Web Audio API synchronization [pending]
+### Dependencies: 6.4
+### Description: Build audio playback system using Web Audio API synchronized with video playback timing
+### Details:
+Create AudioEngine class using Web Audio API context. Build audio buffer management for audio clips. Implement precise scheduling using context.currentTime. Synchronize audio with video playback position. Handle audio source switching for clips. Support volume and pan controls per clip. Implement crossfading for transitions. Manage audio context lifecycle. Handle browser autoplay policies.
+
+## 9. Add preview quality and performance settings [pending]
+### Dependencies: 6.6
+### Description: Implement adjustable preview quality settings to balance performance and visual fidelity
+### Details:
+Create PreviewSettings with quality levels (draft, half, full resolution). Implement dynamic resolution scaling for video preview. Add frame rate limiting option (15/30/60 fps). Build performance monitoring showing FPS and frame drops. Implement automatic quality adjustment based on performance. Add toggle for effects preview. Cache rendered frames when possible. Provide manual override controls in UI.
+
+## 10. Optimize for sub-100ms interaction response [pending]
+### Dependencies: 6.9
+### Description: Implement performance optimizations ensuring timeline interactions respond within 100ms
+### Details:
+Profile and optimize critical render paths. Implement debouncing for expensive operations. Use web workers for heavy calculations. Add request idle callback for non-critical updates. Optimize React re-renders with memo and callbacks. Implement virtual scrolling for long timelines. Cache computed values aggressively. Use CSS containment for render optimization. Monitor and log interaction response times.
+

@@ -1,0 +1,67 @@
+# Task ID: 4
+# Title: Create Timeline Component with Virtualization
+# Status: done
+# Dependencies: 3
+# Priority: high
+# Description: Build the core timeline component with track management, clip rendering, and efficient virtualization for performance
+# Details:
+Install react-virtuoso@^4.6.2 for virtualization. Create Timeline component structure: TimelineRuler (time markers, zoom controls), TrackList (virtualized track rendering), ClipRenderer (optimized clip display). Implement frame-based timebase calculations (30fps default). Add zoom controls (0.25x-8x range) with keyboard shortcuts. Create track types (video, audio, text) with controls (lock, mute, labels). Implement horizontal scroll synchronization between ruler and tracks. Add clip selection, snapping logic, and basic drag-and-drop support. Optimize rendering to only show visible clips based on scroll position.
+
+# Test Strategy:
+Performance test with 100+ clips, test virtualization scroll behavior, verify zoom calculations, test clip visibility calculations, validate track synchronization, test memory usage with large timelines
+
+# Subtasks:
+## 1. Install and Configure React Virtuoso Library [done]
+### Dependencies: None
+### Description: Set up react-virtuoso@^4.6.2 for efficient virtualization of timeline tracks and clips, configure basic list virtualization settings
+### Details:
+Install react-virtuoso@^4.6.2 via npm. Create a basic virtualization configuration file with default settings for row height estimation, overscan, and scroll behavior. Set up TypeScript types for virtuoso components. Configure virtuoso to work with horizontal scrolling for timeline implementation.
+
+## 2. Build TimelineRuler Component with Time Markers [done]
+### Dependencies: None
+### Description: Create the timeline ruler component that displays time markers, frame numbers, and provides visual time reference for the timeline
+### Details:
+Create TimelineRuler component with dynamic time marker generation based on zoom level. Implement time formatting (00:00:00:00 for hours:minutes:seconds:frames). Calculate marker intervals dynamically (every second, 5 seconds, 30 seconds based on zoom). Style ruler with zinc-800 background following dark theme. Add major and minor tick marks for visual hierarchy.
+
+## 3. Implement TrackList with Virtualized Rendering [done]
+### Dependencies: 4.1
+### Description: Build the main track list container using react-virtuoso for efficient rendering of potentially hundreds of tracks
+### Details:
+Create TrackList component using Virtuoso's List component. Implement variable height tracks support for different track types. Set up track data structure with id, type, height, and clips array. Configure virtuoso scrolling behavior for smooth performance. Implement track header rendering with controls. Set up proper item rendering with React.memo for optimization.
+
+## 4. Create ClipRenderer with Optimized Display Logic [done]
+### Dependencies: 4.3
+### Description: Build the clip rendering component with visibility culling and optimized rendering based on viewport
+### Details:
+Create ClipRenderer component that only renders clips within viewport. Implement clip visibility calculation based on timeline scroll position and zoom level. Add clip thumbnail rendering with lazy loading. Create clip selection visual feedback with border highlighting. Optimize with React.memo and useMemo for expensive calculations. Add clip duration display and resize handles.
+
+## 5. Implement Frame-Based Timebase Calculations System [done]
+### Dependencies: None
+### Description: Create the core timebase calculation system for converting between frames, seconds, and timeline pixels at 30fps default
+### Details:
+Create TimebaseCalculator utility class with methods for frame-to-time, time-to-frame, and pixel-to-frame conversions. Implement support for different framerates (24, 25, 30, 60 fps). Create hooks for accessing timebase calculations in components. Add SMPTE timecode formatting support. Implement frame snapping logic for precise editing. Cache calculations for performance optimization.
+
+## 6. Add Zoom Controls with Keyboard Shortcuts [done]
+### Dependencies: 4.2, 4.5
+### Description: Implement zoom functionality with range 0.25x-8x, smooth zooming animations, and keyboard shortcut support
+### Details:
+Create ZoomControls component with slider and preset buttons (fit to window, 1:1, zoom in/out). Implement keyboard shortcuts (Ctrl/Cmd + Plus/Minus for zoom, Ctrl/Cmd + 0 for fit). Add smooth zoom transitions with requestAnimationFrame. Update timeline pixel calculations on zoom changes. Maintain playhead position during zoom. Store zoom level in Zustand TimelineStore.
+
+## 7. Build Track Type System for Video, Audio, and Text [done]
+### Dependencies: 4.3
+### Description: Create specialized track components for different media types with appropriate controls and visual representations
+### Details:
+Create VideoTrack component with thumbnail previews and opacity controls. Build AudioTrack with waveform visualization placeholder and volume controls. Implement TextTrack for titles/captions with text preview. Add track controls: lock/unlock, show/hide, mute (for audio), solo, track color coding. Create track height adjustment functionality. Implement track reordering with drag handles.
+
+## 8. Implement Horizontal Scroll Synchronization [done]
+### Dependencies: 4.2, 4.3
+### Description: Create synchronized horizontal scrolling between timeline ruler, tracks, and any other timeline components
+### Details:
+Create TimelineScrollContext for managing shared scroll state. Implement scroll event handlers that update all timeline components simultaneously. Add smooth scroll behavior with debouncing for performance. Ensure ruler and tracks stay perfectly aligned during scrolling. Handle scroll position persistence in TimelineStore. Add programmatic scrolling for playhead following.
+
+## 9. Add Clip Selection, Snapping, and Drag-and-Drop [done]
+### Dependencies: 4.4, 4.5
+### Description: Implement interactive clip manipulation features including selection, magnetic snapping, and drag-and-drop repositioning
+### Details:
+Implement clip selection with click, shift-click for multiple selection, and marquee selection. Add magnetic snapping to other clips, markers, and playhead with configurable snap threshold. Create drag-and-drop system using HTML5 drag API or custom mouse events. Implement clip movement constraints within track bounds. Add visual feedback during dragging with ghost preview. Store selection state in TimelineStore.
+

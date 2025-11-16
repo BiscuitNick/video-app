@@ -1,0 +1,43 @@
+# Task ID: 2
+# Title: Implement Dark Mode UI Theme System
+# Status: done
+# Dependencies: 1
+# Priority: high
+# Description: Configure TailwindCSS with dark-mode-first design system and integrate Shadcn UI component library for consistent theming
+# Details:
+Configure Tailwind 4.x with dark mode as default, implementing the zinc color palette (zinc-950 background, zinc-900 surfaces, zinc-800 elements, zinc-700 borders). Install and configure Shadcn UI components via CLI (shadcn@^3.5.0). Set up design tokens in tailwind.config.ts for consistent theming. Create ThemeProvider component for managing theme state. Implement CSS variables for dynamic theming support. Ensure all components follow the dark-mode-first aesthetic with blue-500 accent colors for interactive elements.
+
+# Test Strategy:
+Visual regression testing for theme consistency, test theme provider context, verify Shadcn components render with correct dark theme styles, validate CSS variables are applied correctly
+
+# Subtasks:
+## 1. Configure Tailwind 4.x with zinc color palette and dark mode defaults [done]
+### Dependencies: None
+### Description: Set up Tailwind CSS 4.x configuration with dark mode as the default theme, implementing the zinc color palette for backgrounds, surfaces, elements, and borders
+### Details:
+Install Tailwind CSS 4.x dependencies. Configure tailwind.config.ts to use dark mode as default with class-based switching. Define the zinc color palette: zinc-950 for backgrounds, zinc-900 for surfaces, zinc-800 for UI elements, zinc-700 for borders. Set blue-500 as the primary accent color for interactive elements. Configure CSS variables for dynamic color theming. Ensure proper color contrast ratios for accessibility.
+
+## 2. Install and configure Shadcn UI component library via CLI [done]
+### Dependencies: 2.1
+### Description: Install Shadcn UI components using the CLI tool and configure them to work with the dark-mode-first theme system
+### Details:
+Run npx shadcn@latest init to initialize Shadcn UI with TypeScript and Tailwind CSS support. Configure components.json to use the zinc color scheme and dark theme as default. Install essential components like Button, Card, Dialog, Input, and Select using the CLI. Verify all components inherit the dark theme styles correctly. Update component CSS variables to match the zinc palette. Ensure component styles integrate seamlessly with Tailwind configuration.
+
+## 3. Create ThemeProvider component for managing theme state [done]
+### Dependencies: 2.1
+### Description: Build a React context-based ThemeProvider component that manages theme state, handles theme switching, and persists user preferences
+### Details:
+Create ThemeContext using React.createContext with theme state and toggle function. Implement ThemeProvider component that wraps the application and manages theme state. Add localStorage persistence for user theme preference. Implement system preference detection using window.matchMedia for prefers-color-scheme. Create useTheme custom hook for consuming theme context in components. Add theme switching logic that updates document root class for Tailwind. Prevent flash of unstyled content on initial load.
+
+## 4. Set up design tokens in tailwind configuration for consistent theming [done]
+### Dependencies: 2.1, 2.2
+### Description: Define and configure design tokens in Tailwind configuration for spacing, typography, shadows, and other design system properties
+### Details:
+Create design token structure in tailwind.config.ts for consistent spacing scale, typography settings, and shadow values. Define semantic color tokens for primary, secondary, success, warning, and error states using CSS variables. Configure border radius tokens for consistent component styling. Set up animation tokens for transitions and interactions. Create utility classes for common patterns like glass morphism effects and gradient backgrounds. Document token usage patterns for developer reference.
+
+## 5. Integrate ThemeProvider and verify dark-mode-first implementation [done]
+### Dependencies: 2.1, 2.2, 2.3, 2.4
+### Description: Integrate the ThemeProvider into the application root and verify that all components and pages follow the dark-mode-first design system
+### Details:
+Wrap the application root with ThemeProvider component in main.tsx or App.tsx. Apply dark theme classes to all existing components and pages. Verify Shadcn UI components respond correctly to theme changes. Test theme persistence across page refreshes and navigation. Validate color contrast ratios meet WCAG accessibility standards. Create a theme toggle component for user control. Ensure all interactive elements use the blue-500 accent color consistently. Document theme usage guidelines for future development.
+

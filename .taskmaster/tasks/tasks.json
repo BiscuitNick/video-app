@@ -945,11 +945,166 @@
             "testStrategy": "Test undo/redo for each operation type, verify state consistency after multiple undo/redo cycles, test history limit behavior"
           }
         ]
+      },
+      {
+        "id": 11,
+        "title": "Implement Project Management UI Integration",
+        "description": "Wire up ProjectsPage with ProjectStore to enable complete project CRUD operations and seamless navigation to editor",
+        "details": "Integrate ProjectsPage with ProjectStore for full project lifecycle management. Create NewProjectDialog modal using Shadcn Dialog component with form inputs for project name, description, and settings (fps, resolution, aspect ratio). Implement project grid/list display showing project cards with thumbnails, metadata (name, last modified, duration), and action buttons. Add project selection handler that navigates to /projects/:projectId/editor using React Router's useNavigate. Implement delete project functionality with confirmation dialog and ProjectStore.removeProject integration. Create search/filter bar for finding projects by name or metadata. Display empty state when no projects exist with create project CTA. Follow React best practices: use useState for component state, useCallback for event handlers, immutable state updates in ProjectStore. Use Zustand selectors to prevent unnecessary re-renders. Implement loading states during project operations. Add toast notifications for success/error feedback.",
+        "testStrategy": "Test project creation modal form validation, verify project list renders from ProjectStore, test project selection navigates to correct route, validate delete confirmation and state updates, test search/filter functionality, verify empty state displays correctly, test immutable state updates",
+        "priority": "high",
+        "dependencies": [
+          3
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Add project collection to ProjectStore with CRUD operations",
+            "description": "Extend ProjectStore to manage a collection of projects with add, remove, update, and list operations using immutable state patterns",
+            "dependencies": [],
+            "details": "Extend ProjectStore with projects Map<string, ProjectMetadata> state. Implement addProject action that creates new project with generated ID and adds to Map using immutable updates (spread or set). Add removeProject action that deletes project from Map and clears any related data. Implement updateProject for editing project metadata. Create getProjects selector that returns array of projects sorted by updatedAt. Add getCurrentProject selector that returns active project by ID. Ensure all updates use Zustand's set with shallow merge and follow immutable patterns from DeepWiki research (no direct mutations, create new Maps/objects).",
+            "status": "pending",
+            "testStrategy": "Test addProject creates project with unique ID, verify removeProject deletes correctly, test updateProject preserves other projects, validate selectors return correct filtered data, test immutability of state updates"
+          },
+          {
+            "id": 2,
+            "title": "Create NewProjectDialog modal component with Shadcn Dialog",
+            "description": "Build modal dialog for creating new projects using Shadcn Dialog, React Hook Form, and Zod validation",
+            "dependencies": [],
+            "details": "Create NewProjectDialog.tsx component using Shadcn Dialog component. Implement form with React Hook Form and Zod schema validation for project name (required, max 100 chars), description (optional, max 500 chars), fps selector (24/30/60), resolution dropdown (1920x1080, 1280x720, 3840x2160), aspect ratio selector (16:9, 9:16, 1:1, 4:3). Add form validation with error messages below each field. Use Shadcn Form components (Input, Select, Textarea) for consistent styling. Implement controlled form state with register/handleSubmit from React Hook Form. Create DialogTrigger button that opens modal. Style with dark theme zinc palette. Add cancel and create buttons in DialogFooter.",
+            "status": "pending",
+            "testStrategy": "Test form validation rules trigger error messages, verify controlled inputs update correctly, test dialog open/close behavior, validate Zod schema catches invalid inputs, test form submission with valid data"
+          },
+          {
+            "id": 3,
+            "title": "Implement project creation handler with store integration",
+            "description": "Wire up NewProjectDialog form submission to create project in ProjectStore and navigate to editor",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Create handleCreateProject function using useCallback to prevent recreations. On form submit, call ProjectStore.addProject with form data to create new project entry. Use useProjectStore selector to access addProject action. Generate unique project ID using crypto.randomUUID() or timestamp. Set default values for settings not in form (autosaveInterval, etc). After successful creation, use React Router's useNavigate to navigate to /projects/:projectId/editor with new project ID. Close dialog and show success toast using Shadcn toast component. Handle errors with error toast. Follow immutable state update pattern - addProject should return new project object.",
+            "status": "pending",
+            "testStrategy": "Test form submission creates project in store, verify navigation to editor with correct ID, test error handling shows toast, validate project has all required fields, test dialog closes after creation"
+          },
+          {
+            "id": 4,
+            "title": "Build ProjectCard component with thumbnail and metadata display",
+            "description": "Create reusable ProjectCard component showing project thumbnail, name, metadata, and action buttons",
+            "dependencies": [],
+            "details": "Create ProjectCard.tsx as functional component accepting project prop. Display project thumbnail (placeholder image if none exists) using Next Image or img tag. Show project name as heading, last modified date using date-fns or Intl.DateTimeFormat, and duration in readable format. Add hover state with elevated shadow and border highlight using Tailwind. Include action buttons: open project (primary) and delete project (destructive, icon only). Use Shadcn Card component for container. Apply zinc color palette for dark theme. Optimize with React.memo to prevent unnecessary re-renders. Add click handler for card body to open project.",
+            "status": "pending",
+            "testStrategy": "Test component renders with project data, verify thumbnail displays or shows placeholder, test hover states apply correctly, validate date formatting, test action buttons fire onClick handlers, verify memo prevents re-renders"
+          },
+          {
+            "id": 5,
+            "title": "Build project list container with ProjectStore integration",
+            "description": "Create project grid/list view that reads projects from ProjectStore using selectors and renders ProjectCard components",
+            "dependencies": [
+              1,
+              4
+            ],
+            "details": "In ProjectsPage.tsx, use useProjectStore with selector to read projects array (use shallow equality from zustand/shallow). Implement grid layout using CSS Grid or Tailwind grid classes (grid-cols-1 md:grid-cols-2 lg:grid-cols-3). Map over projects array and render ProjectCard for each project. Add loading state using useState while projects load from IndexedDB. Show empty state when projects.length === 0 with illustration and Create Project button. Implement search/filter functionality using useState for search term, filter projects array based on search. Use useCallback for filter function to prevent recreations. Add sort dropdown for sorting by name, date, or duration.",
+            "status": "pending",
+            "testStrategy": "Test grid renders all projects from store, verify empty state shows when no projects, test search filter updates grid, validate sort options reorder correctly, test loading state displays during initialization, verify shallow selector prevents unnecessary re-renders"
+          },
+          {
+            "id": 6,
+            "title": "Implement project selection navigation and delete confirmation",
+            "description": "Add click handlers for opening projects in editor and deleting projects with confirmation dialog",
+            "dependencies": [
+              1,
+              4,
+              5
+            ],
+            "details": "Create handleOpenProject function using useCallback that takes projectId and calls navigate(`/projects/${projectId}/editor`) using useNavigate hook. Wire this to ProjectCard click and open button. Create DeleteConfirmDialog component using Shadcn AlertDialog for destructive confirmation. Implement handleDeleteProject using useCallback that shows confirmation dialog, and on confirm calls ProjectStore.removeProject(projectId) and shows success toast. Handle errors with error toast. Add optimistic updates - immediately update UI then rollback on error using useOptimistic pattern from React 19. Prevent deletion of currently open project with validation check.",
+            "status": "pending",
+            "testStrategy": "Test project selection navigates to correct route, verify delete confirmation dialog shows, test delete removes project from store and UI, validate optimistic updates work correctly, test error handling rolls back optimistic update, verify cannot delete open project"
+          }
+        ]
+      },
+      {
+        "id": 12,
+        "title": "Implement Media Library UI Integration",
+        "description": "Integrate MediaUpload component into MediaLibraryPage and connect upload workflow with MediaStore",
+        "details": "Wire up MediaLibraryPage with MediaUpload component and MediaStore for complete media asset management. Import and render MediaUpload component in MediaLibraryPage, passing onFilesSelected callback that queues files in MediaStore. Implement media grid display showing asset thumbnails from MediaStore with metadata (name, type, size, upload date). Create upload progress indicator UI showing active uploads from MediaStore.uploadQueue with progress bars, file names, and cancel buttons. Add asset selection functionality with click/shift-click for multi-select, storing selected IDs in MediaStore. Implement delete assets functionality with confirmation dialog calling MediaStore.removeAsset. Create folder management UI with create/navigate/delete folder operations. Add search/filter bar using MediaStore.searchAssets. Display empty state when no media exists with upload CTA. Connect Upload Media buttons (header and empty state) to trigger MediaUpload file picker programmatically. Follow React best practices: functional components with hooks, immutable state updates, useCallback for event handlers. Use Zustand selectors for optimal performance. Implement loading states and error handling with toast notifications.",
+        "testStrategy": "Test MediaUpload component renders and file selection works, verify upload queue displays with progress tracking, test asset grid renders from MediaStore, validate asset selection and multi-select, test delete confirmation and state updates, verify search/filter functionality, test folder operations, validate empty state and upload button integration",
+        "priority": "high",
+        "dependencies": [
+          3,
+          5
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Integrate MediaUpload component into MediaLibraryPage",
+            "description": "Import and render MediaUpload component with file selection callback that queues uploads in MediaStore",
+            "dependencies": [],
+            "details": "In MediaLibraryPage.tsx, import MediaUpload component. Create handleFilesSelected callback using useCallback that takes File[] array. Call MediaStore.queueUpload for each file using useMediaStore selector to access queueUpload action. Add MediaUpload component to page layout (conditionally show when no uploads active, or always show in dedicated area). Pass onFilesSelected={handleFilesSelected} prop to MediaUpload. Wire up header Upload Media button using useRef to store MediaUpload ref and trigger file picker programmatically. Also wire empty state Upload button to same trigger. Handle file validation errors with toast notifications. Follow immutable state updates in MediaStore queue.",
+            "status": "pending",
+            "testStrategy": "Test MediaUpload renders in page, verify file selection callback queues in MediaStore, test Upload buttons trigger file picker, validate error toasts show for invalid files"
+          },
+          {
+            "id": 2,
+            "title": "Build upload progress indicator UI component",
+            "description": "Create component showing active uploads from MediaStore.uploadQueue with progress bars and cancel functionality",
+            "dependencies": [
+              1
+            ],
+            "details": "Create UploadProgressList.tsx component. Use useMediaStore selector to read uploadQueue array (use shallow from zustand/shallow). Map over uploadQueue and render UploadProgressItem for each upload. Create UploadProgressItem showing file name, size, progress bar (use Shadcn Progress component), upload speed (MB/s), estimated time remaining, status (queued/uploading/completed/failed), and cancel button. Calculate progress percentage from uploadItem.progress (0-100). Implement handleCancelUpload callback that calls MediaStore.cancelUpload(uploadId). Show success/error toast on upload complete/failed. Use React.memo on UploadProgressItem to prevent unnecessary re-renders. Display list as floating panel or in sidebar.",
+            "status": "pending",
+            "testStrategy": "Test progress list renders active uploads, verify progress bars update correctly, test cancel button stops upload, validate success/error toasts appear, test memo prevents re-renders"
+          },
+          {
+            "id": 3,
+            "title": "Create MediaAssetCard component for grid display",
+            "description": "Build reusable component showing media asset thumbnail, metadata, and selection state",
+            "dependencies": [],
+            "details": "Create MediaAssetCard.tsx functional component accepting asset and isSelected props. Display thumbnail using asset.thumbnailUrl or MediaStore.thumbnailCache for images/videos, or file type icon for audio. Show asset name, type badge (image/video/audio), file size formatted (e.g. 2.5 MB), upload date using Intl.DateTimeFormat. Add checkbox for selection (controlled by isSelected prop). Implement hover state with elevated card and overlay actions (delete, download). Use Shadcn Card component with zinc theme. Add click handler that toggles selection. Optimize with React.memo comparing asset.id and isSelected. Support keyboard navigation (Tab, Space to select).",
+            "status": "pending",
+            "testStrategy": "Test card renders with asset data, verify thumbnail displays correctly, test selection checkbox state, validate hover actions appear, test click toggles selection, verify memo optimization"
+          },
+          {
+            "id": 4,
+            "title": "Implement media grid with MediaStore integration and selection",
+            "description": "Create grid layout that reads assets from MediaStore, handles selection state, and supports multi-select",
+            "dependencies": [
+              3
+            ],
+            "details": "In MediaLibraryPage, use useMediaStore to read assets Map and selectedAssetIds array with shallow selector. Convert assets Map to array and filter by currentFolderId if set. Implement grid layout with Tailwind grid (grid-cols-2 md:grid-cols-4 lg:grid-cols-6). Map over assets and render MediaAssetCard with isSelected={selectedAssetIds.includes(asset.id)}. Create handleAssetClick callback using useCallback that calls MediaStore.selectAsset(assetId, event.shiftKey) for multi-select support. Implement shift-click range selection by tracking lastSelectedIndex. Add Ctrl/Cmd+A keyboard shortcut to select all visible assets. Show selected count in header toolbar. Display loading state while assets load from IndexedDB persistence.",
+            "status": "pending",
+            "testStrategy": "Test grid renders all assets from store, verify selection updates MediaStore state, test shift-click range selection, validate Ctrl+A selects all, test loading state displays, verify shallow selector prevents re-renders"
+          },
+          {
+            "id": 5,
+            "title": "Add search/filter bar and asset deletion",
+            "description": "Implement search functionality using MediaStore.searchAssets and delete confirmation dialog",
+            "dependencies": [
+              4
+            ],
+            "details": "Create search input in page header using Shadcn Input with search icon. Use useState for searchQuery state. Implement useEffect that calls MediaStore.searchAssets(searchQuery) and stores results. Display filtered results in grid instead of all assets. Add filter dropdown for asset type (all/images/videos/audio). Create DeleteConfirmDialog using Shadcn AlertDialog showing count of selected assets. Implement handleDeleteAssets using useCallback that shows confirmation, then calls MediaStore.removeAsset for each selectedAssetId on confirm. Clear selection after delete. Show success toast with count deleted. Handle errors with error toast. Use optimistic updates - remove from UI immediately then rollback on error.",
+            "status": "pending",
+            "testStrategy": "Test search filters assets correctly, verify type filter works, test delete confirmation shows correct count, validate delete removes assets from store, test optimistic updates rollback on error, verify selection clears after delete"
+          },
+          {
+            "id": 6,
+            "title": "Implement folder management UI and navigation",
+            "description": "Create folder sidebar navigation with create/delete folder operations and folder-based filtering",
+            "dependencies": [
+              4
+            ],
+            "details": "Create FolderSidebar component showing folder tree from MediaStore.folders array. Display folders in hierarchical structure with indentation for nested folders. Add Create Folder button that shows input for new folder name and calls MediaStore.createFolder. Implement handleFolderClick that calls MediaStore.setCurrentFolder(folderId) and filters assets in grid. Show active folder with highlight. Add delete folder button (icon) with confirmation dialog calling MediaStore.removeFolder. Display asset count for each folder. Use Shadcn Collapsible for nested folder expand/collapse. Handle drag-and-drop to move assets between folders using MediaStore.moveAsset. Show All Media option at top for unfiltered view.",
+            "status": "pending",
+            "testStrategy": "Test folder tree renders hierarchy correctly, verify create folder adds to store, test folder selection filters grid, validate delete removes folder and moves assets, test drag-and-drop moves assets, verify asset counts are accurate"
+          }
+        ]
       }
     ],
     "metadata": {
       "created": "2025-11-16T19:03:27.919Z",
-      "updated": "2025-11-16T19:03:27.919Z",
+      "updated": "2025-11-16T23:45:00.000Z",
       "description": "Tasks for master context"
     }
   }

@@ -1,0 +1,49 @@
+# Task ID: 11
+# Title: Implement Project Management UI Integration
+# Status: pending
+# Dependencies: 3
+# Priority: high
+# Description: Wire up ProjectsPage with ProjectStore to enable complete project CRUD operations and seamless navigation to editor
+# Details:
+Integrate ProjectsPage with ProjectStore for full project lifecycle management. Create NewProjectDialog modal using Shadcn Dialog component with form inputs for project name, description, and settings (fps, resolution, aspect ratio). Implement project grid/list display showing project cards with thumbnails, metadata (name, last modified, duration), and action buttons. Add project selection handler that navigates to /projects/:projectId/editor using React Router's useNavigate. Implement delete project functionality with confirmation dialog and ProjectStore.removeProject integration. Create search/filter bar for finding projects by name or metadata. Display empty state when no projects exist with create project CTA. Follow React best practices: use useState for component state, useCallback for event handlers, immutable state updates in ProjectStore. Use Zustand selectors to prevent unnecessary re-renders. Implement loading states during project operations. Add toast notifications for success/error feedback.
+
+# Test Strategy:
+Test project creation modal form validation, verify project list renders from ProjectStore, test project selection navigates to correct route, validate delete confirmation and state updates, test search/filter functionality, verify empty state displays correctly, test immutable state updates
+
+# Subtasks:
+## 1. Add project collection to ProjectStore with CRUD operations [pending]
+### Dependencies: None
+### Description: Extend ProjectStore to manage a collection of projects with add, remove, update, and list operations using immutable state patterns
+### Details:
+Extend ProjectStore with projects Map<string, ProjectMetadata> state. Implement addProject action that creates new project with generated ID and adds to Map using immutable updates (spread or set). Add removeProject action that deletes project from Map and clears any related data. Implement updateProject for editing project metadata. Create getProjects selector that returns array of projects sorted by updatedAt. Add getCurrentProject selector that returns active project by ID. Ensure all updates use Zustand's set with shallow merge and follow immutable patterns from DeepWiki research (no direct mutations, create new Maps/objects).
+
+## 2. Create NewProjectDialog modal component with Shadcn Dialog [pending]
+### Dependencies: None
+### Description: Build modal dialog for creating new projects using Shadcn Dialog, React Hook Form, and Zod validation
+### Details:
+Create NewProjectDialog.tsx component using Shadcn Dialog component. Implement form with React Hook Form and Zod schema validation for project name (required, max 100 chars), description (optional, max 500 chars), fps selector (24/30/60), resolution dropdown (1920x1080, 1280x720, 3840x2160), aspect ratio selector (16:9, 9:16, 1:1, 4:3). Add form validation with error messages below each field. Use Shadcn Form components (Input, Select, Textarea) for consistent styling. Implement controlled form state with register/handleSubmit from React Hook Form. Create DialogTrigger button that opens modal. Style with dark theme zinc palette. Add cancel and create buttons in DialogFooter.
+
+## 3. Implement project creation handler with store integration [pending]
+### Dependencies: 11.1, 11.2
+### Description: Wire up NewProjectDialog form submission to create project in ProjectStore and navigate to editor
+### Details:
+Create handleCreateProject function using useCallback to prevent recreations. On form submit, call ProjectStore.addProject with form data to create new project entry. Use useProjectStore selector to access addProject action. Generate unique project ID using crypto.randomUUID() or timestamp. Set default values for settings not in form (autosaveInterval, etc). After successful creation, use React Router's useNavigate to navigate to /projects/:projectId/editor with new project ID. Close dialog and show success toast using Shadcn toast component. Handle errors with error toast. Follow immutable state update pattern - addProject should return new project object.
+
+## 4. Build ProjectCard component with thumbnail and metadata display [pending]
+### Dependencies: None
+### Description: Create reusable ProjectCard component showing project thumbnail, name, metadata, and action buttons
+### Details:
+Create ProjectCard.tsx as functional component accepting project prop. Display project thumbnail (placeholder image if none exists) using Next Image or img tag. Show project name as heading, last modified date using date-fns or Intl.DateTimeFormat, and duration in readable format. Add hover state with elevated shadow and border highlight using Tailwind. Include action buttons: open project (primary) and delete project (destructive, icon only). Use Shadcn Card component for container. Apply zinc color palette for dark theme. Optimize with React.memo to prevent unnecessary re-renders. Add click handler for card body to open project.
+
+## 5. Build project list container with ProjectStore integration [pending]
+### Dependencies: 11.1, 11.4
+### Description: Create project grid/list view that reads projects from ProjectStore using selectors and renders ProjectCard components
+### Details:
+In ProjectsPage.tsx, use useProjectStore with selector to read projects array (use shallow equality from zustand/shallow). Implement grid layout using CSS Grid or Tailwind grid classes (grid-cols-1 md:grid-cols-2 lg:grid-cols-3). Map over projects array and render ProjectCard for each project. Add loading state using useState while projects load from IndexedDB. Show empty state when projects.length === 0 with illustration and Create Project button. Implement search/filter functionality using useState for search term, filter projects array based on search. Use useCallback for filter function to prevent recreations. Add sort dropdown for sorting by name, date, or duration.
+
+## 6. Implement project selection navigation and delete confirmation [pending]
+### Dependencies: 11.1, 11.4, 11.5
+### Description: Add click handlers for opening projects in editor and deleting projects with confirmation dialog
+### Details:
+Create handleOpenProject function using useCallback that takes projectId and calls navigate(`/projects/${projectId}/editor`) using useNavigate hook. Wire this to ProjectCard click and open button. Create DeleteConfirmDialog component using Shadcn AlertDialog for destructive confirmation. Implement handleDeleteProject using useCallback that shows confirmation dialog, and on confirm calls ProjectStore.removeProject(projectId) and shows success toast. Handle errors with error toast. Add optimistic updates - immediately update UI then rollback on error using useOptimistic pattern from React 19. Prevent deletion of currently open project with validation check.
+

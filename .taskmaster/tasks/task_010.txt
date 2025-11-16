@@ -1,0 +1,61 @@
+# Task ID: 10
+# Title: Implement Clip Editing Features and Transitions
+# Status: pending
+# Dependencies: 4
+# Priority: medium
+# Description: Build comprehensive clip editing capabilities including trimming, splitting, transforms, and basic transitions
+# Details:
+Implement clip operations: trim handles (drag in/out points), split at playhead functionality, clip duplication and deletion. Add transform controls: opacity slider (0-100%), scale controls with aspect ratio lock, X/Y position with visual handles, rotation control. Create transition system: fade in/out, cross dissolve, basic wipes. Implement clip properties panel with inline editing. Add keyboard shortcuts for common operations (S for split, Delete, Ctrl+D for duplicate). Integrate all operations with undo/redo system using Zustand middleware.
+
+# Test Strategy:
+Test each clip operation for accuracy, verify undo/redo for all operations, test keyboard shortcuts, validate transform calculations, test transition rendering in preview
+
+# Subtasks:
+## 1. Implement trim handles with drag in/out points for timeline clips [pending]
+### Dependencies: None
+### Description: Create interactive trim handles that allow users to adjust clip start and end points directly on the timeline through drag interactions
+### Details:
+Build TrimHandles component with draggable start/end points. Implement mouse event handlers for drag operations. Update clip duration and position in TimelineStore on drag. Show timecode tooltips during drag. Ensure frame-accurate trimming with snap-to-frame logic. Handle edge cases like minimum clip length and collision with adjacent clips.
+
+## 2. Create split at playhead functionality for clip division [pending]
+### Dependencies: None
+### Description: Implement the ability to split clips at the current playhead position, creating two separate clip segments
+### Details:
+Add split action to TimelineStore that divides clip at playhead position. Calculate new clip durations and start/end times based on split point. Preserve all clip properties (effects, transforms) in both segments. Update clip IDs and maintain proper ordering. Handle splitting of clips with transitions. Ensure split respects minimum clip length constraints.
+
+## 3. Build clip duplication and deletion operations with selection support [pending]
+### Dependencies: None
+### Description: Implement functionality to duplicate selected clips and delete them from the timeline with proper state management
+### Details:
+Create duplicate action in TimelineStore that clones selected clips with new IDs. Position duplicated clips intelligently (offset or next available space). Implement delete action with confirmation for destructive operations. Support multi-selection for batch operations. Update timeline layout after operations. Handle deletion of clips with dependencies or transitions.
+
+## 4. Implement transform controls for opacity, scale, position, and rotation [pending]
+### Dependencies: None
+### Description: Build comprehensive transform control system with visual handles and precise numeric input for clip manipulation
+### Details:
+Create TransformControls component with opacity slider (0-100%), scale controls with aspect ratio lock toggle, X/Y position controls with visual on-canvas handles, rotation control with degree input and visual rotation handle. Implement real-time preview updates. Store transform data in clip properties. Add reset buttons for each transform. Ensure transforms apply correctly in preview renderer.
+
+## 5. Create transition system with fade, cross dissolve, and basic wipes [pending]
+### Dependencies: 10.4
+### Description: Develop a transition system supporting common video transitions between adjacent clips on the timeline
+### Details:
+Build TransitionManager with fade in/out, cross dissolve, and basic wipe transitions (left, right, up, down). Create transition UI overlay on timeline between clips. Implement transition duration controls (0.5s to 3s). Store transition data in timeline state. Calculate transition regions and affected frames. Ensure transitions render correctly in preview with proper alpha blending.
+
+## 6. Build clip properties panel with inline editing capabilities [pending]
+### Dependencies: 10.4, 10.5
+### Description: Create a properties panel that displays and allows inline editing of all clip attributes and settings
+### Details:
+Design ClipPropertiesPanel component with sections for basic info (name, duration, source), transform properties with numeric inputs, applied effects list, transition settings. Implement inline editing with validation and immediate preview updates. Add property grouping and collapsible sections. Include preset management for common settings. Sync panel state with selected clip in timeline.
+
+## 7. Add keyboard shortcuts for common editing operations [pending]
+### Dependencies: 10.1, 10.2, 10.3
+### Description: Implement keyboard shortcut system for efficient clip editing workflow with customizable key bindings
+### Details:
+Create KeyboardShortcutManager using native browser keyboard events. Implement default shortcuts: S for split at playhead, Delete/Backspace for clip deletion, Ctrl/Cmd+D for duplication, Spacebar for play/pause, I/O for in/out points. Add shortcut hint tooltips on hover. Create keyboard shortcut reference panel. Ensure shortcuts don't conflict with browser defaults.
+
+## 8. Integrate undo/redo system with Zustand middleware for all operations [pending]
+### Dependencies: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7
+### Description: Implement comprehensive undo/redo functionality that tracks and reverses all clip editing operations using Zustand temporal middleware
+### Details:
+Configure Zustand temporal middleware for TimelineStore with proper state snapshots. Define undoable actions for all clip operations (trim, split, duplicate, delete, transform, transitions). Implement efficient state diffing to minimize memory usage. Add undo/redo UI buttons with keyboard shortcuts (Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z). Display action history with descriptive labels. Set reasonable history limit (50 actions).
+

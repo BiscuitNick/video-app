@@ -1,0 +1,49 @@
+# Task ID: 12
+# Title: Implement Media Library UI Integration
+# Status: pending
+# Dependencies: 3, 5
+# Priority: high
+# Description: Integrate MediaUpload component into MediaLibraryPage and connect upload workflow with MediaStore
+# Details:
+Wire up MediaLibraryPage with MediaUpload component and MediaStore for complete media asset management. Import and render MediaUpload component in MediaLibraryPage, passing onFilesSelected callback that queues files in MediaStore. Implement media grid display showing asset thumbnails from MediaStore with metadata (name, type, size, upload date). Create upload progress indicator UI showing active uploads from MediaStore.uploadQueue with progress bars, file names, and cancel buttons. Add asset selection functionality with click/shift-click for multi-select, storing selected IDs in MediaStore. Implement delete assets functionality with confirmation dialog calling MediaStore.removeAsset. Create folder management UI with create/navigate/delete folder operations. Add search/filter bar using MediaStore.searchAssets. Display empty state when no media exists with upload CTA. Connect Upload Media buttons (header and empty state) to trigger MediaUpload file picker programmatically. Follow React best practices: functional components with hooks, immutable state updates, useCallback for event handlers. Use Zustand selectors for optimal performance. Implement loading states and error handling with toast notifications.
+
+# Test Strategy:
+Test MediaUpload component renders and file selection works, verify upload queue displays with progress tracking, test asset grid renders from MediaStore, validate asset selection and multi-select, test delete confirmation and state updates, verify search/filter functionality, test folder operations, validate empty state and upload button integration
+
+# Subtasks:
+## 1. Integrate MediaUpload component into MediaLibraryPage [pending]
+### Dependencies: None
+### Description: Import and render MediaUpload component with file selection callback that queues uploads in MediaStore
+### Details:
+In MediaLibraryPage.tsx, import MediaUpload component. Create handleFilesSelected callback using useCallback that takes File[] array. Call MediaStore.queueUpload for each file using useMediaStore selector to access queueUpload action. Add MediaUpload component to page layout (conditionally show when no uploads active, or always show in dedicated area). Pass onFilesSelected={handleFilesSelected} prop to MediaUpload. Wire up header Upload Media button using useRef to store MediaUpload ref and trigger file picker programmatically. Also wire empty state Upload button to same trigger. Handle file validation errors with toast notifications. Follow immutable state updates in MediaStore queue.
+
+## 2. Build upload progress indicator UI component [pending]
+### Dependencies: 12.1
+### Description: Create component showing active uploads from MediaStore.uploadQueue with progress bars and cancel functionality
+### Details:
+Create UploadProgressList.tsx component. Use useMediaStore selector to read uploadQueue array (use shallow from zustand/shallow). Map over uploadQueue and render UploadProgressItem for each upload. Create UploadProgressItem showing file name, size, progress bar (use Shadcn Progress component), upload speed (MB/s), estimated time remaining, status (queued/uploading/completed/failed), and cancel button. Calculate progress percentage from uploadItem.progress (0-100). Implement handleCancelUpload callback that calls MediaStore.cancelUpload(uploadId). Show success/error toast on upload complete/failed. Use React.memo on UploadProgressItem to prevent unnecessary re-renders. Display list as floating panel or in sidebar.
+
+## 3. Create MediaAssetCard component for grid display [pending]
+### Dependencies: None
+### Description: Build reusable component showing media asset thumbnail, metadata, and selection state
+### Details:
+Create MediaAssetCard.tsx functional component accepting asset and isSelected props. Display thumbnail using asset.thumbnailUrl or MediaStore.thumbnailCache for images/videos, or file type icon for audio. Show asset name, type badge (image/video/audio), file size formatted (e.g. 2.5 MB), upload date using Intl.DateTimeFormat. Add checkbox for selection (controlled by isSelected prop). Implement hover state with elevated card and overlay actions (delete, download). Use Shadcn Card component with zinc theme. Add click handler that toggles selection. Optimize with React.memo comparing asset.id and isSelected. Support keyboard navigation (Tab, Space to select).
+
+## 4. Implement media grid with MediaStore integration and selection [pending]
+### Dependencies: 12.3
+### Description: Create grid layout that reads assets from MediaStore, handles selection state, and supports multi-select
+### Details:
+In MediaLibraryPage, use useMediaStore to read assets Map and selectedAssetIds array with shallow selector. Convert assets Map to array and filter by currentFolderId if set. Implement grid layout with Tailwind grid (grid-cols-2 md:grid-cols-4 lg:grid-cols-6). Map over assets and render MediaAssetCard with isSelected={selectedAssetIds.includes(asset.id)}. Create handleAssetClick callback using useCallback that calls MediaStore.selectAsset(assetId, event.shiftKey) for multi-select support. Implement shift-click range selection by tracking lastSelectedIndex. Add Ctrl/Cmd+A keyboard shortcut to select all visible assets. Show selected count in header toolbar. Display loading state while assets load from IndexedDB persistence.
+
+## 5. Add search/filter bar and asset deletion [pending]
+### Dependencies: 12.4
+### Description: Implement search functionality using MediaStore.searchAssets and delete confirmation dialog
+### Details:
+Create search input in page header using Shadcn Input with search icon. Use useState for searchQuery state. Implement useEffect that calls MediaStore.searchAssets(searchQuery) and stores results. Display filtered results in grid instead of all assets. Add filter dropdown for asset type (all/images/videos/audio). Create DeleteConfirmDialog using Shadcn AlertDialog showing count of selected assets. Implement handleDeleteAssets using useCallback that shows confirmation, then calls MediaStore.removeAsset for each selectedAssetId on confirm. Clear selection after delete. Show success toast with count deleted. Handle errors with error toast. Use optimistic updates - remove from UI immediately then rollback on error.
+
+## 6. Implement folder management UI and navigation [pending]
+### Dependencies: 12.4
+### Description: Create folder sidebar navigation with create/delete folder operations and folder-based filtering
+### Details:
+Create FolderSidebar component showing folder tree from MediaStore.folders array. Display folders in hierarchical structure with indentation for nested folders. Add Create Folder button that shows input for new folder name and calls MediaStore.createFolder. Implement handleFolderClick that calls MediaStore.setCurrentFolder(folderId) and filters assets in grid. Show active folder with highlight. Add delete folder button (icon) with confirmation dialog calling MediaStore.removeFolder. Display asset count for each folder. Use Shadcn Collapsible for nested folder expand/collapse. Handle drag-and-drop to move assets between folders using MediaStore.moveAsset. Show All Media option at top for unfiltered view.
+
