@@ -1,5 +1,5 @@
 import { useCallback, useState, useRef } from 'react'
-import { Upload, X } from 'lucide-react'
+import { Upload } from 'lucide-react'
 import { Button } from '../ui/button'
 
 export interface MediaUploadProps {
