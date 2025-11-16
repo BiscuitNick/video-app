@@ -86,6 +86,12 @@ class Composition(BaseModel):
         lazy="selectin",
     )
 
+    project: Mapped["Project"] = relationship(  # type: ignore[name-defined]
+        "Project",
+        back_populates="composition",
+        uselist=False,
+    )
+
     # Indexes for JSONB fields (GIN indexes for efficient querying)
     __table_args__ = (
         Index(
