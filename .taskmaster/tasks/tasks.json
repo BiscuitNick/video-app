@@ -1266,7 +1266,63 @@
           14
         ],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create MediaAsset database model and enums",
+            "description": "Design and implement the MediaAsset SQLAlchemy model with all required fields, relationships, and enum types for media asset storage in the database",
+            "dependencies": [],
+            "details": "Create ffmpeg-backend/src/db/models/media.py with MediaAsset model including fields: id (UUID), user_id, name, file_size, file_type (enum: IMAGE/VIDEO/AUDIO), s3_key, thumbnail_s3_key, status (enum: PENDING_UPLOAD/UPLOADING/READY/FAILED/DELETED), checksum, metadata (JSON with duration, width, height, frame_rate, codec), folder_id (FK), tags (array), created_at, updated_at, is_deleted. Define MediaAssetType and MediaAssetStatus enums. Add proper indexes for performance on commonly queried fields (user_id, folder_id, status, is_deleted). Update db/models/__init__.py to export the new model and enums.",
+            "status": "pending",
+            "testStrategy": "Unit tests for model creation, field validation, enum constraints, and database migrations"
+          },
+          {
+            "id": 2,
+            "title": "Create API schemas for media asset endpoints",
+            "description": "Define Pydantic models for all request/response schemas needed by the media asset API endpoints",
+            "dependencies": [],
+            "details": "Create ffmpeg-backend/src/app/api/schemas/media.py with Pydantic models: MediaUploadRequest (name, size, type, checksum), MediaUploadResponse (id, presigned_url, upload_params), MediaAssetResponse (full asset data), MediaListResponse (paginated list), MediaMetadataUpdate (metadata fields from FFprobe), MediaBatchDeleteRequest (asset_ids array), MediaBatchTagRequest (asset_ids, tags, operation), MediaBatchMoveRequest (asset_ids, folder_id). Include proper validation for file sizes (100MB images, 1GB videos, 500MB audio), allowed file types, and checksum format. Export all schemas in app/api/schemas/__init__.py.",
+            "status": "pending",
+            "testStrategy": "Test schema validation, serialization, field constraints, and edge cases with invalid data"
+          },
+          {
+            "id": 3,
+            "title": "Implement upload and presigned URL generation endpoints",
+            "description": "Create the POST /media/upload endpoint for validating uploads and generating presigned S3 URLs, and helper functions for S3 operations",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Create ffmpeg-backend/src/app/api/v1/media.py with FastAPI router. Implement POST /media/upload endpoint that: validates file metadata against size limits and allowed types, checks checksum format validity, generates presigned S3 URL using boto3 with 15-minute expiration and proper CORS headers, creates MediaAsset record with PENDING_UPLOAD status using AsyncSession, returns presigned URL with upload parameters (method, headers, fields). Add helper function generate_presigned_post_url in S3Manager class that handles multipart upload initialization for large files. Include proper error handling for S3 failures, database errors, and validation issues with custom error codes (INVALID_FILE_TYPE, FILE_TOO_LARGE).",
+            "status": "pending",
+            "testStrategy": "Test presigned URL generation, S3 mock responses, file validation logic, database transaction handling"
+          },
+          {
+            "id": 4,
+            "title": "Implement upload confirmation and metadata extraction",
+            "description": "Create PATCH endpoint to confirm upload completion and extract media metadata using FFprobe, with worker job integration for thumbnails",
+            "dependencies": [
+              1,
+              2,
+              3
+            ],
+            "details": "Implement PATCH /media/{id} endpoint that: confirms upload completion by checking S3 object exists using head_object, runs FFprobe to extract metadata (duration, width, height, frame_rate, codec, bitrate) using existing InputFileManager class from services/ffmpeg/input_manager.py, updates MediaAsset status from PENDING_UPLOAD to READY and stores metadata in JSON field, enqueues RQ worker job for thumbnail generation using existing worker.enqueue_job function with job parameters (media_id, s3_key, media_type). Create helper function extract_media_metadata that wraps InputFileManager.get_file_info and handles both local files and S3 URLs. Handle edge cases: missing files, corrupted media, FFprobe failures with appropriate error responses.",
+            "status": "pending",
+            "testStrategy": "Test FFprobe integration, metadata extraction for various formats, worker job enqueuing, error handling for corrupted files"
+          },
+          {
+            "id": 5,
+            "title": "Implement list, get, delete and batch operations",
+            "description": "Create remaining CRUD and batch operation endpoints for media asset management with proper filtering and pagination",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Implement GET /media endpoint with: pagination using page/per_page parameters (max 100 per page), filtering by type/folder_id/tag/search query using SQLAlchemy queries, sorting by created_at/updated_at/name with proper indexes, lightweight response without full metadata. Implement GET /media/{id} returning complete asset with metadata. Implement DELETE /media/{id} with soft delete setting is_deleted=true and scheduling S3 cleanup worker job. Implement POST /media/batch/delete accepting array of IDs for bulk soft delete in single transaction. Implement POST /media/batch/tag for adding/removing tags from multiple assets. Implement POST /media/batch/move to update folder_id for multiple assets. Follow existing patterns from compositions.py for query building, pagination, and error handling.",
+            "status": "pending",
+            "testStrategy": "Test pagination logic, filtering combinations, batch operation atomicity, soft delete behavior, concurrent request handling"
+          }
+        ]
       },
       {
         "id": 16,
@@ -1280,7 +1336,64 @@
           15
         ],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create SQLAlchemy models for folders with hierarchical tree structure",
+            "description": "Define the Folder ORM model with materialized path support for efficient tree operations and parent-child relationships",
+            "dependencies": [],
+            "details": "Create ffmpeg-backend/src/db/models/folder.py defining the Folder SQLAlchemy model with id (UUID), name, parent_id (self-reference), path (materialized path like /parent/child), owner_user_id fields. Configure foreign key relationships to users and self-referential parent folder. Add relationship properties for parent, children, and owner navigation. Implement path computation logic in model methods. Add the model to db/models/__init__.py exports.",
+            "status": "pending",
+            "testStrategy": "Unit tests for folder model creation, parent-child relationships, and path computation"
+          },
+          {
+            "id": 2,
+            "title": "Create Pydantic schemas for folder API request/response validation",
+            "description": "Define comprehensive Pydantic schemas for folder CRUD operations, tree structures, and pagination responses",
+            "dependencies": [],
+            "details": "Create ffmpeg-backend/src/app/api/schemas/folder.py with FolderBase schema (name validation), FolderCreate (extends Base with optional parent_id), FolderUpdate (name, parent_id for move operations), FolderResponse (id, name, path, parent_id, asset_count, created_at, updated_at), FolderTreeNode (recursive schema with children array for tree representation), FolderListResponse (folders array with tree structure), FolderContentsResponse (paginated assets and subfolders arrays). Implement validators for circular reference prevention and name constraints.",
+            "status": "pending",
+            "testStrategy": "Validate schema serialization, tree structure nesting, and field validation rules"
+          },
+          {
+            "id": 3,
+            "title": "Implement core folder CRUD endpoints (POST, GET, PATCH, DELETE)",
+            "description": "Create FastAPI router with basic folder operations including creation, retrieval, update, and deletion with proper validation",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Create ffmpeg-backend/src/app/api/v1/folders.py with FastAPI router. Implement POST /folders to create folder with name/parent_id, compute materialized path from parent hierarchy, validate no circular references, return FolderResponse. Implement GET /folders/{id} to retrieve single folder with asset count aggregation. Implement PATCH /folders/{id} for rename (update name) and move (change parent_id) operations with path recalculation for descendants. Implement DELETE /folders/{id} with empty check or cascade policy, handle orphaned assets. Use AsyncSession dependency injection and proper error handling.",
+            "status": "pending",
+            "testStrategy": "Test each CRUD operation, validate path updates on moves, test cascade deletes"
+          },
+          {
+            "id": 4,
+            "title": "Implement folder tree listing and hierarchical query endpoints",
+            "description": "Create efficient endpoints for retrieving folder tree structures using recursive CTEs or eager loading strategies",
+            "dependencies": [
+              1,
+              2,
+              3
+            ],
+            "details": "In folders.py router, implement GET /folders endpoint to list all user folders as tree structure. Use recursive CTE query or eager loading with relationship joins to build hierarchy efficiently. Transform flat query results into nested tree structure with children arrays. Sort folders by materialized path for consistent ordering. Implement tree depth limiting and folder count aggregation. Return FolderTreeNode array with proper nesting. Handle empty trees gracefully.",
+            "status": "pending",
+            "testStrategy": "Test tree construction with multiple levels, verify sorting and performance with large hierarchies"
+          },
+          {
+            "id": 5,
+            "title": "Implement folder contents endpoint and integrate router with main API",
+            "description": "Create paginated folder contents listing and wire up the folders router in the main v1 API configuration",
+            "dependencies": [
+              1,
+              2,
+              3
+            ],
+            "details": "In folders.py, implement GET /folders/{id}/contents endpoint with pagination (page, per_page params). Query media_assets filtered by folder_id with optional include_subfolders parameter for recursive listing using path prefix matching. Return paginated FolderContentsResponse with assets and subfolders arrays. Add total counts and pagination metadata. Update ffmpeg-backend/src/app/api/v1/__init__.py to import and include folders router with /folders prefix and folders tag. Ensure proper async patterns and error handling throughout.",
+            "status": "pending",
+            "testStrategy": "Test pagination, recursive folder contents, verify router integration and API accessibility"
+          }
+        ]
       },
       {
         "id": 17,
@@ -1367,7 +1480,62 @@
           14
         ],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Add ErrorCode enum and update database model for error tracking",
+            "description": "Create ErrorCode enum in schemas and add error_code field to Composition database model to track specific error types (FFMPEG_ERROR, S3_ERROR, INVALID_INPUT, etc.)",
+            "dependencies": [],
+            "details": "In ffmpeg-backend/src/app/api/schemas/composition.py, create ErrorCode enum with values: FFMPEG_ERROR, S3_ERROR, INVALID_INPUT, TIMEOUT, CANCELLED, UNKNOWN. Then update ffmpeg-backend/src/db/models/composition.py to add error_code field as nullable String. Run database migration to add the new column. This establishes the foundation for categorizing errors throughout the export process.",
+            "status": "pending",
+            "testStrategy": "Verify ErrorCode enum imports correctly, test database migration applies successfully, validate error_code field saves and retrieves properly through ORM, test that existing records handle null error_code gracefully"
+          },
+          {
+            "id": 2,
+            "title": "Update Pydantic response models with download_url and error fields",
+            "description": "Enhance CompositionResponse model to include optional download_url and error_code fields, ensuring API responses contain all required information per specification",
+            "dependencies": [
+              1
+            ],
+            "details": "In ffmpeg-backend/src/app/api/schemas/composition.py, update CompositionResponse class (lines 220-236) to add: optional download_url: str | None field for direct download links, optional error_code: ErrorCode | None field for categorized errors. Ensure fields are properly validated with Pydantic. Update all endpoints that return CompositionResponse to populate these fields when appropriate, especially in the download and error scenarios.",
+            "status": "pending",
+            "testStrategy": "Test CompositionResponse serialization with and without optional fields, verify backward compatibility with existing clients, test that download_url appears only for COMPLETED compositions, validate error_code populates correctly on failures"
+          },
+          {
+            "id": 3,
+            "title": "Fix download endpoint expiration time and enhance response",
+            "description": "Update the GET /compositions/{id}/download endpoint to use 15-minute expiration for presigned URLs instead of current 1-hour, matching API specification requirements",
+            "dependencies": [
+              2
+            ],
+            "details": "In ffmpeg-backend/src/app/api/v1/compositions.py (lines 496-671), change s3_manager.generate_presigned_url() expiration parameter from 3600 to 900 seconds (15 minutes). Update the expires_at calculation to reflect this change. Ensure DownloadResponse properly includes the expires_at timestamp. Add error handling for S3_ERROR if presigned URL generation fails, setting appropriate error_code in the response.",
+            "status": "pending",
+            "testStrategy": "Verify presigned URLs expire after exactly 15 minutes, test download functionality before and after expiration, validate error handling when S3 is unavailable, confirm expires_at timestamp is accurate in response"
+          },
+          {
+            "id": 4,
+            "title": "Enhance cancel-all endpoint with optional filters",
+            "description": "Add project_id and status_in optional filter parameters to POST /compositions/cancel-all endpoint for more granular bulk cancellation control",
+            "dependencies": [
+              1
+            ],
+            "details": "In ffmpeg-backend/src/app/api/v1/compositions.py (lines 1012-1149), modify cancel_all_compositions() function to accept optional project_id: UUID | None and status_in: list[CompositionStatus] | None parameters. Update the SQLAlchemy query to filter compositions by these parameters when provided. Default status_in to [QUEUED, PROCESSING] if not specified. Ensure BulkCancelResponse accurately reflects the filtered cancellations. Add validation to prevent cancelling COMPLETED/FAILED compositions.",
+            "status": "pending",
+            "testStrategy": "Test cancel-all with no filters cancels all eligible compositions, verify project_id filter only cancels matching project, test status_in filter with various status combinations, validate that completed/failed compositions are never cancelled"
+          },
+          {
+            "id": 5,
+            "title": "Update WebSocket messages and job callbacks with error tracking",
+            "description": "Enhance WebSocket job.update messages and job processing callbacks to include error_code and download_url fields in their payloads for real-time client updates",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "In ffmpeg-backend/src/app/api/schemas/websocket.py, update WSStatusMessage and WSErrorMessage to include error_code field. In ffmpeg-backend/src/workers/job_callbacks.py, modify on_success and on_failure callbacks to populate error_code when errors occur, categorizing them appropriately (FFMPEG_ERROR for processing failures, S3_ERROR for upload failures, etc.). Update WebSocket message publishing in ffmpeg-backend/src/services/websocket/ to include download_url in success messages. Ensure all error paths set both error_message and error_code consistently.",
+            "status": "pending",
+            "testStrategy": "Test WebSocket messages include error_code on failures, verify download_url appears in success notifications, test real-time updates during job cancellation, validate error categorization accuracy across different failure scenarios"
+          }
+        ]
       },
       {
         "id": 19,
@@ -1385,7 +1553,62 @@
           17
         ],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement projectStore API integration and autosave functionality",
+            "description": "Replace TODO comments in projectStore.ts with actual API calls to backend endpoints for project persistence. Implement autosave with 2-second debouncing using a custom React hook or utility function.",
+            "dependencies": [],
+            "details": "In frontend/src/stores/projectStore.ts, replace the TODO in saveProject() method with a PUT request to /projects/{id} endpoint. Implement loadProject() to fetch project data from GET /projects/{id}. Add exportProject() API call to POST /compositions/. Create a debounced autosave mechanism that triggers saveProject() after 2 seconds of inactivity when isDirty is true. Update metadata.updatedAt timestamp on every state change that sets isDirty to true. Add proper error handling with try-catch blocks and loading states.",
+            "status": "pending",
+            "testStrategy": "Test that saveProject correctly sends PUT request with project data. Verify autosave triggers after 2 seconds of changes. Test loadProject fetches and updates store state. Verify exportProject sends POST request. Test that metadata.updatedAt updates on changes."
+          },
+          {
+            "id": 2,
+            "title": "Implement mediaStore upload flow with S3 presigned URLs",
+            "description": "Create complete media upload workflow in mediaStore including S3 presigned URL generation, file upload with progress tracking, and upload confirmation.",
+            "dependencies": [
+              1
+            ],
+            "details": "In frontend/src/stores/mediaStore.ts, add methods for the upload flow: First call POST /media/upload to get presigned S3 URL and media ID. Use XMLHttpRequest to upload file to S3 with progress events updating uploadQueue progress. After successful S3 upload, confirm with PATCH /media/{id}. Implement asset listing with GET /media endpoint supporting pagination. Add delete functionality with DELETE /media/{id}. Fetch and cache thumbnails from backend thumbnail_url field. Update the queueUpload, updateUploadProgress, and setUploadStatus methods to handle the complete flow.",
+            "status": "pending",
+            "testStrategy": "Test presigned URL generation request. Verify XMLHttpRequest upload with progress tracking. Test upload confirmation PATCH request. Verify asset listing with pagination. Test delete functionality removes assets. Verify thumbnail fetching and caching."
+          },
+          {
+            "id": 3,
+            "title": "Integrate WebSocket job updates for export and media processing",
+            "description": "Connect WebSocket store to handle real-time job updates for export jobs, thumbnail generation, and AI generation in project and media stores.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "In projectStore, add WebSocket listeners for export job updates (job.update events with jobType='export'). Create a job status map to track export jobs with states: queued, running, succeeded, failed. In mediaStore, add listeners for thumbnail generation jobs and AI generation jobs. When job completes successfully, update the corresponding asset with new data (thumbnails, AI-generated content). Handle job failures by updating UI state and showing error messages. Use the existing WebSocketService and webSocketStore handleJobUpdate method to process incoming messages. Ensure proper cleanup of listeners on store reset.",
+            "status": "pending",
+            "testStrategy": "Test WebSocket listeners receive job.update events. Verify export job status updates in projectStore. Test thumbnail generation updates in mediaStore. Verify AI generation job updates. Test error handling for failed jobs. Verify listener cleanup on reset."
+          },
+          {
+            "id": 4,
+            "title": "Add toast notifications and loading states for user feedback",
+            "description": "Implement Shadcn toast component and integrate toast notifications throughout the stores for success/error feedback, plus loading state management.",
+            "dependencies": [
+              3
+            ],
+            "details": "Create a new toast component using Shadcn UI library in frontend/src/components/ui/toast.tsx. Add a useToast hook for managing toast notifications. In projectStore and mediaStore, add loading state flags (isLoading, isSaving, isExporting) as part of the store state. Show success toasts for: successful save, project loaded, export started, upload completed. Show error toasts for: save failure, load failure, upload error, WebSocket disconnection. Update all async methods to set appropriate loading states before operations and clear them after completion/failure. Ensure toast messages are user-friendly and actionable.",
+            "status": "pending",
+            "testStrategy": "Test toast component renders correctly. Verify success toasts appear for successful operations. Test error toasts show for failures. Verify loading states update during async operations. Test multiple toasts queue properly. Verify toast auto-dismiss timing."
+          },
+          {
+            "id": 5,
+            "title": "Implement end-to-end testing and error recovery mechanisms",
+            "description": "Create comprehensive error handling, retry logic, and test the complete integration flow from project creation to export.",
+            "dependencies": [
+              4
+            ],
+            "details": "Add retry logic for failed API calls with exponential backoff (max 3 retries). Implement connection error recovery for WebSocket disconnections with auto-reconnect. Add optimistic updates with rollback on failure for better UX. Create error boundary components to catch and display errors gracefully. Test the complete flow: create project -> trigger autosave -> verify save -> upload media files -> verify upload progress -> wait for thumbnail generation -> trigger export -> monitor export progress via WebSocket. Add API request/response logging in development mode. Ensure all Zustand store updates use immer for immutable state updates.",
+            "status": "pending",
+            "testStrategy": "Test retry logic triggers on API failures. Verify WebSocket auto-reconnect works. Test optimistic updates and rollback. Verify error boundaries catch errors. Test complete end-to-end flow. Verify immutable state updates with immer."
+          }
+        ]
       },
       {
         "id": 20,
@@ -1400,7 +1623,62 @@
           5
         ],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create authStore with Zustand vanilla store pattern",
+            "description": "Implement authStore.ts with user authentication state management, shadow user ID generation, and token handling following existing store patterns",
+            "dependencies": [],
+            "details": "Create frontend/src/stores/authStore.ts using createStore from zustand/vanilla with immer, persist, and devtools middleware. Implement AuthState interface with userId, email, name, shadowUserId (for anonymous sessions), accessToken, refreshToken, and tokenExpiresAt fields. Add AuthActions including login, logout, refreshToken, setShadowUser actions. Use crypto.randomUUID() for shadow user ID generation. Implement persist middleware with IndexedDB storage using createIndexedDBStorage(STORE_NAMES.AUTH). Add isAuthenticated computed property that checks if accessToken exists and hasn't expired. Follow the same vanilla store pattern as projectStore and mediaStore with proper TypeScript typing",
+            "status": "pending",
+            "testStrategy": "Test shadow user ID generation with crypto.randomUUID, verify token persistence in IndexedDB, test login/logout flow with mock API responses, validate token expiration checking logic"
+          },
+          {
+            "id": 2,
+            "title": "Create uiStore for centralized UI state management",
+            "description": "Implement uiStore.ts with modal, toast, panel, and keyboard shortcut state management using Zustand vanilla store pattern",
+            "dependencies": [],
+            "details": "Create frontend/src/stores/uiStore.ts using createStore from zustand/vanilla with immer middleware. Implement UiState interface with modalStates as Map<string, ModalState> for modal stacking (isExportModalOpen, isUploadModalOpen, isSettingsOpen), toastQueue as array with max 5 toasts including auto-dismiss timers, panelStates for isPropertiesPanelOpen/isMediaLibraryOpen/isTimelineExpanded, activeTool for editor mode, and keyboardShortcuts as Map<string, KeyboardShortcut>. Add UiActions including openModal, closeModal, addToast, removeToast, togglePanel, setActiveTool, registerShortcut. Implement toast auto-dismiss using setTimeout with cleanup. Use persist middleware for panel states and keyboard shortcuts only. Coordinate with existing ThemeContext to avoid theme state duplication",
+            "status": "pending",
+            "testStrategy": "Test modal stacking with multiple modals open, verify toast queue limits and auto-dismiss timing, test panel toggle states, validate keyboard shortcut registration and conflicts"
+          },
+          {
+            "id": 3,
+            "title": "Add TypeScript types and interfaces to types/stores.ts",
+            "description": "Define comprehensive TypeScript interfaces for AuthState, AuthActions, UiState, and UiActions in the central types file",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Update frontend/src/types/stores.ts to add AuthState interface with userId: string | null, email: string | null, name: string | null, shadowUserId: string, accessToken: string | null, refreshToken: string | null, tokenExpiresAt: number | null fields. Add AuthActions interface with login(credentials) returning Promise, logout() method, refreshToken() returning Promise, setShadowUser(id: string) method. Add UiState interface with modalStates: Map<string, ModalState>, toastQueue: Toast[], panelStates object, activeTool: string, keyboardShortcuts: Map<string, KeyboardShortcut>. Add UiActions with all modal, toast, panel, and tool methods. Define supporting types like ModalState, Toast (with id, message, type, duration), and ensure compatibility with existing store types",
+            "status": "pending",
+            "testStrategy": "Verify TypeScript compilation with new types, test type inference in store hooks, validate interface compatibility with existing components"
+          },
+          {
+            "id": 4,
+            "title": "Integrate stores with React Context and create custom hooks",
+            "description": "Create React Context providers and custom hooks for authStore and uiStore following the existing store integration pattern",
+            "dependencies": [
+              1,
+              2,
+              3
+            ],
+            "details": "Create frontend/src/stores/index.ts exports for new stores. Implement AuthStoreProvider and UiStoreProvider React Context components following the pattern from existing stores. Create useAuthStore and useUiStore hooks that use useContext to access store state and actions. Add the new providers to the main App component provider tree alongside existing providers. Ensure proper TypeScript typing for context values and hook returns. Export createAuthStore and createUiStore functions for testing purposes. Update STORE_NAMES in indexedDBStorage.ts to include AUTH: 'auth-store' and UI: 'ui-store' entries",
+            "status": "pending",
+            "testStrategy": "Test context provider rendering, verify hook access to store state and actions, test store isolation between different provider instances, validate TypeScript type inference"
+          },
+          {
+            "id": 5,
+            "title": "Wire uiStore to existing UI components and implement API integration",
+            "description": "Connect uiStore to ExportModal, panels, and future toast components, and integrate authStore with API calls and cookie handling",
+            "dependencies": [
+              4
+            ],
+            "details": "Update ExportModal component to use useUiStore for open/close state instead of local state. Create a new ToastContainer component that reads from uiStore.toastQueue and renders toast notifications with auto-dismiss. Update panel components to use uiStore.panelStates for visibility. Integrate useKeyboardShortcuts hook with uiStore.keyboardShortcuts Map. For authStore, create an api/auth.ts service file with login/logout/refresh endpoints. Implement shadow user cookie handling in authStore initialization - check for existing cookie or generate new shadowUserId. Add auth headers to existing API calls using accessToken from authStore. Implement token refresh logic with automatic retry on 401 responses. Ensure all state changes use proper Zustand actions",
+            "status": "pending",
+            "testStrategy": "Test modal state synchronization, verify toast rendering and dismissal, test panel visibility toggles, validate API authentication flow with mock responses, test shadow user cookie persistence"
+          }
+        ]
       }
     ],
     "metadata": {

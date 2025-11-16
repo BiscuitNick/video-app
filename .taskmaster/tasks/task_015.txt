@@ -9,3 +9,35 @@ Create ffmpeg-backend/src/app/api/v1/media.py with FastAPI router. Implement POS
 
 # Test Strategy:
 Test presigned URL generation and S3 upload flow, verify FFmpeg metadata extraction, test pagination and filtering, validate soft delete and cleanup, test batch operations, verify error handling for invalid inputs, test concurrent uploads
+
+# Subtasks:
+## 1. Create MediaAsset database model and enums [pending]
+### Dependencies: None
+### Description: Design and implement the MediaAsset SQLAlchemy model with all required fields, relationships, and enum types for media asset storage in the database
+### Details:
+Create ffmpeg-backend/src/db/models/media.py with MediaAsset model including fields: id (UUID), user_id, name, file_size, file_type (enum: IMAGE/VIDEO/AUDIO), s3_key, thumbnail_s3_key, status (enum: PENDING_UPLOAD/UPLOADING/READY/FAILED/DELETED), checksum, metadata (JSON with duration, width, height, frame_rate, codec), folder_id (FK), tags (array), created_at, updated_at, is_deleted. Define MediaAssetType and MediaAssetStatus enums. Add proper indexes for performance on commonly queried fields (user_id, folder_id, status, is_deleted). Update db/models/__init__.py to export the new model and enums.
+
+## 2. Create API schemas for media asset endpoints [pending]
+### Dependencies: None
+### Description: Define Pydantic models for all request/response schemas needed by the media asset API endpoints
+### Details:
+Create ffmpeg-backend/src/app/api/schemas/media.py with Pydantic models: MediaUploadRequest (name, size, type, checksum), MediaUploadResponse (id, presigned_url, upload_params), MediaAssetResponse (full asset data), MediaListResponse (paginated list), MediaMetadataUpdate (metadata fields from FFprobe), MediaBatchDeleteRequest (asset_ids array), MediaBatchTagRequest (asset_ids, tags, operation), MediaBatchMoveRequest (asset_ids, folder_id). Include proper validation for file sizes (100MB images, 1GB videos, 500MB audio), allowed file types, and checksum format. Export all schemas in app/api/schemas/__init__.py.
+
+## 3. Implement upload and presigned URL generation endpoints [pending]
+### Dependencies: 15.1, 15.2
+### Description: Create the POST /media/upload endpoint for validating uploads and generating presigned S3 URLs, and helper functions for S3 operations
+### Details:
+Create ffmpeg-backend/src/app/api/v1/media.py with FastAPI router. Implement POST /media/upload endpoint that: validates file metadata against size limits and allowed types, checks checksum format validity, generates presigned S3 URL using boto3 with 15-minute expiration and proper CORS headers, creates MediaAsset record with PENDING_UPLOAD status using AsyncSession, returns presigned URL with upload parameters (method, headers, fields). Add helper function generate_presigned_post_url in S3Manager class that handles multipart upload initialization for large files. Include proper error handling for S3 failures, database errors, and validation issues with custom error codes (INVALID_FILE_TYPE, FILE_TOO_LARGE).
+
+## 4. Implement upload confirmation and metadata extraction [pending]
+### Dependencies: 15.1, 15.2, 15.3
+### Description: Create PATCH endpoint to confirm upload completion and extract media metadata using FFprobe, with worker job integration for thumbnails
+### Details:
+Implement PATCH /media/{id} endpoint that: confirms upload completion by checking S3 object exists using head_object, runs FFprobe to extract metadata (duration, width, height, frame_rate, codec, bitrate) using existing InputFileManager class from services/ffmpeg/input_manager.py, updates MediaAsset status from PENDING_UPLOAD to READY and stores metadata in JSON field, enqueues RQ worker job for thumbnail generation using existing worker.enqueue_job function with job parameters (media_id, s3_key, media_type). Create helper function extract_media_metadata that wraps InputFileManager.get_file_info and handles both local files and S3 URLs. Handle edge cases: missing files, corrupted media, FFprobe failures with appropriate error responses.
+
+## 5. Implement list, get, delete and batch operations [pending]
+### Dependencies: 15.1, 15.2
+### Description: Create remaining CRUD and batch operation endpoints for media asset management with proper filtering and pagination
+### Details:
+Implement GET /media endpoint with: pagination using page/per_page parameters (max 100 per page), filtering by type/folder_id/tag/search query using SQLAlchemy queries, sorting by created_at/updated_at/name with proper indexes, lightweight response without full metadata. Implement GET /media/{id} returning complete asset with metadata. Implement DELETE /media/{id} with soft delete setting is_deleted=true and scheduling S3 cleanup worker job. Implement POST /media/batch/delete accepting array of IDs for bulk soft delete in single transaction. Implement POST /media/batch/tag for adding/removing tags from multiple assets. Implement POST /media/batch/move to update folder_id for multiple assets. Follow existing patterns from compositions.py for query building, pagination, and error handling.
+

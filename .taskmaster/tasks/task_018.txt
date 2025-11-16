@@ -9,3 +9,35 @@ Update ffmpeg-backend/src/app/api/v1/compositions.py to complete export API. Add
 
 # Test Strategy:
 Test download URL generation for succeeded exports, verify presigned URL expiration, test cancel stops running job, validate cancel-all with filters, test error fields populate correctly, verify WebSocket updates include new fields, test concurrent cancel operations
+
+# Subtasks:
+## 1. Add ErrorCode enum and update database model for error tracking [pending]
+### Dependencies: None
+### Description: Create ErrorCode enum in schemas and add error_code field to Composition database model to track specific error types (FFMPEG_ERROR, S3_ERROR, INVALID_INPUT, etc.)
+### Details:
+In ffmpeg-backend/src/app/api/schemas/composition.py, create ErrorCode enum with values: FFMPEG_ERROR, S3_ERROR, INVALID_INPUT, TIMEOUT, CANCELLED, UNKNOWN. Then update ffmpeg-backend/src/db/models/composition.py to add error_code field as nullable String. Run database migration to add the new column. This establishes the foundation for categorizing errors throughout the export process.
+
+## 2. Update Pydantic response models with download_url and error fields [pending]
+### Dependencies: 18.1
+### Description: Enhance CompositionResponse model to include optional download_url and error_code fields, ensuring API responses contain all required information per specification
+### Details:
+In ffmpeg-backend/src/app/api/schemas/composition.py, update CompositionResponse class (lines 220-236) to add: optional download_url: str | None field for direct download links, optional error_code: ErrorCode | None field for categorized errors. Ensure fields are properly validated with Pydantic. Update all endpoints that return CompositionResponse to populate these fields when appropriate, especially in the download and error scenarios.
+
+## 3. Fix download endpoint expiration time and enhance response [pending]
+### Dependencies: 18.2
+### Description: Update the GET /compositions/{id}/download endpoint to use 15-minute expiration for presigned URLs instead of current 1-hour, matching API specification requirements
+### Details:
+In ffmpeg-backend/src/app/api/v1/compositions.py (lines 496-671), change s3_manager.generate_presigned_url() expiration parameter from 3600 to 900 seconds (15 minutes). Update the expires_at calculation to reflect this change. Ensure DownloadResponse properly includes the expires_at timestamp. Add error handling for S3_ERROR if presigned URL generation fails, setting appropriate error_code in the response.
+
+## 4. Enhance cancel-all endpoint with optional filters [pending]
+### Dependencies: 18.1
+### Description: Add project_id and status_in optional filter parameters to POST /compositions/cancel-all endpoint for more granular bulk cancellation control
+### Details:
+In ffmpeg-backend/src/app/api/v1/compositions.py (lines 1012-1149), modify cancel_all_compositions() function to accept optional project_id: UUID | None and status_in: list[CompositionStatus] | None parameters. Update the SQLAlchemy query to filter compositions by these parameters when provided. Default status_in to [QUEUED, PROCESSING] if not specified. Ensure BulkCancelResponse accurately reflects the filtered cancellations. Add validation to prevent cancelling COMPLETED/FAILED compositions.
+
+## 5. Update WebSocket messages and job callbacks with error tracking [pending]
+### Dependencies: 18.1, 18.2
+### Description: Enhance WebSocket job.update messages and job processing callbacks to include error_code and download_url fields in their payloads for real-time client updates
+### Details:
+In ffmpeg-backend/src/app/api/schemas/websocket.py, update WSStatusMessage and WSErrorMessage to include error_code field. In ffmpeg-backend/src/workers/job_callbacks.py, modify on_success and on_failure callbacks to populate error_code when errors occur, categorizing them appropriately (FFMPEG_ERROR for processing failures, S3_ERROR for upload failures, etc.). Update WebSocket message publishing in ffmpeg-backend/src/services/websocket/ to include download_url in success messages. Ensure all error paths set both error_message and error_code consistently.
+

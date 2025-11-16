@@ -9,3 +9,35 @@ Create frontend/src/stores/authStore.ts with Zustand vanilla store: manage user 
 
 # Test Strategy:
 Test auth store login/logout flow, verify shadow user ID generation, test token persistence and refresh, validate UI store modal management, test toast auto-dismiss and queue limits, verify panel state toggles, test keyboard shortcut registration
+
+# Subtasks:
+## 1. Create authStore with Zustand vanilla store pattern [pending]
+### Dependencies: None
+### Description: Implement authStore.ts with user authentication state management, shadow user ID generation, and token handling following existing store patterns
+### Details:
+Create frontend/src/stores/authStore.ts using createStore from zustand/vanilla with immer, persist, and devtools middleware. Implement AuthState interface with userId, email, name, shadowUserId (for anonymous sessions), accessToken, refreshToken, and tokenExpiresAt fields. Add AuthActions including login, logout, refreshToken, setShadowUser actions. Use crypto.randomUUID() for shadow user ID generation. Implement persist middleware with IndexedDB storage using createIndexedDBStorage(STORE_NAMES.AUTH). Add isAuthenticated computed property that checks if accessToken exists and hasn't expired. Follow the same vanilla store pattern as projectStore and mediaStore with proper TypeScript typing
+
+## 2. Create uiStore for centralized UI state management [pending]
+### Dependencies: None
+### Description: Implement uiStore.ts with modal, toast, panel, and keyboard shortcut state management using Zustand vanilla store pattern
+### Details:
+Create frontend/src/stores/uiStore.ts using createStore from zustand/vanilla with immer middleware. Implement UiState interface with modalStates as Map<string, ModalState> for modal stacking (isExportModalOpen, isUploadModalOpen, isSettingsOpen), toastQueue as array with max 5 toasts including auto-dismiss timers, panelStates for isPropertiesPanelOpen/isMediaLibraryOpen/isTimelineExpanded, activeTool for editor mode, and keyboardShortcuts as Map<string, KeyboardShortcut>. Add UiActions including openModal, closeModal, addToast, removeToast, togglePanel, setActiveTool, registerShortcut. Implement toast auto-dismiss using setTimeout with cleanup. Use persist middleware for panel states and keyboard shortcuts only. Coordinate with existing ThemeContext to avoid theme state duplication
+
+## 3. Add TypeScript types and interfaces to types/stores.ts [pending]
+### Dependencies: 20.1, 20.2
+### Description: Define comprehensive TypeScript interfaces for AuthState, AuthActions, UiState, and UiActions in the central types file
+### Details:
+Update frontend/src/types/stores.ts to add AuthState interface with userId: string | null, email: string | null, name: string | null, shadowUserId: string, accessToken: string | null, refreshToken: string | null, tokenExpiresAt: number | null fields. Add AuthActions interface with login(credentials) returning Promise, logout() method, refreshToken() returning Promise, setShadowUser(id: string) method. Add UiState interface with modalStates: Map<string, ModalState>, toastQueue: Toast[], panelStates object, activeTool: string, keyboardShortcuts: Map<string, KeyboardShortcut>. Add UiActions with all modal, toast, panel, and tool methods. Define supporting types like ModalState, Toast (with id, message, type, duration), and ensure compatibility with existing store types
+
+## 4. Integrate stores with React Context and create custom hooks [pending]
+### Dependencies: 20.1, 20.2, 20.3
+### Description: Create React Context providers and custom hooks for authStore and uiStore following the existing store integration pattern
+### Details:
+Create frontend/src/stores/index.ts exports for new stores. Implement AuthStoreProvider and UiStoreProvider React Context components following the pattern from existing stores. Create useAuthStore and useUiStore hooks that use useContext to access store state and actions. Add the new providers to the main App component provider tree alongside existing providers. Ensure proper TypeScript typing for context values and hook returns. Export createAuthStore and createUiStore functions for testing purposes. Update STORE_NAMES in indexedDBStorage.ts to include AUTH: 'auth-store' and UI: 'ui-store' entries
+
+## 5. Wire uiStore to existing UI components and implement API integration [pending]
+### Dependencies: 20.4
+### Description: Connect uiStore to ExportModal, panels, and future toast components, and integrate authStore with API calls and cookie handling
+### Details:
+Update ExportModal component to use useUiStore for open/close state instead of local state. Create a new ToastContainer component that reads from uiStore.toastQueue and renders toast notifications with auto-dismiss. Update panel components to use uiStore.panelStates for visibility. Integrate useKeyboardShortcuts hook with uiStore.keyboardShortcuts Map. For authStore, create an api/auth.ts service file with login/logout/refresh endpoints. Implement shadow user cookie handling in authStore initialization - check for existing cookie or generate new shadowUserId. Add auth headers to existing API calls using accessToken from authStore. Implement token refresh logic with automatic retry on 401 responses. Ensure all state changes use proper Zustand actions
+
