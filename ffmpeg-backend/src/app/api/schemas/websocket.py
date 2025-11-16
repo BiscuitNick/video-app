@@ -208,3 +208,244 @@ class WSClientMessage(BaseModel):
                 "data": {"sequence": 42},
             }
         }
+
+
+# ============================================================================
+# Media Library WebSocket Messages
+# ============================================================================
+
+
+class MediaEventType(str, Enum):
+    """Media library event types."""
+
+    MEDIA_UPLOADED = "media.uploaded"
+    MEDIA_UPDATED = "media.updated"
+    MEDIA_DELETED = "media.deleted"
+    MEDIA_THUMBNAIL_READY = "media.thumbnail.ready"
+    FOLDER_CREATED = "folder.created"
+    FOLDER_UPDATED = "folder.updated"
+    FOLDER_DELETED = "folder.deleted"
+    CONNECTED = "connected"
+    HEARTBEAT = "heartbeat"
+    PONG = "pong"
+
+
+class WSMediaBaseMessage(BaseModel):
+    """Base WebSocket message structure for media events."""
+
+    type: MediaEventType = Field(..., description="Media event type identifier")
+    timestamp: datetime = Field(
+        default_factory=datetime.utcnow, description="When the event occurred"
+    )
+    user_id: str | None = Field(None, description="User who triggered the event")
+
+
+class WSMediaUploadedMessage(WSMediaBaseMessage):
+    """Event message when a media asset upload completes."""
+
+    type: MediaEventType = Field(default=MediaEventType.MEDIA_UPLOADED, description="Event type")
+    media_asset_id: UUID = Field(..., description="ID of the uploaded media asset")
+    folder_id: UUID | None = Field(None, description="Folder where asset was uploaded")
+    data: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Media asset details (filename, type, size, etc.)",
+    )
+
+    class Config:
+        """Pydantic configuration."""
+
+        json_schema_extra = {
+            "example": {
+                "type": "media.uploaded",
+                "timestamp": "2024-01-15T10:30:45.123Z",
+                "user_id": "user-123",
+                "media_asset_id": "550e8400-e29b-41d4-a716-446655440000",
+                "folder_id": "660e8400-e29b-41d4-a716-446655440000",
+                "data": {
+                    "filename": "video.mp4",
+                    "type": "video",
+                    "file_size_bytes": 5242880,
+                    "mime_type": "video/mp4",
+                },
+            }
+        }
+
+
+class WSMediaUpdatedMessage(WSMediaBaseMessage):
+    """Event message when media asset metadata is updated."""
+
+    type: MediaEventType = Field(default=MediaEventType.MEDIA_UPDATED, description="Event type")
+    media_asset_id: UUID = Field(..., description="ID of the updated media asset")
+    folder_id: UUID | None = Field(None, description="Current folder of the asset")
+    data: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Updated fields (filename, tags, folder_id, etc.)",
+    )
+
+    class Config:
+        """Pydantic configuration."""
+
+        json_schema_extra = {
+            "example": {
+                "type": "media.updated",
+                "timestamp": "2024-01-15T10:30:45.123Z",
+                "user_id": "user-123",
+                "media_asset_id": "550e8400-e29b-41d4-a716-446655440000",
+                "folder_id": "660e8400-e29b-41d4-a716-446655440000",
+                "data": {
+                    "filename": "renamed-video.mp4",
+                    "tags": ["project-a", "final"],
+                },
+            }
+        }
+
+
+class WSMediaDeletedMessage(WSMediaBaseMessage):
+    """Event message when a media asset is deleted."""
+
+    type: MediaEventType = Field(default=MediaEventType.MEDIA_DELETED, description="Event type")
+    media_asset_ids: list[UUID] = Field(..., description="IDs of deleted media assets")
+    folder_id: UUID | None = Field(None, description="Folder that contained the assets")
+
+    class Config:
+        """Pydantic configuration."""
+
+        json_schema_extra = {
+            "example": {
+                "type": "media.deleted",
+                "timestamp": "2024-01-15T10:30:45.123Z",
+                "user_id": "user-123",
+                "media_asset_ids": [
+                    "550e8400-e29b-41d4-a716-446655440000",
+                    "660e8400-e29b-41d4-a716-446655440001",
+                ],
+                "folder_id": "660e8400-e29b-41d4-a716-446655440000",
+            }
+        }
+
+
+class WSMediaThumbnailReadyMessage(WSMediaBaseMessage):
+    """Event message when thumbnail generation completes."""
+
+    type: MediaEventType = Field(
+        default=MediaEventType.MEDIA_THUMBNAIL_READY, description="Event type"
+    )
+    media_asset_id: UUID = Field(..., description="ID of the media asset")
+    folder_id: UUID | None = Field(None, description="Folder containing the asset")
+    thumbnail_url: str = Field(..., description="Presigned URL for the generated thumbnail")
+
+    class Config:
+        """Pydantic configuration."""
+
+        json_schema_extra = {
+            "example": {
+                "type": "media.thumbnail.ready",
+                "timestamp": "2024-01-15T10:30:45.123Z",
+                "user_id": "user-123",
+                "media_asset_id": "550e8400-e29b-41d4-a716-446655440000",
+                "folder_id": "660e8400-e29b-41d4-a716-446655440000",
+                "thumbnail_url": "https://s3.amazonaws.com/bucket/thumbnails/...",
+            }
+        }
+
+
+class WSFolderCreatedMessage(WSMediaBaseMessage):
+    """Event message when a folder is created."""
+
+    type: MediaEventType = Field(default=MediaEventType.FOLDER_CREATED, description="Event type")
+    folder_id: UUID = Field(..., description="ID of the created folder")
+    parent_id: UUID | None = Field(None, description="Parent folder ID")
+    data: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Folder details (name, path, etc.)",
+    )
+
+    class Config:
+        """Pydantic configuration."""
+
+        json_schema_extra = {
+            "example": {
+                "type": "folder.created",
+                "timestamp": "2024-01-15T10:30:45.123Z",
+                "user_id": "user-123",
+                "folder_id": "660e8400-e29b-41d4-a716-446655440000",
+                "parent_id": None,
+                "data": {
+                    "name": "Project A",
+                    "path": "/Project A",
+                },
+            }
+        }
+
+
+class WSFolderUpdatedMessage(WSMediaBaseMessage):
+    """Event message when a folder is updated."""
+
+    type: MediaEventType = Field(default=MediaEventType.FOLDER_UPDATED, description="Event type")
+    folder_id: UUID = Field(..., description="ID of the updated folder")
+    parent_id: UUID | None = Field(None, description="Current parent folder ID")
+    data: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Updated fields (name, parent_id, etc.)",
+    )
+
+    class Config:
+        """Pydantic configuration."""
+
+        json_schema_extra = {
+            "example": {
+                "type": "folder.updated",
+                "timestamp": "2024-01-15T10:30:45.123Z",
+                "user_id": "user-123",
+                "folder_id": "660e8400-e29b-41d4-a716-446655440000",
+                "parent_id": "770e8400-e29b-41d4-a716-446655440000",
+                "data": {
+                    "name": "Renamed Project",
+                },
+            }
+        }
+
+
+class WSFolderDeletedMessage(WSMediaBaseMessage):
+    """Event message when a folder is deleted."""
+
+    type: MediaEventType = Field(default=MediaEventType.FOLDER_DELETED, description="Event type")
+    folder_ids: list[UUID] = Field(..., description="IDs of deleted folders")
+    parent_id: UUID | None = Field(None, description="Parent folder that contained the folders")
+
+    class Config:
+        """Pydantic configuration."""
+
+        json_schema_extra = {
+            "example": {
+                "type": "folder.deleted",
+                "timestamp": "2024-01-15T10:30:45.123Z",
+                "user_id": "user-123",
+                "folder_ids": ["660e8400-e29b-41d4-a716-446655440000"],
+                "parent_id": None,
+            }
+        }
+
+
+class WSMediaConnectedMessage(WSMediaBaseMessage):
+    """Connection established message for media WebSocket."""
+
+    type: MediaEventType = Field(default=MediaEventType.CONNECTED, description="Event type")
+    message: str = Field(..., description="Welcome message")
+    subscriptions: list[str] = Field(
+        default_factory=list,
+        description="List of subscribed channels (folders)",
+    )
+
+    class Config:
+        """Pydantic configuration."""
+
+        json_schema_extra = {
+            "example": {
+                "type": "connected",
+                "timestamp": "2024-01-15T10:30:45.123Z",
+                "user_id": "user-123",
+                "message": "Connected to media library updates",
+                "subscriptions": ["folder:660e8400-e29b-41d4-a716-446655440000", "all"],
+            }
+        }

@@ -1,0 +1,103 @@
+/* PerformanceMonitor CSS */
+
+.performance-monitor {
+  position: fixed;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
+  border-radius: 6px;
+  padding: 12px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  color: white;
+  min-width: 120px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Position variants */
+.performance-monitor-top-left {
+  top: 16px;
+  left: 16px;
+}
+
+.performance-monitor-top-right {
+  top: 16px;
+  right: 16px;
+}
+
+.performance-monitor-bottom-left {
+  bottom: 16px;
+  left: 16px;
+}
+
+.performance-monitor-bottom-right {
+  bottom: 16px;
+  right: 16px;
+}
+
+.performance-monitor-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.metric-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.metric-label {
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: normal;
+}
+
+.metric-value {
+  font-weight: bold;
+  color: white;
+  text-align: right;
+}
+
+/* FPS Graph */
+.fps-graph {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.fps-graph svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .performance-monitor {
+    font-size: 10px;
+    padding: 8px;
+    min-width: 100px;
+  }
+
+  .metric-row {
+    gap: 8px;
+  }
+}
+
+/* Animation for metric updates */
+@keyframes metric-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.metric-value {
+  animation: metric-pulse 0.3s ease-in-out;
+}

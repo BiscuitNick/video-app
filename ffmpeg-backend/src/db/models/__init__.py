@@ -4,6 +4,14 @@ Database models.
 
 from db.models.composition import Composition, CompositionStatus
 from db.models.job import JobMetric, JobStatus, JobType, MetricType, ProcessingJob
+from db.models.media_asset import Folder, MediaAsset, MediaAssetTag, MediaAssetType, Tag
+from db.models.project import (
+    Project,
+    ProjectShare,
+    ProjectStatus,
+    ProjectVersion,
+    SharePermission,
+)
 
 __all__ = [
     # Composition models
@@ -16,4 +24,16 @@ __all__ = [
     # Metrics models
     "JobMetric",
     "MetricType",
+    # Media asset models
+    "MediaAsset",
+    "MediaAssetType",
+    "MediaAssetTag",
+    "Folder",
+    "Tag",
+    # Project models
+    "Project",
+    "ProjectVersion",
+    "ProjectShare",
+    "ProjectStatus",
+    "SharePermission",
 ]
