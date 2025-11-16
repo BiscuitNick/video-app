@@ -286,3 +286,48 @@ export interface EditorActions {
 }
 
 export type EditorStore = EditorState & EditorActions
+
+// ============================================================================
+// WebSocket Store Types
+// ============================================================================
+
+import type { ConnectionStatus, ConnectionMetrics, JobUpdateMessage } from './websocket'
+
+export interface JobState {
+  id: string
+  type: 'export' | 'ai_generation' | 'thumbnail' | 'processing'
+  status: 'queued' | 'running' | 'succeeded' | 'failed' | 'canceled'
+  progress?: number
+  message?: string
+  error?: string
+  result?: unknown
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface WebSocketState {
+  connectionStatus: ConnectionStatus
+  connectionMetrics: ConnectionMetrics
+  jobs: Map<string, JobState>
+  activeJobIds: string[]
+  isConnected: boolean
+}
+
+export interface WebSocketActions {
+  // Connection management
+  connect: () => void
+  disconnect: () => void
+  updateConnectionStatus: (status: ConnectionStatus) => void
+  updateConnectionMetrics: (metrics: ConnectionMetrics) => void
+
+  // Job management
+  addJob: (job: JobState) => void
+  updateJob: (jobId: string, updates: Partial<JobState>) => void
+  removeJob: (jobId: string) => void
+  handleJobUpdate: (message: JobUpdateMessage) => void
+
+  // Utility
+  reset: () => void
+}
+
+export type WebSocketStore = WebSocketState & WebSocketActions

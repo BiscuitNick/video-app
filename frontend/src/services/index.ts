@@ -38,3 +38,6 @@ export type { PerformanceProfile, InteractionMetrics } from './PerformanceMonito
 // Upload Services
 export { uploadService } from './uploadService'
 export { UploadManager } from './uploadManager'
+
+// WebSocket Service
+export { WebSocketService, getWebSocketService } from './WebSocketService'
