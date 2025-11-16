@@ -31,6 +31,8 @@ const initialState = {
   lastSaved: undefined as Date | undefined,
   autosaveInterval: 60000, // 1 minute
   isAutoSaveEnabled: true,
+  projects: new Map<string, ProjectMetadata>(),
+  currentProjectId: undefined as string | undefined,
 }
 
 // Create the vanilla store with devtools, persist, and immer middleware
@@ -192,6 +194,69 @@ export const createProjectStore = () => {
           }
         }),
 
+      // Project collection operations
+      addProject: (metadata, settings) => {
+        const projectId = crypto.randomUUID()
+        const now = new Date()
+
+        const newProject: ProjectMetadata = {
+          ...metadata,
+          id: projectId,
+          createdAt: now,
+          updatedAt: now,
+          version: 1,
+        }
+
+        set((state) => {
+          state.projects.set(projectId, newProject)
+        })
+
+        return projectId
+      },
+
+      removeProject: (projectId) =>
+        set((state) => {
+          state.projects.delete(projectId)
+
+          // Clear current project if it was deleted
+          if (state.currentProjectId === projectId) {
+            state.currentProjectId = undefined
+          }
+        }),
+
+      updateProject: (projectId, updates) =>
+        set((state) => {
+          const project = state.projects.get(projectId)
+          if (project) {
+            state.projects.set(projectId, {
+              ...project,
+              ...updates,
+              updatedAt: new Date(),
+            })
+          }
+        }),
+
+      getProjects: () => {
+        const { projects } = get()
+        return Array.from(projects.values()).sort(
+          (a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()
+        )
+      },
+
+      getCurrentProject: () => {
+        const { currentProjectId, projects } = get()
+        return currentProjectId ? projects.get(currentProjectId) : undefined
+      },
+
+      setCurrentProject: (projectId) =>
+        set((state) => {
+          state.currentProjectId = projectId
+          const project = state.projects.get(projectId)
+          if (project) {
+            state.metadata = { ...project }
+          }
+        }),
+
       // Utility
       reset: () => {
         if (autosaveTimer) {
@@ -215,12 +280,32 @@ export const createProjectStore = () => {
                   updatedAt: state.state.metadata.updatedAt.toISOString(),
                 },
                 lastSaved: state.state.lastSaved?.toISOString(),
+                projects: Array.from(state.state.projects.entries()).map(([id, project]) => ({
+                  id,
+                  project: {
+                    ...project,
+                    createdAt: project.createdAt.toISOString(),
+                    updatedAt: project.updatedAt.toISOString(),
+                  },
+                })),
               },
               version: state.version,
             })
           },
-          deserialize: (str) => {
+          deserialize: (str: string) => {
             const parsed = JSON.parse(str)
+            const projectsArray = parsed.state.projects || []
+            const projectsMap = new Map(
+              projectsArray.map((entry: { id: string; project: ProjectMetadata & { createdAt: string; updatedAt: string } }) => [
+                entry.id,
+                {
+                  ...entry.project,
+                  createdAt: new Date(entry.project.createdAt),
+                  updatedAt: new Date(entry.project.updatedAt),
+                },
+              ])
+            )
+
             return {
               state: {
                 ...parsed.state,
@@ -230,6 +315,7 @@ export const createProjectStore = () => {
                   updatedAt: new Date(parsed.state.metadata.updatedAt),
                 },
                 lastSaved: parsed.state.lastSaved ? new Date(parsed.state.lastSaved) : undefined,
+                projects: projectsMap,
               },
               version: parsed.version,
             }
