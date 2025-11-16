@@ -3,44 +3,44 @@
     "tasks": [
       {
         "id": 13,
-        "title": "Implement Media Library Backend API",
-        "description": "Create comprehensive media asset management API endpoints with database schema, storage integration, and real-time WebSocket updates for the media library panel",
-        "details": "Design and implement MediaAsset model with fields for type (image/video/audio/text), url, thumbnail_url, filename, dimensions, duration, tags, folder_id, created_at, updated_at. Create REST API endpoints: POST /api/v1/media/upload for file uploads with multipart support, GET /api/v1/media with pagination/filtering/sorting, PATCH /api/v1/media/{id} for metadata updates, DELETE /api/v1/media/{id} for soft deletion. Implement folder management system with nested folder support. Add tagging system with many-to-many relationship. Create thumbnail generation service using FFmpeg for video assets. Integrate with S3 for asset storage with proper ACLs. Implement WebSocket notifications for new media arrival using existing WebSocket infrastructure. Add bulk operations support for moving, tagging, and deleting multiple assets.",
-        "testStrategy": "Unit test MediaAsset model CRUD operations and relationship management. Integration test file upload flow from API to S3 storage. Test thumbnail generation for various video formats. Verify WebSocket notifications are sent on media creation. Test pagination, filtering, and sorting with large datasets. Load test concurrent file uploads (target: 10 simultaneous). Test folder hierarchy operations and tag management.",
+        "title": "BACKEND: Implement Media Asset Management API (ffmpeg-backend)",
+        "description": "Create media asset management API in ffmpeg-backend with presigned S3 URLs for direct client-side uploads, database models for MediaAsset/Folder/Tag, and WebSocket events",
+        "details": "Implement in /ffmpeg-backend: Create MediaAsset model inheriting from BaseModel with fields: id, owner_user_id (default: 'default-user'), type (enum), url, s3_key, thumbnail_url, filename, file_size_bytes, mime_type, duration_seconds, width, height, frame_rate, codec, folder_id (FK), is_deleted. Create Folder model with parent_id (self-referential), path (materialized path). Create Tag model and MediaAssetTag junction table. Build API endpoints: POST /api/v1/media/upload (returns presigned S3 URL), GET /api/v1/media (list with pagination/filtering), GET /api/v1/media/{id}, PATCH /api/v1/media/{id}, DELETE /api/v1/media/{id}, POST /api/v1/media/{id}/thumbnail. Add batch endpoints for bulk operations. Integrate with existing s3_manager for presigned URL generation. Use same S3 bucket as compositions. Create Pydantic schemas in app/api/schemas/media.py. Add migration in migrations/versions/. Implement WebSocket events for media.uploaded, media.thumbnail.ready, media.deleted broadcast to /ws/media.",
+        "testStrategy": "Unit test MediaAsset/Folder/Tag models and relationships. Test presigned URL generation with correct S3 keys (user-uploads/{user_id}/{type}/{uuid}.{ext}). Integration test: request upload URL, upload to S3, confirm completion. Test pagination, filtering by type/folder/tags. Verify soft deletion. Test thumbnail generation triggers RQ job. Load test 10 concurrent presigned URL requests. Test WebSocket events broadcast correctly.",
         "priority": "high",
         "dependencies": [],
         "status": "pending",
         "subtasks": [
           {
             "id": 1,
-            "title": "Design and implement MediaAsset database schema with migrations",
-            "description": "Create the MediaAsset model with all required fields and relationships, including support for multiple media types, metadata storage, and soft deletion capability",
+            "title": "Create database models and migration for MediaAsset, Folder, Tag",
+            "description": "Implement SQLAlchemy models in /ffmpeg-backend/src/db/models/ and create Alembic migration for media asset management tables",
             "dependencies": [],
-            "details": "Design MediaAsset table with fields: id, type (enum: image/video/audio/text), url, thumbnail_url, filename, original_filename, file_size, mime_type, dimensions (JSON for width/height), duration (for video/audio), tags (many-to-many), folder_id (foreign key), user_id, is_deleted, created_at, updated_at. Create Folder table with id, name, parent_id (self-referential), path, created_at. Create Tag table and MediaAssetTag junction table. Write Alembic migrations for all tables with proper indexes on frequently queried fields (type, folder_id, created_at). Add database constraints for data integrity.",
+            "details": "Create media_asset.py in /ffmpeg-backend/src/db/models/ with MediaAsset model inheriting from BaseModel. Fields: owner_user_id VARCHAR(255) DEFAULT 'default-user', type (media_asset_type enum), url TEXT, s3_key VARCHAR(1024), thumbnail_url TEXT, thumbnail_s3_key VARCHAR(1024), filename VARCHAR(500), original_filename VARCHAR(500), file_size_bytes BIGINT, mime_type VARCHAR(100), duration_seconds NUMERIC(10,2), width/height/frame_rate/codec, folder_id UUID FK, is_deleted BOOLEAN. Create Folder model with parent_id self-referential FK, path TEXT for materialized path. Create Tag model with name/slug UNIQUE, color, usage_count. Create MediaAssetTag junction table. Add to /ffmpeg-backend/src/db/base.py imports. Create migration 002_media_asset_management.py with CREATE TYPE media_asset_type, all tables, indexes (type, folder_id, created_at, owner_user_id), GIN indexes for JSONB, proper foreign key constraints. Follow existing pattern from 001_initial_schema.py.",
             "status": "pending",
-            "testStrategy": "Unit test model creation, field validation, and relationship constraints. Test soft deletion behavior. Verify migration rollback works correctly."
+            "testStrategy": "Test model instantiation and relationships. Verify migration runs without errors. Test rollback/upgrade cycle. Validate foreign key constraints prevent orphaned records. Test soft deletion doesn't cascade delete."
           },
           {
             "id": 2,
-            "title": "Build file upload API with multipart support and S3 integration",
-            "description": "Implement POST /api/v1/media/upload endpoint with multipart file handling, validation, virus scanning, and direct S3 upload with proper ACLs",
+            "title": "Implement presigned S3 URL generation endpoint",
+            "description": "Create POST /api/v1/media/upload endpoint that generates presigned S3 URLs for direct client-side uploads and creates MediaAsset records",
             "dependencies": [
               1
             ],
-            "details": "Create upload endpoint accepting multipart/form-data with file size limits (100MB images, 1GB videos). Implement file type validation using python-magic for MIME type verification. Add virus scanning integration using ClamAV or similar. Generate unique S3 keys using UUID + original filename. Implement chunked upload for large files with resume capability. Set proper S3 ACLs (private bucket, signed URLs for access). Extract metadata during upload (dimensions for images, duration for videos using FFprobe). Create database record after successful S3 upload. Return upload progress via Server-Sent Events or WebSocket.",
+            "details": "Create /ffmpeg-backend/src/app/api/v1/media.py router. Build POST /upload endpoint accepting MediaUploadRequest schema (filename, content_type, file_size_bytes, media_type, folder_id optional). Validate file_size against MAX_*_UPLOAD_SIZE_MB env vars. Generate UUID for media_asset_id. Construct s3_key: 'user-uploads/{DEFAULT_USER_ID}/{media_type}s/{uuid}.{ext}'. Use existing s3_manager.generate_presigned_url() for PUT operation with expiration from PRESIGNED_URL_EXPIRATION_SECONDS env var. Create MediaAsset record with status='pending'. Return MediaUploadResponse with media_asset_id, upload_url, s3_key, expires_at. Add content-type and file size limits to presigned URL. Create Pydantic schemas in app/api/schemas/media.py: MediaUploadRequest, MediaUploadResponse, MediaAssetResponse, MediaAssetListResponse.",
             "status": "pending",
-            "testStrategy": "Integration test file upload flow from API to S3. Test various file types and sizes. Verify malformed files are rejected. Test chunked upload resume functionality."
+            "testStrategy": "Test presigned URL generation with valid s3_key format. Verify upload size validation rejects oversized files. Test S3 upload using generated presigned URL from client. Verify MediaAsset record created with correct fields. Test expiration time matches configuration. Mock s3_manager for unit tests."
           },
           {
             "id": 3,
-            "title": "Implement CRUD REST endpoints with advanced querying capabilities",
-            "description": "Create GET, PATCH, and DELETE endpoints for media assets with comprehensive pagination, filtering, sorting, and search functionality",
+            "title": "Build media list/get/update/delete endpoints with filtering",
+            "description": "Implement GET /api/v1/media (list), GET /{id}, PATCH /{id}, DELETE /{id} endpoints with pagination, filtering, and sorting",
             "dependencies": [
               1
             ],
-            "details": "Implement GET /api/v1/media with cursor-based pagination for scalability, supporting limit/offset as fallback. Add filtering by type, folder_id, tags (with AND/OR logic), date ranges, file size ranges. Enable sorting by name, created_at, updated_at, file_size with ASC/DESC. Add full-text search on filename and tags. Implement PATCH /api/v1/media/{id} for updating metadata (name, tags, folder_id) with optimistic locking via version field. Create DELETE /api/v1/media/{id} for soft deletion with cascade handling. Add batch endpoints: POST /api/v1/media/batch/move, /batch/tag, /batch/delete for bulk operations with transaction support.",
+            "details": "In /ffmpeg-backend/src/app/api/v1/media.py: Implement GET /media with query params: offset (default 0), limit (default 50, max 100), type filter, folder_id filter, tags (comma-separated), sort_by (created_at, filename, file_size), sort_order (asc/desc), search (filename full-text). Use SQLAlchemy async queries with selectinload for folder/tags. Return MediaAssetListResponse with total count, offset, limit, media_assets array. Implement GET /{id} returning single MediaAssetResponse with presigned URLs for url and thumbnail_url (1-hour expiration). Implement PATCH /{id} accepting MediaAssetUpdateRequest (filename, tags, folder_id) - update only provided fields. Implement DELETE /{id} for soft deletion (set is_deleted=true, keep record). Generate presigned URLs when returning media assets. Add batch endpoints: POST /batch/delete, /batch/tag (operation: add/remove/set), /batch/move.",
             "status": "pending",
-            "testStrategy": "Test pagination with large datasets (1000+ items). Verify all filter combinations work correctly. Test sorting consistency. Verify soft deletion preserves data."
+            "testStrategy": "Test pagination with 100+ assets. Verify filtering by type, folder, tags works. Test sorting by different fields. Verify soft delete doesn't remove from DB. Test presigned URL generation in responses. Test batch operations in transactions."
           },
           {
             "id": 4,
