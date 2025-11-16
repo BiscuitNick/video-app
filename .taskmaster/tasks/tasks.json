@@ -261,7 +261,7 @@
         "dependencies": [
           3
         ],
-        "status": "pending",
+        "status": "in-progress",
         "subtasks": [
           {
             "id": 1,
@@ -269,7 +269,7 @@
             "description": "Set up react-virtuoso@^4.6.2 for efficient virtualization of timeline tracks and clips, configure basic list virtualization settings",
             "dependencies": [],
             "details": "Install react-virtuoso@^4.6.2 via npm. Create a basic virtualization configuration file with default settings for row height estimation, overscan, and scroll behavior. Set up TypeScript types for virtuoso components. Configure virtuoso to work with horizontal scrolling for timeline implementation.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test virtuoso installation and basic rendering, verify TypeScript types compile correctly, test basic list virtualization with mock data"
           },
           {
@@ -278,7 +278,7 @@
             "description": "Create the timeline ruler component that displays time markers, frame numbers, and provides visual time reference for the timeline",
             "dependencies": [],
             "details": "Create TimelineRuler component with dynamic time marker generation based on zoom level. Implement time formatting (00:00:00:00 for hours:minutes:seconds:frames). Calculate marker intervals dynamically (every second, 5 seconds, 30 seconds based on zoom). Style ruler with zinc-800 background following dark theme. Add major and minor tick marks for visual hierarchy.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test time marker calculations at different zoom levels, verify correct time formatting, test ruler responsiveness to window resizing"
           },
           {
@@ -289,7 +289,7 @@
               1
             ],
             "details": "Create TrackList component using Virtuoso's List component. Implement variable height tracks support for different track types. Set up track data structure with id, type, height, and clips array. Configure virtuoso scrolling behavior for smooth performance. Implement track header rendering with controls. Set up proper item rendering with React.memo for optimization.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test rendering performance with 100+ tracks, verify virtualization only renders visible tracks, test scroll performance metrics"
           },
           {
@@ -300,7 +300,7 @@
               3
             ],
             "details": "Create ClipRenderer component that only renders clips within viewport. Implement clip visibility calculation based on timeline scroll position and zoom level. Add clip thumbnail rendering with lazy loading. Create clip selection visual feedback with border highlighting. Optimize with React.memo and useMemo for expensive calculations. Add clip duration display and resize handles.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test clip visibility calculations, verify only visible clips render, test memory usage with large number of clips, validate selection state updates"
           },
           {
@@ -309,7 +309,7 @@
             "description": "Create the core timebase calculation system for converting between frames, seconds, and timeline pixels at 30fps default",
             "dependencies": [],
             "details": "Create TimebaseCalculator utility class with methods for frame-to-time, time-to-frame, and pixel-to-frame conversions. Implement support for different framerates (24, 25, 30, 60 fps). Create hooks for accessing timebase calculations in components. Add SMPTE timecode formatting support. Implement frame snapping logic for precise editing. Cache calculations for performance optimization.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Unit test all conversion functions with edge cases, verify frame accuracy at different framerates, test pixel-to-frame calculations at various zoom levels"
           },
           {
@@ -321,7 +321,7 @@
               5
             ],
             "details": "Create ZoomControls component with slider and preset buttons (fit to window, 1:1, zoom in/out). Implement keyboard shortcuts (Ctrl/Cmd + Plus/Minus for zoom, Ctrl/Cmd + 0 for fit). Add smooth zoom transitions with requestAnimationFrame. Update timeline pixel calculations on zoom changes. Maintain playhead position during zoom. Store zoom level in Zustand TimelineStore.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test zoom range limits, verify keyboard shortcuts work correctly, test zoom performance with complex timelines, validate playhead position preservation"
           },
           {
@@ -332,7 +332,7 @@
               3
             ],
             "details": "Create VideoTrack component with thumbnail previews and opacity controls. Build AudioTrack with waveform visualization placeholder and volume controls. Implement TextTrack for titles/captions with text preview. Add track controls: lock/unlock, show/hide, mute (for audio), solo, track color coding. Create track height adjustment functionality. Implement track reordering with drag handles.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test each track type renders correctly, verify track controls update state properly, test track type switching, validate track reordering logic"
           },
           {
@@ -344,7 +344,7 @@
               3
             ],
             "details": "Create TimelineScrollContext for managing shared scroll state. Implement scroll event handlers that update all timeline components simultaneously. Add smooth scroll behavior with debouncing for performance. Ensure ruler and tracks stay perfectly aligned during scrolling. Handle scroll position persistence in TimelineStore. Add programmatic scrolling for playhead following.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test scroll synchronization accuracy, verify no visual lag between components, test scroll performance with heavy content, validate scroll position persistence"
           },
           {

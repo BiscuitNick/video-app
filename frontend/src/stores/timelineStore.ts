@@ -18,7 +18,7 @@ const initialState = {
 export const createTimelineStore = () => {
   return createStore<TimelineStore>()(
     devtools(
-      immer((set, get) => ({
+      immer((set) => ({
       ...initialState,
 
       // Clip operations
