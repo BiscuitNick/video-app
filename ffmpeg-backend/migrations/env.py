@@ -20,11 +20,21 @@ from db.base import Base
 from db.models import (  # noqa: F401
     Composition,
     CompositionStatus,
+    Folder,
     JobMetric,
     JobStatus,
     JobType,
+    MediaAsset,
+    MediaAssetTag,
+    MediaAssetType,
     MetricType,
     ProcessingJob,
+    Project,
+    ProjectShare,
+    ProjectStatus,
+    ProjectVersion,
+    SharePermission,
+    Tag,
 )
 
 # this is the Alembic Config object, which provides

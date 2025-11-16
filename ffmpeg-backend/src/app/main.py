@@ -155,6 +155,17 @@ def create_app() -> FastAPI:  # noqa: C901
             except Exception as e:
                 logger.warning(f"Failed to start config watcher: {e}")
 
+        # Initialize database connection
+        try:
+            from db.session import init_db
+
+            await init_db()
+            logger.info("Database initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize database: {e}")
+            # Don't raise - allow app to start but log the error
+            # This allows the health check endpoint to report the issue
+
         # WebSocket services use lazy initialization - they'll be created
         # when the first WebSocket connection is established
         logger.info("WebSocket services will initialize on first connection")
