@@ -170,6 +170,7 @@ export interface ProjectMetadata {
   id: string
   name: string
   description?: string
+  thumbnailUrl?: string
   createdAt: Date
   updatedAt: Date
   owner?: string
@@ -185,12 +186,17 @@ export interface ProjectSettings {
 }
 
 export interface ProjectState {
+  // Current project being edited
   metadata: ProjectMetadata
   settings: ProjectSettings
   isDirty: boolean
   lastSaved?: Date
   autosaveInterval: number // milliseconds
   isAutoSaveEnabled: boolean
+
+  // Project collection management
+  projects: Map<string, ProjectMetadata>
+  currentProjectId?: string
 }
 
 export interface ProjectActions {
@@ -209,6 +215,14 @@ export interface ProjectActions {
   // Autosave
   enableAutoSave: (enabled: boolean) => void
   setAutosaveInterval: (interval: number) => void
+
+  // Project collection operations
+  addProject: (metadata: Omit<ProjectMetadata, 'id' | 'createdAt' | 'updatedAt' | 'version'>, settings?: Partial<ProjectSettings>) => string
+  removeProject: (projectId: string) => void
+  updateProject: (projectId: string, updates: Partial<ProjectMetadata>) => void
+  getProjects: () => ProjectMetadata[]
+  getCurrentProject: () => ProjectMetadata | undefined
+  setCurrentProject: (projectId: string) => void
 
   // Utility
   reset: () => void
