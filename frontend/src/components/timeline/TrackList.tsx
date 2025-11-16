@@ -13,6 +13,7 @@ interface TrackListProps {
   scrollLeft: number
   onClipSelect?: (clipId: string, addToSelection: boolean) => void
   onClipMove?: (clipId: string, trackId: string, startTime: number) => void
+  onClipTrim?: (clipId: string, updates: Partial<Clip>) => void
   onTrackUpdate?: (trackId: string, updates: Partial<Track>) => void
 }
 
@@ -27,6 +28,7 @@ export function TrackList({
   scrollLeft,
   onClipSelect,
   onClipMove,
+  onClipTrim,
   onTrackUpdate,
 }: TrackListProps) {
   // Get clips for a specific track
@@ -69,6 +71,7 @@ export function TrackList({
               allClips={clips}
               onClipSelect={onClipSelect}
               onClipMove={onClipMove}
+              onClipTrim={onClipTrim}
               onTrackUpdate={onTrackUpdate}
             />
           )

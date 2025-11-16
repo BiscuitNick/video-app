@@ -16,6 +16,7 @@ interface TrackItemProps {
   allClips?: Map<string, Clip>
   onClipSelect?: (clipId: string, addToSelection: boolean) => void
   onClipMove?: (clipId: string, trackId: string, startTime: number) => void
+  onClipTrim?: (clipId: string, updates: Partial<Clip>) => void
   onTrackUpdate?: (trackId: string, updates: Partial<Track>) => void
 }
 
@@ -30,6 +31,7 @@ export const TrackItem = memo(function TrackItem({
   allClips,
   onClipSelect,
   onClipMove,
+  onClipTrim,
   onTrackUpdate,
 }: TrackItemProps) {
   const totalWidth = framesToPixels(duration, fps, zoom)
@@ -138,6 +140,7 @@ export const TrackItem = memo(function TrackItem({
               playhead={playhead}
               onSelect={onClipSelect}
               onMove={onClipMove}
+              onTrim={onClipTrim}
             />
           ))}
 
