@@ -420,3 +420,95 @@ export interface AIGenerationActions {
 }
 
 export type AIGenerationStore = AIGenerationState & AIGenerationActions
+
+// ============================================================================
+// Auth Store Types
+// ============================================================================
+
+export interface AuthState {
+  userId: string | null
+  email: string | null
+  name: string | null
+  shadowUserId: string // For anonymous sessions
+  accessToken: string | null
+  refreshToken: string | null
+  tokenExpiresAt: number | null // Unix timestamp
+  isAuthenticated: boolean
+}
+
+export interface AuthActions {
+  // Authentication operations
+  login: (credentials: { email: string; password: string }) => Promise<void>
+  logout: () => Promise<void>
+  refreshAuthToken: () => Promise<void>
+  setShadowUser: (id: string) => void
+
+  // Utility
+  reset: () => void
+}
+
+export type AuthStore = AuthState & AuthActions
+
+// ============================================================================
+// UI Store Types
+// ============================================================================
+
+export type ToastType = 'success' | 'error' | 'info' | 'warning'
+
+export interface Toast {
+  id: string
+  message: string
+  type: ToastType
+  description?: string
+  duration: number // milliseconds
+  createdAt: Date
+}
+
+export interface ModalState {
+  id: string
+  isOpen: boolean
+  data?: Record<string, unknown>
+}
+
+export interface PanelStates {
+  isPropertiesPanelOpen: boolean
+  isMediaLibraryOpen: boolean
+  isTimelineExpanded: boolean
+}
+
+export interface UiState {
+  modalStates: Map<string, ModalState>
+  toastQueue: Toast[]
+  panelStates: PanelStates
+  activeTool: string | null
+  keyboardShortcuts: Map<string, KeyboardShortcut>
+}
+
+export interface UiActions {
+  // Modal operations
+  openModal: (modalId: string, data?: Record<string, unknown>) => void
+  closeModal: (modalId: string) => void
+  isModalOpen: (modalId: string) => boolean
+
+  // Toast operations
+  addToast: (toast: Omit<Toast, 'id' | 'createdAt'>) => string
+  removeToast: (toastId: string) => void
+  clearToasts: () => void
+
+  // Panel operations
+  togglePanel: (panel: keyof PanelStates) => void
+  setPanelState: (panel: keyof PanelStates, isOpen: boolean) => void
+
+  // Tool operations
+  setActiveTool: (tool: string | null) => void
+
+  // Keyboard shortcut operations
+  registerShortcut: (shortcut: KeyboardShortcut) => void
+  removeShortcut: (key: string) => void
+  getShortcut: (key: string) => KeyboardShortcut | undefined
+
+  // Utility
+  reset: () => void
+}
+
+export type UiStore = UiState & UiActions

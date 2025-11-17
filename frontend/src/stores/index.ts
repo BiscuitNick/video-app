@@ -15,3 +15,9 @@ export { createWebSocketStore } from './webSocketStore'
 
 export { createAIGenerationStore } from './aiGenerationStore'
 export type { AIGenerationStoreInstance } from './aiGenerationStore'
+
+export { createAuthStore } from './authStore'
+export type { AuthStoreInstance } from './authStore'
+
+export { createUiStore } from './uiStore'
+export type { UiStoreInstance } from './uiStore'
