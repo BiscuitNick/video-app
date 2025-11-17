@@ -37,7 +37,7 @@ export default function MediaLibraryPage() {
   const queueUpload = useMediaStore((state) => state.queueUpload);
   const selectAsset = useMediaStore((state) => state.selectAsset);
   const clearAssetSelection = useMediaStore((state) => state.clearAssetSelection);
-  const removeAsset = useMediaStore((state) => state.removeAsset);
+  const deleteAsset = useMediaStore((state) => state.deleteAsset);
   const searchAssets = useMediaStore((state) => state.searchAssets);
   const loadAssets = useMediaStore((state) => state.loadAssets);
 
@@ -101,31 +101,37 @@ export default function MediaLibraryPage() {
   );
 
   // Handle asset deletion
-  const handleDeleteAssets = useCallback(() => {
+  const handleDeleteAssets = useCallback(async () => {
     if (selectedAssetIds.length === 0) {
       setShowDeleteDialog(false);
       return;
     }
 
-    // Optimistic update - remove from UI immediately
-    selectedAssetIds.forEach((assetId) => {
-      removeAsset(assetId);
-    });
+    // Delete all selected assets
+    const deletePromises = selectedAssetIds.map((assetId) => deleteAsset(assetId));
 
-    clearAssetSelection();
-    setShowDeleteDialog(false);
-
-    // Show success message (console log for now, could be replaced with toast)
-    console.log(`Successfully deleted ${selectedAssetIds.length} asset(s)`);
-  }, [selectedAssetIds, removeAsset, clearAssetSelection]);
+    try {
+      await Promise.all(deletePromises);
+      clearAssetSelection();
+      setShowDeleteDialog(false);
+      console.log(`Successfully deleted ${selectedAssetIds.length} asset(s)`);
+    } catch (error) {
+      console.error('Failed to delete some assets:', error);
+      // Keep dialog open on error so user can retry
+    }
+  }, [selectedAssetIds, deleteAsset, clearAssetSelection]);
 
   // Handle individual asset delete
   const handleDeleteSingleAsset = useCallback(
-    (assetId: string) => {
-      removeAsset(assetId);
-      console.log('Successfully deleted asset');
+    async (assetId: string) => {
+      try {
+        await deleteAsset(assetId);
+        console.log('Successfully deleted asset');
+      } catch (error) {
+        console.error('Failed to delete asset:', error);
+      }
     },
-    [removeAsset]
+    [deleteAsset]
   );
 
   // Handle asset preview

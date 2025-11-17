@@ -1,7 +1,8 @@
-import { memo, useCallback, KeyboardEvent } from 'react';
+import { memo, useCallback, type KeyboardEvent } from 'react';
 import { Image, Video, Music, Trash2, Download, CheckSquare, Square } from 'lucide-react';
 import { Card } from '../ui/card';
 import type { MediaAsset } from '../../types/stores';
+import { formatRelativeTime } from '../../lib/relativeTime';
 
 interface MediaAssetCardProps {
   asset: MediaAsset;
@@ -23,15 +24,6 @@ export const MediaAssetCard = memo(
       if (bytes < 1024 * 1024 * 1024)
         return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
       return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
-    };
-
-    // Format upload date
-    const formatDate = (date: Date): string => {
-      return new Intl.DateTimeFormat('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      }).format(date);
     };
 
     // Get type icon and badge
@@ -168,7 +160,7 @@ export const MediaAssetCard = memo(
 
           <div className="flex items-center justify-between text-xs text-zinc-500">
             <span>{formatSize(asset.size)}</span>
-            <span>{formatDate(asset.createdAt)}</span>
+            <span>{formatRelativeTime(asset.createdAt)}</span>
           </div>
 
           {/* Duration for video/audio */}
