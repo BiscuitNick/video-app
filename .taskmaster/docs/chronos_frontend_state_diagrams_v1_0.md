@@ -1,6 +1,6 @@
 # Chronos Editor — Frontend State & Flow Diagrams
 **Version**: 1.0
-**Scope**: `frontend/` React + Zustand architecture
+**Scope**: `frontend-editor/` React + Zustand architecture
 **Stack**: React 18.3+, React Router 7.x, Zustand 5.x, Vite 5.4+
 
 This document captures the major frontend state machines and flows for Chronos Editor: project lifecycle, timeline interactions, autosave, media ingestion, and export/AI job handling.

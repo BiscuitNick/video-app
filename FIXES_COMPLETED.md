@@ -6,7 +6,7 @@ Fixed multiple issues preventing AI-generated videos from appearing in the media
 ## Issues Fixed
 
 ### 1. Frontend TypeError: "Cannot read properties of undefined (reading 'forEach')"
-**Location**: `frontend/src/stores/mediaStore.ts:249`
+**Location**: `frontend-editor/src/stores/mediaStore.ts:249`
 
 **Problem**: Backend returns `{assets: [...]}` but frontend expected `{items: [...]}`
 
@@ -18,7 +18,7 @@ Fixed multiple issues preventing AI-generated videos from appearing in the media
 **Status**: ✅ Fixed and verified
 
 ### 2. Enhanced Polling Logs
-**Location**: `frontend/src/layouts/RootLayout.tsx:45`
+**Location**: `frontend-editor/src/layouts/RootLayout.tsx:45`
 
 **Problem**: Polling logs didn't show job IDs for manual lookup
 
@@ -31,7 +31,7 @@ console.log(`[RootLayout] Polling ${activeJobs.length} active jobs:`,
 **Status**: ✅ Fixed
 
 ### 3. Queue Not Persisting (Fixed Earlier)
-**Location**: `frontend/src/stores/aiGenerationStore.ts`
+**Location**: `frontend-editor/src/stores/aiGenerationStore.ts`
 
 **Problem**: AI generation queue disappeared on page refresh
 
@@ -40,7 +40,7 @@ console.log(`[RootLayout] Polling ${activeJobs.length} active jobs:`,
 **Status**: ✅ Fixed
 
 ### 4. Polling Fallback Not Working (Fixed Earlier)
-**Location**: `frontend/src/layouts/RootLayout.tsx` and `frontend/src/components/ai-generation/AIGenerationPanel.tsx`
+**Location**: `frontend-editor/src/layouts/RootLayout.tsx` and `frontend-editor/src/components/ai-generation/AIGenerationPanel.tsx`
 
 **Problem**: Polling stopped when AI panel was closed because it was tied to component lifecycle
 
@@ -78,21 +78,21 @@ curl -s "http://localhost:8000/api/v1/media/?page=1&per_page=50" | jq
 
 ## Files Modified
 
-1. **frontend/src/stores/mediaStore.ts**
+1. **frontend-editor/src/stores/mediaStore.ts**
    - Lines 228, 249, 266
    - Changed `items` → `assets` to match backend response
 
-2. **frontend/src/layouts/RootLayout.tsx**
+2. **frontend-editor/src/layouts/RootLayout.tsx**
    - Lines 45-46
    - Added detailed job logging with job IDs
 
-3. **frontend/src/stores/aiGenerationStore.ts** (Earlier)
+3. **frontend-editor/src/stores/aiGenerationStore.ts** (Earlier)
    - Added persist middleware with Map/Date serialization
 
-4. **frontend/src/layouts/RootLayout.tsx** (Earlier)
+4. **frontend-editor/src/layouts/RootLayout.tsx** (Earlier)
    - Added persistent polling logic
 
-5. **frontend/src/components/ai-generation/AIGenerationPanel.tsx** (Earlier)
+5. **frontend-editor/src/components/ai-generation/AIGenerationPanel.tsx** (Earlier)
    - Removed redundant polling (moved to RootLayout)
 
 ## Complete Flow (Working End-to-End)

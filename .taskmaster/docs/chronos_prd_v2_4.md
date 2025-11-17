@@ -71,7 +71,7 @@ All tunable constants MUST be configurable via environment variables; no hardcod
 
 ### 2.3 Frontend Runtime Environment
 
-These are typically **Vite** env vars (`VITE_` prefix) defined in `frontend/.env`:
+These are typically **Vite** env vars (`VITE_` prefix) defined in `frontend-editor/.env`:
 
 | Constant        | Env Var           | Example                     | Description                            |
 |-----------------|-------------------|-----------------------------|----------------------------------------|
@@ -87,7 +87,7 @@ These are typically **Vite** env vars (`VITE_` prefix) defined in `frontend/.env
 
 ```text
 video-app/
-├── frontend/                     # React application - Chronos Editor UI
+├── frontend-editor/              # React application - Chronos Editor UI
 │   ├── index.html
 │   ├── vite.config.ts
 │   ├── tsconfig.json

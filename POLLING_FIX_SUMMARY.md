@@ -43,7 +43,7 @@ The polling useEffect in AIGenerationPanel had dependencies on `activeGeneration
 
 ### 1. Move Polling to Persistent Component ✅
 
-**File**: `frontend/src/layouts/RootLayout.tsx`
+**File**: `frontend-editor/src/layouts/RootLayout.tsx`
 
 Moved the polling logic from `AIGenerationPanel` to `RootLayout`:
 - `RootLayout` is always mounted (across all pages)
@@ -100,7 +100,7 @@ useEffect(() => {
 
 ### 2. Removed Redundant Polling from AIGenerationPanel ✅
 
-**File**: `frontend/src/components/ai-generation/AIGenerationPanel.tsx`
+**File**: `frontend-editor/src/components/ai-generation/AIGenerationPanel.tsx`
 
 Removed ~70 lines of polling logic and replaced with a comment:
 ```typescript
@@ -175,14 +175,14 @@ Features:
 
 ## Files Modified
 
-1. **frontend/src/layouts/RootLayout.tsx**
+1. **frontend-editor/src/layouts/RootLayout.tsx**
    - Added persistent polling logic
    - Added imports for stores and hooks
 
-2. **frontend/src/components/ai-generation/AIGenerationPanel.tsx**
+2. **frontend-editor/src/components/ai-generation/AIGenerationPanel.tsx**
    - Removed redundant polling logic (replaced with comment)
 
-3. **frontend/src/stores/aiGenerationStore.ts** (Fixed earlier)
+3. **frontend-editor/src/stores/aiGenerationStore.ts** (Fixed earlier)
    - Added persist middleware with localStorage
 
 ## Configuration
