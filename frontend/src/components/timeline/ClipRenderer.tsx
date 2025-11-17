@@ -69,12 +69,10 @@ export const ClipRenderer = memo(function ClipRenderer({
     [clip.duration, fps, zoom]
   )
 
-  // Get clip color based on track type
-  const clipColor = trackType === 'video'
-    ? 'bg-purple-700'
-    : trackType === 'audio'
-    ? 'bg-green-700'
-    : 'bg-blue-700'
+  // Get clip color based on asset type (all tracks now support mixed media)
+  // TODO: Once we have asset data, determine color based on asset.type
+  // For now, use purple as default for mixed media tracks
+  const clipColor = 'bg-purple-700'
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation()

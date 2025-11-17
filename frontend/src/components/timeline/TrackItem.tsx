@@ -140,7 +140,7 @@ export const TrackItem = memo(function TrackItem({
               {track.name}
             </div>
             <div className="text-[10px] text-zinc-500 uppercase">
-              {track.type}
+              Mixed Media
             </div>
           </div>
         </div>

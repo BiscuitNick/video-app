@@ -4,6 +4,7 @@ import { Play, SkipBack, SkipForward } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { Timeline } from '../components/timeline';
 import { MediaLibraryWidget } from '../components/media/MediaLibraryWidget';
+import { ClipsListPanel } from '../components/timeline/ClipsListPanel';
 import { useTimelineStore, useMediaStore } from '../contexts/StoreContext';
 import type { MediaAsset, Clip } from '../types/stores';
 
@@ -27,40 +28,18 @@ export default function ProjectEditorPage() {
     }))
   );
 
-  // Initialize default tracks on component mount
+  // Initialize default track on component mount (single track for mixed media)
   useEffect(() => {
     if (timelineStore.tracks.length === 0) {
-      // Add default video track
+      // Add default track that can handle all media types
       timelineStore.addTrack({
-        type: 'video',
-        name: 'Video 1',
+        type: 'video', // Type is now just cosmetic for color
+        name: 'Track 1',
         height: 80,
         locked: false,
         hidden: false,
         muted: false,
         order: 0,
-      });
-
-      // Add default audio track
-      timelineStore.addTrack({
-        type: 'audio',
-        name: 'Audio 1',
-        height: 60,
-        locked: false,
-        hidden: false,
-        muted: false,
-        order: 1,
-      });
-
-      // Add default text track
-      timelineStore.addTrack({
-        type: 'text',
-        name: 'Text/Titles',
-        height: 60,
-        locked: false,
-        hidden: false,
-        muted: false,
-        order: 2,
       });
     }
 
@@ -120,7 +99,7 @@ export default function ProjectEditorPage() {
   const handleAddTrack = useCallback(() => {
     const trackNumber = timelineStore.tracks.length + 1;
     timelineStore.addTrack({
-      type: 'video',
+      type: 'video', // Type is now just cosmetic for color
       name: `Track ${trackNumber}`,
       height: 80,
       locked: false,
@@ -214,14 +193,14 @@ export default function ProjectEditorPage() {
             </div>
           </div>
 
-          {/* Properties Panel */}
-          <div className="w-80 bg-zinc-900 border-l border-zinc-800 p-6">
-            <h3 className="text-lg font-semibold text-zinc-100 mb-4">Properties</h3>
-            <div className="space-y-4">
-              <div className="p-4 bg-zinc-800 rounded-lg text-center text-zinc-500">
-                <p className="text-sm">Select a clip to edit properties</p>
-              </div>
-            </div>
+          {/* Media Details Panel - Shows all clips with expandable details */}
+          <div className="w-80 bg-zinc-900 border-l border-zinc-800 overflow-hidden">
+            <ClipsListPanel
+              clips={clips}
+              fps={fps}
+              selectedClipIds={selectedClipIds}
+              onClipSelect={timelineStore.selectClip}
+            />
           </div>
         </div>
       </div>
