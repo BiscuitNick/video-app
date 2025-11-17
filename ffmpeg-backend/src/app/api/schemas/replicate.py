@@ -31,24 +31,65 @@ class NanoBananaRequest(BaseModel):
     )
 
 
-class WanVideoRequest(BaseModel):
+class WanVideoI2VRequest(BaseModel):
     """Request schema for Wan Video I2V model.
 
-    The Wan Video model generates videos from image and text prompts.
+    The Wan Video I2V model generates videos from text prompts and optional images.
     """
 
     prompt: str = Field(
         ...,
-        description="Text prompt describing the desired video",
+        description="Prompt for video generation",
         min_length=1,
         max_length=1000,
         examples=["A serene ocean wave crashing on the shore"]
     )
 
-    image_input: HttpUrl | None = Field(
+    image: HttpUrl | None = Field(
         default=None,
-        description="Optional image URL to use as the starting frame",
+        description="Optional input image to generate video from",
         examples=["https://example.com/image.png"]
+    )
+
+    last_image: HttpUrl | None = Field(
+        default=None,
+        description="Optional last image to condition the video generation for smoother transitions",
+        examples=["https://example.com/last_frame.png"]
+    )
+
+    resolution: str = Field(
+        default="480p",
+        description="Resolution of video: 480p or 720p",
+        examples=["480p", "720p"]
+    )
+
+
+class WanVideoT2VRequest(BaseModel):
+    """Request schema for Wan Video 2.5 T2V model.
+
+    The Wan Video 2.5 T2V model generates videos from text prompts only (text-to-video).
+    """
+
+    prompt: str = Field(
+        ...,
+        description="Text prompt for video generation",
+        min_length=1,
+        max_length=2000,
+        examples=["A majestic dragon flying through clouds at sunset"]
+    )
+
+    size: str = Field(
+        default="1280*720",
+        description="Video resolution and aspect ratio",
+        examples=["832*480", "480*832", "1280*720", "720*1280", "1920*1080", "1080*1920"]
+    )
+
+    duration: int = Field(
+        default=5,
+        description="Duration of the generated video in seconds (5 or 10)",
+        ge=5,
+        le=10,
+        examples=[5, 10]
     )
 
 

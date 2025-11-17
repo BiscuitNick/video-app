@@ -13,12 +13,44 @@ const initialMetrics: ConnectionMetrics = {
   messagesSent: 0,
 }
 
-// Initial state
+// LocalStorage key for persisting active job IDs
+const ACTIVE_JOBS_STORAGE_KEY = 'ai_active_job_ids'
+
+// Helper functions for localStorage persistence
+const persistActiveJobs = (jobIds: string[]) => {
+  try {
+    localStorage.setItem(ACTIVE_JOBS_STORAGE_KEY, JSON.stringify(jobIds))
+  } catch (error) {
+    console.error('Failed to persist active jobs to localStorage:', error)
+  }
+}
+
+const loadPersistedJobs = (): string[] => {
+  try {
+    const stored = localStorage.getItem(ACTIVE_JOBS_STORAGE_KEY)
+    return stored ? JSON.parse(stored) : []
+  } catch (error) {
+    console.error('Failed to load persisted jobs from localStorage:', error)
+    return []
+  }
+}
+
+const removeFromPersistedJobs = (jobId: string) => {
+  try {
+    const stored = loadPersistedJobs()
+    const updated = stored.filter(id => id !== jobId)
+    persistActiveJobs(updated)
+  } catch (error) {
+    console.error('Failed to remove job from localStorage:', error)
+  }
+}
+
+// Initial state - restore persisted jobs
 const initialState = {
   connectionStatus: 'disconnected' as ConnectionStatus,
   connectionMetrics: { ...initialMetrics },
   jobs: new Map<string, JobState>(),
-  activeJobIds: [],
+  activeJobIds: loadPersistedJobs(), // Restore persisted job IDs
   isConnected: false,
 }
 
@@ -73,6 +105,8 @@ export const createWebSocketStore = () => {
             if (job.status === 'running' || job.status === 'queued') {
               if (!state.activeJobIds.includes(job.id)) {
                 state.activeJobIds.push(job.id)
+                // Persist to localStorage for recovery
+                persistActiveJobs(state.activeJobIds)
               }
             }
           }),
@@ -90,8 +124,12 @@ export const createWebSocketStore = () => {
 
               if (isActive && !isInActiveList) {
                 state.activeJobIds.push(jobId)
+                // Persist when job becomes active
+                persistActiveJobs(state.activeJobIds)
               } else if (!isActive && isInActiveList) {
                 state.activeJobIds = state.activeJobIds.filter((id) => id !== jobId)
+                // Remove from persistence when job completes
+                persistActiveJobs(state.activeJobIds)
               }
             }
           }),
@@ -100,6 +138,8 @@ export const createWebSocketStore = () => {
           set((state) => {
             state.jobs.delete(jobId)
             state.activeJobIds = state.activeJobIds.filter((id) => id !== jobId)
+            // Remove from persistence
+            persistActiveJobs(state.activeJobIds)
           }),
 
         handleJobUpdate: (message) => {
@@ -147,6 +187,9 @@ export const createWebSocketStore = () => {
               } else if (!isActive && isInActiveList) {
                 state.activeJobIds = state.activeJobIds.filter((id) => id !== jobId)
               }
+
+              // Persist changes to localStorage
+              persistActiveJobs(state.activeJobIds)
             }
           })
 

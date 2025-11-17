@@ -16,7 +16,8 @@ export interface GenerateImageRequest {
 
 export interface GenerateVideoRequest {
   prompt: string
-  aspectRatio: string
+  size?: string
+  duration?: number
 }
 
 export interface GenerationResponse {
@@ -52,19 +53,20 @@ export async function generateImage(request: GenerateImageRequest): Promise<Gene
 }
 
 /**
- * Generate a video using Replicate's Wan Video I2V model
+ * Generate a video using Replicate's Wan Video 2.5 T2V model (text-to-video)
  * @param request - Video generation request parameters
  * @returns Response containing job ID for tracking
  */
 export async function generateVideo(request: GenerateVideoRequest): Promise<GenerationResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/replicate/wan-video-i2v`, {
+  const response = await fetch(`${API_BASE_URL}/api/v1/replicate/wan-video-t2v`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
       prompt: request.prompt,
-      aspect_ratio: request.aspectRatio,
+      size: request.size || '1280*720',
+      duration: request.duration || 5,
     }),
   })
 
@@ -105,7 +107,7 @@ export async function getGenerationStatus(jobId: string): Promise<{
   result_url?: string
   error?: string
 }> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/jobs/${jobId}`, {
+  const response = await fetch(`${API_BASE_URL}/api/v1/replicate/jobs/${jobId}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',

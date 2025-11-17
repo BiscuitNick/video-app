@@ -15,7 +15,8 @@ from ..schemas.replicate import (
     NanoBananaRequest,
     NanoBananaResponse,
     ReplicateWebhookPayload,
-    WanVideoRequest,
+    WanVideoI2VRequest,
+    WanVideoT2VRequest,
 )
 
 logger = logging.getLogger(__name__)
@@ -25,6 +26,45 @@ router = APIRouter()
 # Replicate API Configuration
 REPLICATE_WEBHOOK_SECRET = os.getenv("REPLICATE_WEBHOOK_SECRET", "")
 REPLICATE_WEBHOOK_URL = os.getenv("REPLICATE_WEBHOOK_URL", "")  # e.g., "https://yourdomain.com/api/v1/replicate/webhook"
+
+
+def extract_result_from_output(output: object | None) -> tuple[str | None, object | None]:
+    """Extract a usable result URL from Replicate outputs and return the raw payload.
+
+    Replicate can return strings, lists of strings, or lists/dicts for video payloads.
+    We return both the first URL we can find and the normalized payload for clients
+    that want to inspect the full output (e.g., for logging or debugging).
+    """
+    if output is None:
+        return None, None
+
+    # String output (most image models)
+    if isinstance(output, str):
+        return output, output
+
+    # List output (video models sometimes return list of URLs or dicts)
+    if isinstance(output, list):
+        for item in output:
+            url, _ = extract_result_from_output(item)
+            if url:
+                return url, output
+        # No URL found, but return payload for debugging
+        return None, output
+
+    # Dict output (some video models wrap URLs under keys like "video" or "url")
+    if isinstance(output, dict):
+        url_keys = ["url", "video", "mp4", "download_url"]
+        for key in url_keys:
+            value = output.get(key)
+            if isinstance(value, str) and value.startswith("http"):
+                return value, output
+        # Check any string value in the dict
+        for value in output.values():
+            if isinstance(value, str) and value.startswith("http"):
+                return value, output
+        return None, output
+
+    return None, None
 
 
 def store_job_metadata(
@@ -71,6 +111,7 @@ def publish_job_update(
     status_value: str,
     progress: int | None = None,
     result_url: str | None = None,
+    result_output: object | None = None,
     error: str | None = None
 ) -> None:
     """Publish job update to Redis pub/sub for WebSocket delivery.
@@ -80,6 +121,7 @@ def publish_job_update(
         status_value: Job status (queued, running, succeeded, failed, canceled)
         progress: Optional progress percentage (0-100)
         result_url: Optional result URL when completed
+        result_output: Optional raw output payload from the provider
         error: Optional error message
     """
     try:
@@ -106,8 +148,13 @@ def publish_job_update(
             "timestamp": datetime.now(UTC).isoformat()
         }
 
-        if result_url:
-            message["result"] = {"url": result_url}
+        if result_url or result_output is not None:
+            result_payload: dict[str, object] = {}
+            if result_url:
+                result_payload["url"] = result_url
+            if result_output is not None:
+                result_payload["output"] = result_output
+            message["result"] = result_payload
 
         if error:
             message["error"] = error
@@ -280,9 +327,9 @@ async def generate_nano_banana(request_body: NanoBananaRequest) -> JSONResponse:
     response_model=AsyncJobResponse,
     status_code=status.HTTP_202_ACCEPTED,
     summary="Generate video with Wan Video I2V model (Async)",
-    description="Start async video generation using Wan Video I2V model via Replicate",
+    description="Start async video generation using Wan Video 2.2 I2V Fast model via Replicate",
 )
-async def generate_wan_video(request_body: WanVideoRequest) -> JSONResponse:
+async def generate_wan_video_i2v(request_body: WanVideoI2VRequest) -> JSONResponse:
     """Generate video using Wan Video I2V model (async).
 
     Creates an async prediction job and returns immediately with a job ID.
@@ -322,25 +369,40 @@ async def generate_wan_video(request_body: WanVideoRequest) -> JSONResponse:
             "Processing Wan Video async request",
             extra={
                 "prompt": request_body.prompt,
-                "has_image_input": request_body.image_input is not None,
+                "has_image": request_body.image is not None,
+                "has_last_image": request_body.last_image is not None,
+                "resolution": request_body.resolution,
             },
         )
 
         os.environ["REPLICATE_API_TOKEN"] = replicate_api_key
 
-        # Prepare input
+        # Prepare input with defaults for Wan Video 2.2 I2V Fast
         model_input = {
             "prompt": request_body.prompt,
+            "num_frames": 81,  # Best results with 81 frames
+            "resolution": request_body.resolution,
+            "frames_per_second": 16,
+            "interpolate_output": False,
+            "go_fast": True,
+            "sample_shift": 12,
+            "disable_safety_checker": False,
+            "lora_scale_transformer": 1,
+            "lora_scale_transformer_2": 1,
         }
 
-        if request_body.image_input:
-            model_input["image"] = str(request_body.image_input)
+        # Add optional image inputs if provided
+        if request_body.image:
+            model_input["image"] = str(request_body.image)
+
+        if request_body.last_image:
+            model_input["last_image"] = str(request_body.last_image)
 
         # Create async prediction
         try:
-            # Note: Replace with actual Wan Video model path
+            # Using Wan Video 2.2 I2V Fast model
             prediction = replicate.predictions.create(
-                model="tencent/hunyuan-video",  # Using Hunyuan Video as example
+                model="wan-video/wan-2.2-i2v-fast",
                 input=model_input,
                 webhook=REPLICATE_WEBHOOK_URL if REPLICATE_WEBHOOK_URL else None,
                 webhook_events_filter=["completed"]
@@ -353,7 +415,7 @@ async def generate_wan_video(request_body: WanVideoRequest) -> JSONResponse:
                 job_id=job_id,
                 job_type="ai_generation",
                 prompt=request_body.prompt,
-                model="tencent/hunyuan-video",
+                model="wan-video/wan-2.2-i2v-fast",
                 generation_type="video"
             )
 
@@ -399,6 +461,220 @@ async def generate_wan_video(request_body: WanVideoRequest) -> JSONResponse:
 
 
 @router.post(
+    "/wan-video-t2v",
+    response_model=AsyncJobResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Generate video with Wan Video 2.5 T2V model (Async)",
+    description="Start async text-to-video generation using Wan Video 2.5 T2V model via Replicate",
+)
+async def generate_wan_video_t2v(request_body: WanVideoT2VRequest) -> JSONResponse:
+    """Generate video using Wan Video 2.5 T2V model (async text-to-video).
+
+    Creates an async prediction job and returns immediately with a job ID.
+    This is a text-to-video model that generates videos from prompts only.
+
+    Args:
+        request_body: Request containing prompt, size, and duration
+
+    Returns:
+        AsyncJobResponse: Response with job ID for tracking
+    """
+    try:
+        # Check if Replicate API key is configured
+        replicate_api_key = os.getenv("REPLICATE_API_TOKEN")
+        if not replicate_api_key:
+            logger.error("REPLICATE_API_TOKEN environment variable not set")
+            return JSONResponse(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                content={
+                    "error": "Replicate API key not configured.",
+                    "status": "error",
+                },
+            )
+
+        try:
+            import replicate
+        except ImportError as e:
+            logger.error(f"Failed to import Replicate package: {e}")
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content={
+                    "error": "Replicate package not installed.",
+                    "status": "error",
+                },
+            )
+
+        logger.info(
+            "Processing Wan Video 2.5 T2V async request",
+            extra={
+                "prompt": request_body.prompt,
+                "size": request_body.size,
+                "duration": request_body.duration,
+            },
+        )
+
+        os.environ["REPLICATE_API_TOKEN"] = replicate_api_key
+
+        # Prepare input with defaults for Wan Video 2.5 T2V
+        model_input = {
+            "prompt": request_body.prompt,
+            "size": request_body.size,
+            "duration": request_body.duration,
+            "negative_prompt": "",
+            "enable_prompt_expansion": True,
+        }
+
+        # Create async prediction
+        try:
+            # Using Wan Video 2.5 T2V model
+            prediction = replicate.predictions.create(
+                model="wan-video/wan-2.5-t2v",
+                input=model_input,
+                webhook=REPLICATE_WEBHOOK_URL if REPLICATE_WEBHOOK_URL else None,
+                webhook_events_filter=["completed"]
+            )
+
+            job_id = prediction.id
+
+            # Store job metadata
+            store_job_metadata(
+                job_id=job_id,
+                job_type="ai_generation",
+                prompt=request_body.prompt,
+                model="wan-video/wan-2.5-t2v",
+                generation_type="video"
+            )
+
+            # Publish initial status
+            publish_job_update(job_id, "starting")
+
+            logger.info(
+                "Wan Video 2.5 T2V async job created",
+                extra={
+                    "job_id": job_id,
+                    "prompt": request_body.prompt,
+                    "size": request_body.size,
+                    "duration": request_body.duration,
+                },
+            )
+
+            return JSONResponse(
+                status_code=status.HTTP_202_ACCEPTED,
+                content={
+                    "job_id": job_id,
+                    "status": prediction.status,
+                    "message": "Video generation started"
+                },
+            )
+
+        except Exception as e:
+            logger.exception("Replicate API call failed", extra={"error": str(e)})
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content={
+                    "error": f"Failed to start video generation: {str(e)}",
+                    "status": "error",
+                },
+            )
+
+    except Exception as e:
+        logger.exception("Unexpected error in Wan Video 2.5 T2V endpoint", extra={"error": str(e)})
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                "error": f"Unexpected error: {str(e)}",
+                "status": "error",
+            },
+        )
+
+
+@router.get(
+    "/jobs/{job_id}",
+    status_code=status.HTTP_200_OK,
+    summary="Get AI generation job status",
+    description="Get status of an AI generation job (for polling fallback)",
+)
+async def get_ai_job_status(job_id: str) -> JSONResponse:
+    """Get AI generation job status.
+
+    Checks Redis cache first, then queries Replicate API if needed.
+
+    Args:
+        job_id: Replicate prediction ID
+
+    Returns:
+        JSONResponse with job status
+    """
+    try:
+        # Try to get from Redis cache first
+        redis_conn = get_redis_connection()
+        redis_key = f"ai_job:{job_id}"
+
+        job_data_str = redis_conn.get(redis_key)
+        if job_data_str:
+            job_data = json.loads(job_data_str)
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={
+                    "status": job_data.get("status", "processing"),
+                    "result_url": job_data.get("result_url"),
+                    "output": job_data.get("output"),
+                    "error": job_data.get("error"),
+                }
+            )
+
+        # If not in cache, query Replicate API
+        replicate_api_key = os.getenv("REPLICATE_API_TOKEN")
+        if not replicate_api_key:
+            return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND,
+                content={"error": "Job not found"}
+            )
+
+        try:
+            import replicate
+            os.environ["REPLICATE_API_TOKEN"] = replicate_api_key
+
+            prediction = replicate.predictions.get(job_id)
+
+            # Map Replicate status to our format
+            status_map = {
+                "starting": "processing",
+                "processing": "processing",
+                "succeeded": "succeeded",
+                "failed": "failed",
+                "canceled": "canceled"
+            }
+
+            mapped_status = status_map.get(prediction.status, prediction.status)
+            result_url, normalized_output = extract_result_from_output(prediction.output)
+
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={
+                    "status": mapped_status,
+                    "result_url": result_url,
+                    "output": normalized_output or prediction.output,
+                    "error": prediction.error,
+                }
+            )
+
+        except Exception as e:
+            logger.error(f"Failed to get job from Replicate: {e}")
+            return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND,
+                content={"error": "Job not found"}
+            )
+
+    except Exception as e:
+        logger.exception(f"Error getting AI job status: {e}")
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"error": str(e)}
+        )
+
+
+@router.post(
     "/webhook",
     status_code=status.HTTP_200_OK,
     summary="Replicate webhook receiver",
@@ -425,17 +701,24 @@ async def replicate_webhook(request: Request) -> JSONResponse:
             f"Received Replicate webhook for job {payload.id}",
             extra={
                 "job_id": payload.id,
-                "status": payload.status
+                "status": payload.status,
+                "output_type": type(payload.output).__name__,
+                "has_error": payload.error is not None,
             }
         )
 
-        # Extract result URL
-        result_url = None
-        if payload.output:
-            if isinstance(payload.output, str):
-                result_url = payload.output
-            elif isinstance(payload.output, list) and len(payload.output) > 0:
-                result_url = payload.output[0]
+        # Extract result URL and keep the raw output for downstream consumers
+        result_url, normalized_output = extract_result_from_output(payload.output)
+
+        logger.info(
+            "Parsed Replicate webhook payload",
+            extra={
+                "job_id": payload.id,
+                "status": payload.status,
+                "result_url": result_url,
+                "normalized_output_type": type(normalized_output).__name__,
+            },
+        )
 
         # Publish job update based on status
         if payload.status == "succeeded":
@@ -443,18 +726,21 @@ async def replicate_webhook(request: Request) -> JSONResponse:
                 job_id=payload.id,
                 status_value="succeeded",
                 progress=100,
-                result_url=result_url
+                result_url=result_url,
+                result_output=normalized_output or payload.output
             )
         elif payload.status == "failed":
             publish_job_update(
                 job_id=payload.id,
                 status_value="failed",
-                error=payload.error or "Generation failed"
+                error=payload.error or "Generation failed",
+                result_output=normalized_output or payload.output
             )
         elif payload.status == "canceled":
             publish_job_update(
                 job_id=payload.id,
-                status_value="canceled"
+                status_value="canceled",
+                result_output=normalized_output or payload.output
             )
 
         # Update job metadata in Redis
@@ -472,6 +758,8 @@ async def replicate_webhook(request: Request) -> JSONResponse:
                     job_data["result_url"] = result_url
                 if payload.error:
                     job_data["error"] = payload.error
+                if normalized_output or payload.output:
+                    job_data["output"] = normalized_output or payload.output
 
                 redis_conn.setex(redis_key, 86400, json.dumps(job_data))
 

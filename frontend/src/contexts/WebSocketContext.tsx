@@ -52,8 +52,8 @@ export function WebSocketProvider({
       serviceRef.current = WebSocketService.getInstance({
         url: wsUrl,
         authToken,
-        heartbeatInterval: 30000,
-        pongTimeout: 5000,
+        heartbeatInterval: 90000, // 90 seconds - allows long-running video generation
+        pongTimeout: 10000, // 10 seconds - more generous timeout
         reconnectInitialDelay: 1000,
         reconnectMaxDelay: 30000,
         reconnectBackoffMultiplier: 1.5,

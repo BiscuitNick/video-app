@@ -68,9 +68,43 @@ export default function AIGenerationPanel() {
             aspectRatio: params.aspectRatio,
           })
         } else {
-          response = await generateVideo({
+          // Video generation using T2V model
+          // Map aspect ratios to valid T2V sizes (wan-video/wan-2.5-t2v supported sizes)
+          // Valid sizes: "832*480", "480*832", "1280*720", "720*1280", "1920*1080", "1080*1920"
+          let size = '1280*720' // default 16:9 HD
+
+          switch (params.aspectRatio) {
+            case '16:9':
+              size = '1280*720'
+              break
+            case '9:16':
+              size = '720*1280'
+              break
+            case '1:1':
+              // 1:1 (square) not supported by T2V model, use 16:9 as fallback
+              console.warn('[AIGenerationPanel] 1:1 aspect ratio not supported for video, using 16:9')
+              size = '1280*720'
+              break
+            case '4:3':
+              // 4:3 not exactly supported, use closest 16:9
+              console.warn('[AIGenerationPanel] 4:3 aspect ratio not supported for video, using 16:9')
+              size = '1280*720'
+              break
+            default:
+              console.error('[AIGenerationPanel] Invalid aspect ratio:', params.aspectRatio)
+              size = '1280*720'
+          }
+
+          console.log('[AIGenerationPanel] Video generation params:', {
             prompt: params.prompt,
             aspectRatio: params.aspectRatio,
+            size
+          })
+
+          response = await generateVideo({
+            prompt: params.prompt,
+            size,
+            duration: 5, // Default 5 seconds
           })
         }
 
@@ -88,6 +122,77 @@ export default function AIGenerationPanel() {
     },
     [queueGeneration, updateGenerationStatus]
   )
+
+  // Polling fallback for job status (in case WebSocket fails)
+  // This is critical for long-running video generation where WebSocket may timeout
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Configurable polling interval (in milliseconds) - default 5 seconds
+  // Can be overridden via VITE_AI_POLLING_INTERVAL_MS environment variable
+  const POLLING_INTERVAL_MS = import.meta.env.VITE_AI_POLLING_INTERVAL_MS
+    ? Number(import.meta.env.VITE_AI_POLLING_INTERVAL_MS)
+    : 5000
+
+  useEffect(() => {
+    const pollJobStatus = async () => {
+      // Poll ALL jobs that are generating or queued (not just 'generating')
+      // This ensures we catch jobs that started before WebSocket connected
+      const activeJobs = Array.from(activeGenerationsMap.values()).filter(
+        (gen) => (gen.status === 'generating' || gen.status === 'queued') && gen.jobId
+      )
+
+      console.log(`[AIGenerationPanel] Polling ${activeJobs.length} active jobs`)
+
+      for (const job of activeJobs) {
+        if (!job.jobId) continue
+
+        try {
+          const { getGenerationStatus } = await import('../../services/aiGenerationService')
+          const status = await getGenerationStatus(job.jobId)
+
+          if (status.status === 'succeeded' && job.status !== 'completed') {
+            console.log(`[AIGenerationPanel] Polling detected completion for job ${job.jobId}`)
+            updateGenerationStatus(job.id, 'completed', {
+              resultUrl: status.result_url,
+              progress: 100,
+            })
+          } else if (status.status === 'failed') {
+            console.log(`[AIGenerationPanel] Polling detected failure for job ${job.jobId}`)
+            updateGenerationStatus(job.id, 'failed', {
+              error: status.error || 'Generation failed',
+            })
+          } else if (status.progress !== undefined && status.progress !== job.progress) {
+            // Update progress if it changed
+            updateGenerationStatus(job.id, 'generating', {
+              progress: status.progress,
+            })
+          }
+        } catch (error) {
+          console.error(`Failed to poll job ${job.jobId}:`, error)
+        }
+      }
+    }
+
+    const hasActiveJobs = Array.from(activeGenerationsMap.values()).some(
+      (gen) => gen.status === 'generating' || gen.status === 'queued'
+    )
+
+    if (hasActiveJobs && !pollingIntervalRef.current) {
+      // Start polling with configurable interval (default 5 seconds)
+      console.log(`[AIGenerationPanel] Starting polling with ${POLLING_INTERVAL_MS}ms interval`)
+      pollingIntervalRef.current = setInterval(pollJobStatus, POLLING_INTERVAL_MS)
+      pollJobStatus() // Run immediately
+    } else if (!hasActiveJobs && pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current)
+      pollingIntervalRef.current = null
+    }
+
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current)
+      }
+    }
+  }, [activeGenerationsMap, updateGenerationStatus])
 
   // Handle generation cancellation
   const handleCancelGeneration = useCallback(
@@ -139,6 +244,49 @@ export default function AIGenerationPanel() {
   // Track processed job updates to prevent duplicate processing
   const processedJobsRef = useRef(new Map<string, { status: string; timestamp: number }>())
 
+  const resolveResultUrl = useCallback((result: unknown): string | undefined => {
+    if (!result) return undefined
+
+    if (typeof result === 'string') {
+      return result
+    }
+
+    if (Array.isArray(result)) {
+      for (const item of result) {
+        const candidate = resolveResultUrl(item)
+        if (candidate) return candidate
+      }
+      return undefined
+    }
+
+    if (typeof result === 'object') {
+      const obj = result as Record<string, unknown>
+      const prioritizedKeys = ['url', 'video', 'mp4', 'download_url', 'output']
+
+      for (const key of prioritizedKeys) {
+        const value = obj[key]
+        if (typeof value === 'string' && value.startsWith('http')) {
+          return value
+        }
+        if (Array.isArray(value)) {
+          for (const item of value) {
+            if (typeof item === 'string' && item.startsWith('http')) {
+              return item
+            }
+          }
+        }
+      }
+
+      for (const value of Object.values(obj)) {
+        if (typeof value === 'string' && value.startsWith('http')) {
+          return value
+        }
+      }
+    }
+
+    return undefined
+  }, [])
+
   // Sync WebSocket job updates to AI generation store
   useEffect(() => {
     // For each active generation with a jobId, check if there's a corresponding WebSocket job update
@@ -161,8 +309,7 @@ export default function AIGenerationPanel() {
 
       // Handle successful completion
       if (job.status === 'succeeded') {
-        const result = job.result as { url?: string; output?: string[] } | undefined
-        const resultUrl = result?.url || result?.output?.[0]
+        const resultUrl = resolveResultUrl(job.result)
 
         if (resultUrl) {
           console.log(`[AIGenerationPanel] Job ${generation.jobId} completed with URL: ${resultUrl}`)
@@ -235,6 +382,22 @@ export default function AIGenerationPanel() {
                 },
               })
             })
+        } else {
+          console.warn(
+            `[AIGenerationPanel] Job ${generation.jobId} succeeded but no result URL found`,
+            { result: job.result }
+          )
+
+          processedJobsRef.current.set(generation.jobId, {
+            status: job.status,
+            timestamp: Date.now()
+          })
+
+          // Still mark completion to unblock the UI; resultUrl undefined indicates an upstream payload issue
+          updateGenerationStatus(generation.id, 'completed', {
+            resultUrl,
+            progress: 100,
+          })
         }
       }
 
@@ -282,7 +445,7 @@ export default function AIGenerationPanel() {
         }
       }
     })
-  }, [wsJobs, activeGenerations, updateGenerationStatus, addAsset])
+  }, [wsJobs, activeGenerations, updateGenerationStatus, addAsset, resolveResultUrl])
 
   return (
     <div className="flex flex-col h-full bg-zinc-950">

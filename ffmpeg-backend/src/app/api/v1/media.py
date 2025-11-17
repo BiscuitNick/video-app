@@ -396,7 +396,10 @@ async def import_media_from_url(
         with tempfile.NamedTemporaryFile(delete=False, suffix=Path(request.name).suffix) as temp_file:
             temp_file_path = Path(temp_file.name)
 
-        logger.debug(f"Downloading from {request.url} to {temp_file_path}")
+        logger.debug(
+            f"Downloading from {request.url} to {temp_file_path}",
+            extra={"asset_id": str(asset_id)},
+        )
 
         # Download file from URL using httpx with streaming
         async with httpx.AsyncClient(timeout=120.0) as client:
@@ -418,7 +421,12 @@ async def import_media_from_url(
 
                     logger.info(
                         f"Downloaded {total_size} bytes from URL",
-                        extra={"size": total_size, "checksum": checksum},
+                        extra={
+                            "asset_id": str(asset_id),
+                            "size": total_size,
+                            "checksum": checksum,
+                            "content_type": response.headers.get("Content-Type"),
+                        },
                     )
 
             except httpx.HTTPStatusError as e:
@@ -507,6 +515,8 @@ async def import_media_from_url(
                 extra={
                     "asset_id": str(asset_id),
                     "s3_key": s3_key,
+                    "file_type": request.type.value,
+                    "size": total_size,
                 },
             )
 
@@ -528,6 +538,10 @@ async def import_media_from_url(
                 s3_manager.delete_file(s3_key)
             except Exception:
                 pass
+            logger.error(
+                "Import failed after S3 upload, cleaned up uploaded object",
+                extra={"asset_id": str(asset_id), "s3_key": s3_key},
+            )
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to create media asset record",
@@ -540,7 +554,10 @@ async def import_media_from_url(
                 temp_file_path.unlink()
                 logger.debug(f"Cleaned up temp file: {temp_file_path}")
             except Exception as e:
-                logger.warning(f"Failed to cleanup temp file: {e}")
+                logger.warning(
+                    "Failed to cleanup temp file",
+                    extra={"asset_id": str(asset_id), "error": str(e), "path": str(temp_file_path)},
+                )
 
 
 @router.get(

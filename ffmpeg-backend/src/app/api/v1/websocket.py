@@ -423,6 +423,11 @@ async def websocket_job_updates(
                 async for message in pubsub.listen():
                     if message["type"] == "message":
                         try:
+                            # Check if WebSocket is still connected before sending
+                            if websocket.client_state.value != 1:  # 1 = CONNECTED
+                                logger.info("WebSocket disconnected, stopping Redis listener")
+                                break
+
                             # Parse the JSON message
                             job_update = json.loads(message["data"])
                             # Forward to WebSocket client
@@ -430,8 +435,21 @@ async def websocket_job_updates(
                             logger.debug(f"Forwarded job update: {job_update.get('jobId')}")
                         except json.JSONDecodeError:
                             logger.warning(f"Failed to decode Redis message: {message['data']}")
+                        except RuntimeError as e:
+                            # WebSocket already closed - this is expected for long-running jobs
+                            # where the webhook arrives after the connection times out
+                            error_msg = str(e)
+                            if "websocket.send" in error_msg and "websocket.close" in error_msg:
+                                logger.warning(f"WebSocket connection closed before message could be sent (job will be caught by polling fallback)")
+                            else:
+                                logger.info(f"WebSocket closed during send: {e}")
+                            break
+                        except Exception as e:
+                            # Catch any other unexpected errors during message forwarding
+                            logger.error(f"Unexpected error forwarding message: {e}", exc_info=True)
+                            break
             except Exception as e:
-                logger.error(f"Redis listener error: {e}")
+                logger.error(f"Redis listener error: {e}", exc_info=True)
 
         # Listen for WebSocket messages (for heartbeat/ping)
         async def websocket_receiver():
@@ -439,9 +457,20 @@ async def websocket_job_updates(
             try:
                 while True:
                     data = await websocket.receive_text()
-                    # Handle ping/pong for keep-alive
-                    if data == "ping":
-                        await websocket.send_text("pong")
+                    try:
+                        # Try to parse as JSON
+                        message = json.loads(data)
+                        # Handle JSON ping messages from frontend
+                        if message.get("event") == "ping":
+                            await websocket.send_json({
+                                "event": "pong",
+                                "timestamp": datetime.now(UTC).isoformat()
+                            })
+                            logger.debug("Sent pong response to ping")
+                    except json.JSONDecodeError:
+                        # Handle plain text ping for backward compatibility
+                        if data == "ping":
+                            await websocket.send_text("pong")
             except WebSocketDisconnect:
                 logger.info("WebSocket disconnected (receiver)")
 
