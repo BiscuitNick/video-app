@@ -1,11 +1,8 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
 import { TimelineRuler } from './TimelineRuler'
 import { TrackList } from './TrackList'
-import { ZoomControls } from './ZoomControls'
 import { TimelineToolbar } from './TimelineToolbar'
 import type { Track, Clip, MediaAsset } from '../../types/stores'
-import { Plus } from 'lucide-react'
-import { Button } from '../ui/button'
 
 interface TimelineProps {
   tracks: Track[]
@@ -25,6 +22,7 @@ interface TimelineProps {
   onDeleteClips?: (clipIds: string[]) => void
   onTrackUpdate?: (trackId: string, updates: Partial<Track>) => void
   onAddTrack?: () => void
+  onDeleteTrack?: (trackId: string) => void
   onAssetDrop?: (asset: MediaAsset, trackId: string, startFrame: number) => void
 }
 
@@ -46,6 +44,7 @@ export function Timeline({
   onDeleteClips,
   onTrackUpdate,
   onAddTrack,
+  onDeleteTrack,
   onAssetDrop,
 }: TimelineProps) {
   const rulerScrollRef = useRef<HTMLDivElement>(null)
@@ -108,29 +107,11 @@ export function Timeline({
 
   return (
     <div className="flex flex-col h-full w-full bg-zinc-950 border-t border-zinc-700">
-      {/* Timeline header with controls */}
-      <div className="w-full flex items-center justify-between px-4 py-2 bg-zinc-900 border-b border-zinc-700">
-        <div className="flex items-center gap-2">
-          <h3 className="text-sm font-medium text-zinc-200">Timeline</h3>
-          {onAddTrack && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onAddTrack}
-              className="h-7"
-            >
-              <Plus className="w-4 h-4 mr-1" />
-              Add Track
-            </Button>
-          )}
-        </div>
-
-        <ZoomControls zoom={zoom} onZoomChange={onZoomChange} />
-      </div>
-
       {/* Timeline toolbar */}
       <TimelineToolbar
         hasSelection={selectedClipIds.length > 0}
+        zoom={zoom}
+        onZoomChange={onZoomChange}
         onSplitAtPlayhead={handleSplitAtPlayhead}
         onDuplicateClips={handleDuplicateClips}
         onDeleteClips={handleDeleteClips}
@@ -174,6 +155,8 @@ export function Timeline({
             onClipTrim={onClipTrim}
             onTrackUpdate={onTrackUpdate}
             onAssetDrop={onAssetDrop}
+            onAddTrack={onAddTrack}
+            onDeleteTrack={onDeleteTrack}
           />
         </div>
       </div>

@@ -1,141 +1,168 @@
 import { Outlet, NavLink } from 'react-router';
+import { useEffect, useRef } from 'react';
 import { ROUTES } from '../types/routes';
 import {
-  Home,
   FolderOpen,
   Film,
-  Settings as SettingsIcon,
   Image,
-  Menu,
-  X
 } from 'lucide-react';
 import { ThemeToggle } from '../components/ThemeToggle';
-import { useState, useEffect } from 'react';
+import { useAIGenerationStore, useMediaStore } from '../contexts/StoreContext';
 
 /**
- * Root layout component with sidebar navigation and topbar
+ * Root layout component with horizontal navigation topbar
+ * Also handles persistent AI generation job polling (fallback for WebSocket)
  */
 export default function RootLayout() {
-  // Get initial state from localStorage, default to true (expanded)
-  const [isNavExpanded, setIsNavExpanded] = useState(() => {
-    const saved = localStorage.getItem('nav-expanded');
-    return saved !== null ? JSON.parse(saved) : true;
-  });
+  // Polling fallback for AI generation jobs (persistent across navigation)
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const activeGenerationsMap = useAIGenerationStore((state) => state.activeGenerations);
+  const updateGenerationStatus = useAIGenerationStore((state) => state.updateGenerationStatus);
+  const loadAssets = useMediaStore((state) => state.loadAssets);
 
-  // Persist state to localStorage whenever it changes
+  // Configurable polling interval (default 5 seconds)
+  const POLLING_INTERVAL_MS = import.meta.env.VITE_AI_POLLING_INTERVAL_MS
+    ? Number(import.meta.env.VITE_AI_POLLING_INTERVAL_MS)
+    : 5000;
+
   useEffect(() => {
-    localStorage.setItem('nav-expanded', JSON.stringify(isNavExpanded));
-  }, [isNavExpanded]);
+    const pollJobStatus = async () => {
+      // Poll ALL jobs that are generating or queued
+      const activeJobs = Array.from(activeGenerationsMap.values()).filter(
+        (gen) => (gen.status === 'generating' || gen.status === 'queued') && gen.jobId
+      );
 
-  const toggleNav = () => setIsNavExpanded(!isNavExpanded);
+      if (activeJobs.length === 0) {
+        // No active jobs, stop polling
+        if (pollingIntervalRef.current) {
+          console.log('[RootLayout] No active jobs, stopping polling');
+          clearInterval(pollingIntervalRef.current);
+          pollingIntervalRef.current = null;
+        }
+        return;
+      }
+
+      console.log(`[RootLayout] Polling ${activeJobs.length} active jobs:`,
+        activeJobs.map(j => `${j.id} (jobId: ${j.jobId}, status: ${j.status})`).join(', '));
+
+      for (const job of activeJobs) {
+        if (!job.jobId) continue;
+
+        try {
+          const { getGenerationStatus } = await import('../services/aiGenerationService');
+          const status = await getGenerationStatus(job.jobId);
+
+          if (status.status === 'succeeded' && job.status !== 'completed') {
+            console.log(`[RootLayout] Polling detected completion for job ${job.jobId}`);
+            updateGenerationStatus(job.id, 'completed', {
+              resultUrl: status.result_url,
+              progress: 100,
+            });
+
+            // Refresh media library after 2 seconds
+            setTimeout(() => {
+              console.log('[RootLayout] Refreshing media library after polling detected completion');
+              loadAssets().catch((error) => {
+                console.error('[RootLayout] Failed to refresh media library:', error);
+              });
+            }, 2000);
+          } else if (status.status === 'failed') {
+            console.log(`[RootLayout] Polling detected failure for job ${job.jobId}`);
+            updateGenerationStatus(job.id, 'failed', {
+              error: status.error || 'Generation failed',
+            });
+          } else if (status.progress !== undefined && status.progress !== job.progress) {
+            // Update progress if it changed
+            updateGenerationStatus(job.id, 'generating', {
+              progress: status.progress,
+            });
+          }
+        } catch (error) {
+          console.error(`[RootLayout] Failed to poll job ${job.jobId}:`, error);
+        }
+      }
+    };
+
+    // Start polling if there are active jobs and not already polling
+    const hasActiveJobs = Array.from(activeGenerationsMap.values()).some(
+      (gen) => (gen.status === 'generating' || gen.status === 'queued') && gen.jobId
+    );
+
+    if (hasActiveJobs && !pollingIntervalRef.current) {
+      console.log(`[RootLayout] Starting persistent polling with ${POLLING_INTERVAL_MS}ms interval`);
+      pollingIntervalRef.current = setInterval(pollJobStatus, POLLING_INTERVAL_MS);
+      pollJobStatus(); // Run immediately
+    }
+
+    // Cleanup on unmount only (RootLayout rarely unmounts)
+    return () => {
+      if (pollingIntervalRef.current) {
+        console.log('[RootLayout] Cleaning up polling interval on unmount');
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+    };
+  }, [activeGenerationsMap, updateGenerationStatus, loadAssets, POLLING_INTERVAL_MS]);
 
   return (
-    <div className="flex h-screen bg-background text-foreground">
-      {/* Sidebar Navigation */}
-      <aside className={`${isNavExpanded ? 'w-64' : 'w-0'} bg-sidebar border-r border-sidebar-border flex flex-col transition-all duration-300 overflow-hidden`}>
-        {/* Logo/Branding */}
-        <div className="p-6 border-b border-sidebar-border flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-primary whitespace-nowrap">Chronos Editor</h1>
-          <button
-            onClick={toggleNav}
-            className="p-2 rounded-lg hover:bg-sidebar-accent text-sidebar-foreground/60 hover:text-sidebar-accent-foreground transition-colors"
-            aria-label="Close navigation"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Navigation Links */}
-        <nav className="flex-1 p-4 space-y-2">
+    <div className="flex h-screen bg-background text-foreground flex-col">
+      {/* Topbar */}
+      <header className="h-16 bg-card border-b border-border flex items-center justify-between px-6 flex-shrink-0">
+        <div className="flex items-center gap-6">
+          {/* Home link with Film icon and text */}
           <NavLink
             to={ROUTES.HOME}
-            end
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                isActive
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
-              }`
-            }
+            className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors"
           >
-            <Home className="w-5 h-5" />
-            <span>Home</span>
-          </NavLink>
-
-          <NavLink
-            to={ROUTES.PROJECTS}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                isActive
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
-              }`
-            }
-          >
-            <FolderOpen className="w-5 h-5" />
-            <span>Projects</span>
-          </NavLink>
-
-          <NavLink
-            to={ROUTES.MEDIA}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                isActive
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
-              }`
-            }
-          >
-            <Image className="w-5 h-5" />
-            <span>Media Library</span>
-          </NavLink>
-
-          <NavLink
-            to={ROUTES.SETTINGS}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                isActive
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
-              }`
-            }
-          >
-            <SettingsIcon className="w-5 h-5" />
-            <span>Settings</span>
-          </NavLink>
-        </nav>
-      </aside>
-
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Topbar */}
-        <header className="h-16 bg-card border-b border-border flex items-center justify-between px-6">
-          <div className="flex items-center gap-4">
-            {/* Hamburger menu when nav is collapsed */}
-            {!isNavExpanded && (
-              <button
-                onClick={toggleNav}
-                className="p-2 rounded-lg hover:bg-sidebar-accent text-sidebar-foreground/60 hover:text-sidebar-accent-foreground transition-colors"
-                aria-label="Open navigation"
-              >
-                <Menu className="w-5 h-5" />
-              </button>
-            )}
-            <Film className="w-6 h-6 text-primary" />
+            <Film className="w-6 h-6" />
             <span className="text-lg font-semibold">Video Editor</span>
-          </div>
+          </NavLink>
 
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">Welcome to Chronos</span>
-            <ThemeToggle />
-          </div>
-        </header>
+          {/* Navigation links */}
+          <nav className="flex items-center gap-1">
+            <NavLink
+              to={ROUTES.PROJECTS}
+              className={({ isActive }) =>
+                `px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  isActive
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                }`
+              }
+            >
+              <div className="flex items-center gap-2">
+                <FolderOpen className="w-4 h-4" />
+                <span>Projects</span>
+              </div>
+            </NavLink>
 
-        {/* Page Content */}
-        <main className="flex-1 w-screen overflow-hidden bg-background">
-          <Outlet />
-        </main>
-      </div>
+            <NavLink
+              to={ROUTES.MEDIA}
+              className={({ isActive }) =>
+                `px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  isActive
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                }`
+              }
+            >
+              <div className="flex items-center gap-2">
+                <Image className="w-4 h-4" />
+                <span>Media Library</span>
+              </div>
+            </NavLink>
+          </nav>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <ThemeToggle />
+        </div>
+      </header>
+
+      {/* Page Content */}
+      <main className="flex-1 w-screen overflow-hidden bg-background">
+        <Outlet />
+      </main>
     </div>
   );
 }

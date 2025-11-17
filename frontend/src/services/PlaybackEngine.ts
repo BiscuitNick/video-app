@@ -168,8 +168,14 @@ export class PlaybackEngine {
     this.frameAccumulator += deltaTime
 
     if (this.frameAccumulator >= msPerFrame) {
-      const framesToAdvance = Math.floor(this.frameAccumulator / msPerFrame)
-      this.frameAccumulator -= framesToAdvance * msPerFrame
+      // Consume accumulated time, but only advance a small number of frames per tick
+      const maxFramesPerTick = 2
+      let framesToAdvance = 0
+
+      while (this.frameAccumulator >= msPerFrame && framesToAdvance < maxFramesPerTick) {
+        this.frameAccumulator -= msPerFrame
+        framesToAdvance++
+      }
 
       const currentFrame = this.getCurrentFrame()
       const duration = this.getDuration()

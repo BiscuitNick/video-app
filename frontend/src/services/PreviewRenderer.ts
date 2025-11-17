@@ -59,6 +59,9 @@ export class PreviewRenderer {
   // Video container
   private videoContainer: HTMLDivElement | null = null
 
+  // Track currently visible video to avoid unnecessary hide/show operations
+  private currentVisibleVideoId: string | null = null
+
   constructor(options: PreviewRendererOptions) {
     this.container = options.containerElement
     this.timelineStore = options.timelineStore
@@ -93,6 +96,18 @@ export class PreviewRenderer {
 
     this.setupContainer()
     this.startRenderLoop()
+
+    // Subscribe to playhead changes to update preview when scrubbing
+    this.timelineStore.subscribe((state, prevState) => {
+      // Only render if playhead changed and we're not currently playing
+      if (state.playhead !== prevState.playhead && !this.editorStore.getState().isPlaying) {
+        this.renderFrame(state.playhead)
+      }
+    })
+
+    // Render initial frame
+    const initialPlayhead = this.timelineStore.getState().playhead
+    this.renderFrame(initialPlayhead)
   }
 
   /**
@@ -149,18 +164,30 @@ export class PreviewRenderer {
 
     try {
       // Get active clips at current frame
-      const activeVideoClips = this.clipResolver.getActiveVideoClips(frame)
-      const activeOverlayClips = [
-        ...this.clipResolver.getActiveClipsByType(frame, 'text'),
-        ...this.clipResolver.getActiveClipsByType(frame, 'video').slice(1), // Additional videos as overlays
-      ]
+      const assets = this.mediaStore.assets
+
+      // Track-based sets for order, then filter by asset type for overlays
+      const activeVideoTrackClips = this.clipResolver.getActiveVideoClips(frame)
+      const primaryVideoClip = activeVideoTrackClips[0]
+
+      const activeClips = this.clipResolver.getActiveClips(frame)
+      const activeImageClips = activeClips.filter(
+        (clip) => assets.get(clip.assetId)?.type === 'image'
+      )
+      const activeTextClips = this.clipResolver.getActiveClipsByType(frame, 'text')
       const activeAudioClips = this.clipResolver.getActiveAudioClips(frame)
+
+      const activeOverlayClips = [
+        ...activeTextClips,
+        ...activeImageClips,
+        ...activeVideoTrackClips.slice(1), // Additional videos as overlays
+      ]
 
       // Get container dimensions
       const { width, height } = this.getPreviewDimensions()
 
       // Render primary video (first video clip)
-      await this.renderPrimaryVideo(activeVideoClips[0], frame, width, height)
+      await this.renderPrimaryVideo(primaryVideoClip, frame, width, height)
 
       // Render overlays (images, text, additional videos)
       this.compositor.renderOverlays(
@@ -199,18 +226,31 @@ export class PreviewRenderer {
     width: number,
     height: number
   ): Promise<void> {
-    // Hide all videos first
-    const videoElements = this.videoPool.getAllVideoElements()
-    videoElements.forEach((video) => {
-      video.style.display = 'none'
-    })
-
+    // If no video clip, hide current video if any
     if (!videoClip) {
+      if (this.currentVisibleVideoId !== null) {
+        const videoElements = this.videoPool.getAllVideoElements()
+        videoElements.forEach((video) => {
+          video.style.display = 'none'
+        })
+        this.currentVisibleVideoId = null
+      }
       return
     }
 
     const asset = this.mediaStore.assets.get(videoClip.assetId)
-    if (!asset || asset.type !== 'video') {
+    if (!asset) {
+      console.warn('Asset not found for clip:', videoClip.assetId)
+      return
+    }
+
+    if (asset.type !== 'video') {
+      console.warn('Asset is not a video:', asset.type)
+      return
+    }
+
+    if (!asset.url) {
+      console.error('Video asset missing URL:', asset)
       return
     }
 
@@ -218,22 +258,38 @@ export class PreviewRenderer {
     const fps = this.timelineStore.getState().fps
     const videoTime = videoClip.localTime / fps
 
-    // Get video element
+    // Get playback state
+    const { isPlaying } = this.editorStore.getState()
+
+    // Get video element (pass isPlaying to avoid unnecessary seeks during playback)
     const videoElement = await this.videoPool.getVideoElement(
       videoClip.assetId,
       asset,
-      videoTime
+      videoTime,
+      isPlaying
     )
 
-    // Show and position video
-    videoElement.style.display = 'block'
-    videoElement.style.zIndex = '1'
+    // Only update visibility if the video changed
+    if (this.currentVisibleVideoId !== videoClip.assetId) {
+      // Hide all other videos
+      const videoElements = this.videoPool.getAllVideoElements()
+      videoElements.forEach((video) => {
+        if (video !== videoElement) {
+          video.style.display = 'none'
+        }
+      })
 
-    // Apply transforms
+      // Show the current video
+      videoElement.style.display = 'block'
+      videoElement.style.zIndex = '1'
+      this.currentVisibleVideoId = videoClip.assetId
+    }
+
+    // Apply transforms (these may change frame-to-frame for animations)
     TransformEngine.applyTransforms(videoElement, videoClip, width, height)
 
     // Sync playback
-    const { isPlaying, playbackRate } = this.editorStore.getState()
+    const { playbackRate } = this.editorStore.getState()
     this.videoPool.syncToTimeline(videoElement, isPlaying, playbackRate)
   }
 

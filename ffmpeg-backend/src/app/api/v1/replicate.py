@@ -526,15 +526,35 @@ async def generate_wan_video_t2v(request_body: WanVideoT2VRequest) -> JSONRespon
 
         # Create async prediction
         try:
+            webhook_url = REPLICATE_WEBHOOK_URL if REPLICATE_WEBHOOK_URL else None
+
+            logger.info(
+                "Creating Replicate prediction",
+                extra={
+                    "model": "wan-video/wan-2.5-t2v",
+                    "webhook_url": webhook_url,
+                    "webhook_configured": bool(webhook_url),
+                },
+            )
+
             # Using Wan Video 2.5 T2V model
             prediction = replicate.predictions.create(
                 model="wan-video/wan-2.5-t2v",
                 input=model_input,
-                webhook=REPLICATE_WEBHOOK_URL if REPLICATE_WEBHOOK_URL else None,
+                webhook=webhook_url,
                 webhook_events_filter=["completed"]
             )
 
             job_id = prediction.id
+
+            logger.info(
+                "Replicate prediction created successfully",
+                extra={
+                    "job_id": job_id,
+                    "prediction_status": prediction.status,
+                    "webhook_registered": bool(webhook_url),
+                },
+            )
 
             # Store job metadata
             store_job_metadata(
@@ -592,79 +612,158 @@ async def generate_wan_video_t2v(request_body: WanVideoT2VRequest) -> JSONRespon
     "/jobs/{job_id}",
     status_code=status.HTTP_200_OK,
     summary="Get AI generation job status",
-    description="Get status of an AI generation job (for polling fallback)",
+    description="Get status of an AI generation job (for polling fallback with auto-import)",
 )
-async def get_ai_job_status(job_id: str) -> JSONResponse:
-    """Get AI generation job status.
+async def get_ai_job_status(
+    job_id: str,
+    auto_import: bool = True
+) -> JSONResponse:
+    """Get AI generation job status with automatic import on completion.
 
     Checks Redis cache first, then queries Replicate API if needed.
+    When auto_import=True and job succeeds, automatically triggers media import.
 
     Args:
         job_id: Replicate prediction ID
+        auto_import: Whether to automatically trigger import on success (default: True)
 
     Returns:
         JSONResponse with job status
     """
     try:
-        # Try to get from Redis cache first
         redis_conn = get_redis_connection()
         redis_key = f"ai_job:{job_id}"
 
+        # Try to get from Redis cache first
         job_data_str = redis_conn.get(redis_key)
+        job_data = None
+
         if job_data_str:
             job_data = json.loads(job_data_str)
-            return JSONResponse(
-                status_code=status.HTTP_200_OK,
-                content={
-                    "status": job_data.get("status", "processing"),
-                    "result_url": job_data.get("result_url"),
-                    "output": job_data.get("output"),
-                    "error": job_data.get("error"),
+            mapped_status = job_data.get("status", "processing")
+            result_url = job_data.get("result_url")
+            output = job_data.get("output")
+            error = job_data.get("error")
+        else:
+            # If not in cache, query Replicate API
+            replicate_api_key = os.getenv("REPLICATE_API_TOKEN")
+            if not replicate_api_key:
+                return JSONResponse(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    content={"error": "Job not found"}
+                )
+
+            try:
+                import replicate
+                os.environ["REPLICATE_API_TOKEN"] = replicate_api_key
+
+                prediction = replicate.predictions.get(job_id)
+
+                # Map Replicate status to our format
+                status_map = {
+                    "starting": "processing",
+                    "processing": "processing",
+                    "succeeded": "succeeded",
+                    "failed": "failed",
+                    "canceled": "canceled"
                 }
-            )
 
-        # If not in cache, query Replicate API
-        replicate_api_key = os.getenv("REPLICATE_API_TOKEN")
-        if not replicate_api_key:
-            return JSONResponse(
-                status_code=status.HTTP_404_NOT_FOUND,
-                content={"error": "Job not found"}
-            )
+                mapped_status = status_map.get(prediction.status, prediction.status)
+                result_url, normalized_output = extract_result_from_output(prediction.output)
+                output = normalized_output or prediction.output
+                error = prediction.error
 
-        try:
-            import replicate
-            os.environ["REPLICATE_API_TOKEN"] = replicate_api_key
-
-            prediction = replicate.predictions.get(job_id)
-
-            # Map Replicate status to our format
-            status_map = {
-                "starting": "processing",
-                "processing": "processing",
-                "succeeded": "succeeded",
-                "failed": "failed",
-                "canceled": "canceled"
-            }
-
-            mapped_status = status_map.get(prediction.status, prediction.status)
-            result_url, normalized_output = extract_result_from_output(prediction.output)
-
-            return JSONResponse(
-                status_code=status.HTTP_200_OK,
-                content={
+                # Store in cache for future requests
+                job_data = {
+                    "job_id": job_id,
                     "status": mapped_status,
                     "result_url": result_url,
-                    "output": normalized_output or prediction.output,
-                    "error": prediction.error,
+                    "output": output,
+                    "error": error,
                 }
-            )
+                redis_conn.setex(redis_key, 86400, json.dumps(job_data))
 
-        except Exception as e:
-            logger.error(f"Failed to get job from Replicate: {e}")
-            return JSONResponse(
-                status_code=status.HTTP_404_NOT_FOUND,
-                content={"error": "Job not found"}
-            )
+            except Exception as e:
+                logger.error(f"Failed to get job from Replicate: {e}")
+                return JSONResponse(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    content={"error": "Job not found"}
+                )
+
+        # Auto-import on first completion detection (polling fallback)
+        if auto_import and mapped_status == "succeeded" and result_url:
+            import_key = f"imported:{job_id}"
+
+            # Check if already imported (deduplication)
+            if not redis_conn.exists(import_key):
+                logger.info(
+                    f"Polling detected completion for {job_id}, triggering auto-import",
+                    extra={"job_id": job_id, "result_url": result_url}
+                )
+
+                try:
+                    from workers.job_queue import enqueue_video_import
+                    import uuid
+
+                    # Get metadata from job data or use defaults
+                    generation_type = job_data.get("generation_type", "video") if job_data else "video"
+                    prompt = job_data.get("prompt", "") if job_data else ""
+                    model = job_data.get("model", "unknown") if job_data else "unknown"
+
+                    # Only trigger for video generation (skip images for now)
+                    if generation_type == "video":
+                        asset_id = str(uuid.uuid4())
+                        user_id = "00000000-0000-0000-0000-000000000001"  # TODO: Get from job metadata
+                        filename = f"AI_Video_{job_id[:8]}.mp4"
+
+                        # Enqueue import job
+                        import_job = enqueue_video_import(
+                            url=result_url,
+                            name=filename,
+                            user_id=user_id,
+                            asset_id=asset_id,
+                            metadata={
+                                "aiGenerated": True,
+                                "prompt": prompt,
+                                "model": model,
+                                "replicate_job_id": job_id,
+                            }
+                        )
+
+                        # Mark as imported so we don't trigger again (24hr TTL)
+                        redis_conn.setex(import_key, 86400, "1")
+
+                        logger.info(
+                            f"Auto-triggered video import from polling for {job_id}",
+                            extra={
+                                "job_id": job_id,
+                                "import_job_id": import_job,
+                                "asset_id": asset_id
+                            }
+                        )
+
+                        # Update job data with asset_id for frontend reference
+                        if job_data:
+                            job_data["asset_id"] = asset_id
+                            job_data["import_job_id"] = import_job
+                            redis_conn.setex(redis_key, 86400, json.dumps(job_data))
+
+                except Exception as e:
+                    logger.error(
+                        f"Failed to auto-trigger import from polling: {e}",
+                        extra={"job_id": job_id, "result_url": result_url}
+                    )
+                    # Don't fail the polling request - just log the error
+
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content={
+                "status": mapped_status,
+                "result_url": result_url,
+                "output": output,
+                "error": error,
+            }
+        )
 
     except Exception as e:
         logger.exception(f"Error getting AI job status: {e}")
@@ -684,7 +783,8 @@ async def replicate_webhook(request: Request) -> JSONResponse:
     """Receive webhook callbacks from Replicate.
 
     When a prediction completes, Replicate sends a POST request to this endpoint.
-    We then publish the result to Redis for WebSocket delivery.
+    We then publish the result to Redis for WebSocket delivery and enqueue
+    a background job to save videos to permanent S3 storage.
 
     Args:
         request: FastAPI request object containing webhook payload
@@ -729,6 +829,94 @@ async def replicate_webhook(request: Request) -> JSONResponse:
                 result_url=result_url,
                 result_output=normalized_output or payload.output
             )
+
+            # Enqueue background job to save video to permanent S3 storage
+            if result_url:
+                try:
+                    from workers.job_queue import enqueue_image_import, enqueue_video_import
+
+                    # Get job metadata from Redis to determine generation type
+                    redis_conn = get_redis_connection()
+                    redis_key = f"ai_job:{payload.id}"
+                    import_key = f"imported:{payload.id}"
+
+                    # Check if already imported (deduplication for webhook vs polling)
+                    if redis_conn.exists(import_key):
+                        logger.info(
+                            f"Job {payload.id} already imported, skipping duplicate webhook import",
+                            extra={"job_id": payload.id}
+                        )
+                    else:
+                        job_data_str = redis_conn.get(redis_key)
+
+                        if job_data_str:
+                            job_data = json.loads(job_data_str)
+                            generation_type = job_data.get("generation_type", "image")
+                            prompt = job_data.get("prompt", "")
+                            model = job_data.get("model", "unknown")
+
+                            # Generate asset ID and filename
+                            import uuid
+                            asset_id = str(uuid.uuid4())
+                            user_id = "00000000-0000-0000-0000-000000000001"  # TODO: Get from job metadata
+
+                            # Determine file extension and media type
+                            if generation_type == "video":
+                                file_ext = ".mp4"
+                                filename = f"AI_Video_{payload.id[:8]}{file_ext}"
+                            else:
+                                file_ext = ".png"
+                                filename = f"AI_Image_{payload.id[:8]}{file_ext}"
+
+                            # Build metadata
+                            metadata = {
+                                "aiGenerated": True,
+                                "prompt": prompt,
+                                "model": model,
+                                "replicate_job_id": payload.id,
+                            }
+
+                            # Enqueue appropriate import job
+                            if generation_type == "video":
+                                import_job_id = enqueue_video_import(
+                                    url=result_url,
+                                    name=filename,
+                                    user_id=user_id,
+                                    asset_id=asset_id,
+                                    metadata=metadata,
+                                )
+                                logger.info(
+                                    f"Enqueued video import job {import_job_id} for {payload.id}",
+                                    extra={"asset_id": asset_id, "import_job_id": import_job_id},
+                                )
+                            else:
+                                import_job_id = enqueue_image_import(
+                                    url=result_url,
+                                    name=filename,
+                                    user_id=user_id,
+                                    asset_id=asset_id,
+                                    metadata=metadata,
+                                )
+                                logger.info(
+                                    f"Enqueued image import job {import_job_id} for {payload.id}",
+                                    extra={"asset_id": asset_id, "import_job_id": import_job_id},
+                                )
+
+                            # Mark as imported (deduplication)
+                            redis_conn.setex(import_key, 86400, "1")
+
+                            # Store asset_id in Redis job metadata for frontend reference
+                            job_data["asset_id"] = asset_id
+                            job_data["import_job_id"] = import_job_id
+                            redis_conn.setex(redis_key, 86400, json.dumps(job_data))
+
+                except Exception as e:
+                    logger.error(
+                        f"Failed to enqueue media import job: {e}",
+                        extra={"job_id": payload.id, "result_url": result_url},
+                    )
+                    # Don't fail the webhook - continue processing
+
         elif payload.status == "failed":
             publish_job_update(
                 job_id=payload.id,

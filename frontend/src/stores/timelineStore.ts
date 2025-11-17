@@ -4,16 +4,27 @@ import { devtools } from 'zustand/middleware'
 import { temporal } from 'zundo'
 import type { TimelineStore, Clip, Track } from '../types/stores'
 
-// Initial state
-const initialState = {
+// Helper to build a fresh initial state (prevents StrictMode double-init bugs)
+const createInitialState = () => ({
   clips: new Map<string, Clip>(),
-  tracks: [] as Track[],
+  tracks: [
+    {
+      id: `track-${Date.now()}`,
+      type: 'video' as Track['type'],
+      name: 'Track 1',
+      height: 80,
+      locked: false,
+      hidden: false,
+      muted: false,
+      order: 0,
+    },
+  ] as Track[],
   playhead: 0,
   zoom: 1,
   selectedClipIds: [] as string[],
   duration: 0,
   fps: 30,
-}
+})
 
 // Create the vanilla store with devtools, immer, and temporal middleware
 export const createTimelineStore = () => {
@@ -21,7 +32,7 @@ export const createTimelineStore = () => {
     temporal(
       devtools(
         immer((set) => ({
-        ...initialState,
+        ...createInitialState(),
 
       // Clip operations
       addClip: (clip) =>
@@ -72,11 +83,49 @@ export const createTimelineStore = () => {
         set((state) => {
           const clip = state.clips.get(clipId)
           if (clip) {
+            // Place duplicate immediately after the original clip
+            const newStartTime = clip.startTime + clip.duration
+
             const newClip: Clip = {
               ...clip,
               id: `${clip.id}-copy-${Date.now()}`,
-              startTime: clip.startTime + clip.duration + 10, // Offset by 10 frames
+              startTime: newStartTime,
             }
+
+            // Check for overlapping clips on the same track
+            const overlappingClips: { id: string; startTime: number; duration: number }[] = []
+            state.clips.forEach((otherClip) => {
+              if (otherClip.trackId === clip.trackId && otherClip.id !== clipId) {
+                const otherClipEnd = otherClip.startTime + otherClip.duration
+                const newClipEnd = newStartTime + newClip.duration
+
+                // Check if clips overlap
+                if (
+                  (otherClip.startTime >= newStartTime && otherClip.startTime < newClipEnd) ||
+                  (otherClipEnd > newStartTime && otherClipEnd <= newClipEnd) ||
+                  (otherClip.startTime <= newStartTime && otherClipEnd >= newClipEnd)
+                ) {
+                  overlappingClips.push({
+                    id: otherClip.id,
+                    startTime: otherClip.startTime,
+                    duration: otherClip.duration
+                  })
+                }
+              }
+            })
+
+            // Move overlapping clips to the right
+            overlappingClips.forEach(({ id }) => {
+              const overlappingClip = state.clips.get(id)
+              if (overlappingClip) {
+                const newClipEnd = newStartTime + newClip.duration
+                state.clips.set(id, {
+                  ...overlappingClip,
+                  startTime: newClipEnd
+                })
+              }
+            })
+
             state.clips.set(newClip.id, newClip)
             const clipEnd = newClip.startTime + newClip.duration
             if (clipEnd > state.duration) {
@@ -194,7 +243,7 @@ export const createTimelineStore = () => {
         }),
 
       // Utility
-      reset: () => set(initialState),
+      reset: () => set(createInitialState()),
         })),
         { name: 'TimelineStore' }
       ),

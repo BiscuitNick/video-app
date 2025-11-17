@@ -1,5 +1,13 @@
 import type { Track, Clip, MediaAsset } from '../../types/stores'
 import { TrackItem } from './TrackItem'
+import { Plus } from 'lucide-react'
+import { Button } from '../ui/button'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '../ui/tooltip'
 
 interface TrackListProps {
   tracks: Track[]
@@ -15,6 +23,8 @@ interface TrackListProps {
   onClipTrim?: (clipId: string, updates: Partial<Clip>) => void
   onTrackUpdate?: (trackId: string, updates: Partial<Track>) => void
   onAssetDrop?: (asset: MediaAsset, trackId: string, startFrame: number) => void
+  onAddTrack?: () => void
+  onDeleteTrack?: (trackId: string) => void
 }
 
 export function TrackList({
@@ -31,6 +41,8 @@ export function TrackList({
   onClipTrim,
   onTrackUpdate,
   onAssetDrop,
+  onAddTrack,
+  onDeleteTrack,
 }: TrackListProps) {
   // Get clips for a specific track
   const getClipsForTrack = (trackId: string): Clip[] => {
@@ -52,7 +64,7 @@ export function TrackList({
   }
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col relative">
       {tracks.map((track) => {
         const trackClips = getClipsForTrack(track.id)
 
@@ -73,9 +85,32 @@ export function TrackList({
             onClipTrim={onClipTrim}
             onTrackUpdate={onTrackUpdate}
             onAssetDrop={onAssetDrop}
+            onDeleteTrack={onDeleteTrack}
           />
         )
       })}
+
+      {/* Floating Add Track Button */}
+      {onAddTrack && (
+        <div className="sticky bottom-4 right-4 flex justify-end pr-4 pb-4 pointer-events-none">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={onAddTrack}
+                  size="sm"
+                  className="h-10 w-10 rounded-full bg-blue-500 hover:bg-blue-600 text-white shadow-lg pointer-events-auto"
+                >
+                  <Plus className="w-5 h-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="left">
+                <p>Add Track</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+      )}
     </div>
   )
 }

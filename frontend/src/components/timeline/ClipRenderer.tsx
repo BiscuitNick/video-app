@@ -2,6 +2,7 @@ import { memo, useMemo, useRef, useState, useEffect } from 'react'
 import type { Clip, TrackType } from '../../types/stores'
 import { framesToPixels, pixelsToFrames } from '../../lib/timebase'
 import { getSnapTargets, snapClipPosition } from '../../lib/snapping'
+import { useMediaStore } from '../../contexts/StoreContext'
 
 /**
  * Helper function to snap clip to nearby targets
@@ -49,6 +50,11 @@ export const ClipRenderer = memo(function ClipRenderer({
   onTrim,
 }: ClipRendererProps) {
   const clipRef = useRef<HTMLDivElement>(null)
+  const mediaAssets = useMediaStore((state) => state.assets)
+  const asset = mediaAssets.get(clip.assetId)
+  const isVideo = asset?.type === 'video'
+  const isImage = asset?.type === 'image'
+
   const [isDragging, setIsDragging] = useState(false)
   const [dragOffset, setDragOffset] = useState(0)
   const dragStartPosRef = useRef({ x: 0, startTime: 0 })
@@ -229,13 +235,30 @@ export const ClipRenderer = memo(function ClipRenderer({
           const maxFrameDelta = trimStartRef.current.duration - 1
           const clampedFrameDelta = Math.min(frameDelta, maxFrameDelta)
 
-          updates.startTime = Math.max(0, Math.round(trimStartRef.current.startTime + clampedFrameDelta))
-          updates.inPoint = Math.max(0, trimStartRef.current.inPoint + clampedFrameDelta)
-          updates.duration = Math.max(1, trimStartRef.current.duration - clampedFrameDelta)
+          // For images: adjust startTime and duration (time_length)
+          // For videos: adjust startTime, inPoint (trim), and duration
+          if (isImage) {
+            updates.startTime = Math.max(0, Math.round(trimStartRef.current.startTime + clampedFrameDelta))
+            updates.duration = Math.max(1, trimStartRef.current.duration - clampedFrameDelta)
+          } else if (isVideo) {
+            updates.startTime = Math.max(0, Math.round(trimStartRef.current.startTime + clampedFrameDelta))
+            updates.inPoint = Math.max(0, trimStartRef.current.inPoint + clampedFrameDelta)
+            updates.duration = Math.max(1, trimStartRef.current.duration - clampedFrameDelta)
+          }
         } else if (isTrimming === 'end') {
           const newDuration = Math.max(1, Math.round(trimStartRef.current.duration + frameDelta))
-          updates.duration = newDuration
-          updates.outPoint = trimStartRef.current.inPoint + newDuration
+
+          // For images: adjust duration (time_length) only
+          // For videos: adjust duration and outPoint (trim)
+          if (isImage) {
+            updates.duration = newDuration
+          } else if (isVideo) {
+            // Ensure outPoint doesn't exceed source video duration
+            const maxOutPoint = asset?.duration ? Math.round(asset.duration * fps) : trimStartRef.current.outPoint
+            const newOutPoint = trimStartRef.current.inPoint + newDuration
+            updates.duration = newDuration
+            updates.outPoint = Math.min(maxOutPoint, newOutPoint)
+          }
         }
 
         if (Object.keys(updates).length > 0) {
@@ -310,8 +333,7 @@ export const ClipRenderer = memo(function ClipRenderer({
       {showThumbnail && (
         <div className="absolute inset-0 p-1 flex flex-col justify-between text-xs text-white pointer-events-none">
           <div className="truncate font-medium">
-            {/* In a real app, this would show the asset name */}
-            Clip {clip.id.slice(0, 8)}
+            {asset?.name || `Clip ${clip.id.slice(0, 8)}`}
           </div>
           <div className="text-[10px] opacity-75">
             {durationText}

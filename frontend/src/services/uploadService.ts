@@ -248,6 +248,8 @@ export async function confirmUpload(
   file_size: number
   file_type: string
   status: string
+  url: string
+  thumbnail_url?: string
   metadata: Record<string, any>
 }> {
   const response = await fetch(`/api/v1/media/${assetId}`, {
@@ -273,6 +275,39 @@ export async function confirmUpload(
 }
 
 /**
+ * Get media asset details by ID
+ */
+export async function getMediaAsset(
+  assetId: string
+): Promise<{
+  id: string
+  name: string
+  type: string
+  url: string
+  thumbnail_url?: string
+  file_size: number
+  created_at: string
+  metadata: Record<string, any>
+}> {
+  const response = await fetch(`/api/v1/media/${assetId}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
+
+  if (!response.ok) {
+    throw new UploadError(
+      `Failed to fetch media asset: ${response.statusText}`,
+      response.status,
+      false
+    )
+  }
+
+  return response.json()
+}
+
+/**
  * Complete upload flow: request presigned URL, upload to S3, confirm with backend
  */
 export async function uploadFile(
@@ -285,6 +320,8 @@ export async function uploadFile(
   file_size: number
   file_type: string
   status: string
+  url: string
+  thumbnail_url?: string
 }> {
   // Step 1: Calculate checksum
   const checksum = await calculateChecksum(file)
@@ -306,7 +343,7 @@ export async function uploadFile(
     signal
   )
 
-  // Step 4: Confirm upload with backend
+  // Step 4: Confirm upload with backend and get full asset details
   const result = await confirmUpload(presignedData.id, {
     // TODO: Extract metadata using FFmpeg/browser APIs if needed
   })

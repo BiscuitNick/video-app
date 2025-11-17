@@ -1,6 +1,6 @@
 import { createStore } from 'zustand/vanilla'
 import { immer } from 'zustand/middleware/immer'
-import { devtools } from 'zustand/middleware'
+import { devtools, persist, createJSONStorage } from 'zustand/middleware'
 import type {
   AIGenerationStore,
   GenerationRequest,
@@ -15,11 +15,12 @@ const initialState = {
   maxConcurrentGenerations: 3, // MAX_GENERATIONS concurrency limit
 }
 
-// Create the vanilla store with devtools and immer middleware (persist temporarily disabled)
+// Create the vanilla store with devtools, persist, and immer middleware
 export const createAIGenerationStore = () => {
   return createStore<AIGenerationStore>()(
     devtools(
-      immer((set, get) => ({
+      persist(
+        immer((set, get) => ({
           ...initialState,
 
           // Generation operations
@@ -144,6 +145,45 @@ export const createAIGenerationStore = () => {
           // Utility
           reset: () => set(initialState),
         })),
+        {
+          name: 'ai-generation-store',
+          storage: createJSONStorage(() => localStorage),
+          partialize: (state) => ({
+            activeGenerations: Array.from(state.activeGenerations.entries()),
+            generationHistory: state.generationHistory,
+            maxConcurrentGenerations: state.maxConcurrentGenerations,
+          }),
+          merge: (persistedState, currentState) => {
+            const persisted = persistedState as any
+
+            // Reconstruct activeGenerations Map with proper Date objects
+            const activeGenerationsMap = new Map(
+              (persisted.activeGenerations || []).map(([id, gen]: [string, any]) => [
+                id,
+                {
+                  ...gen,
+                  createdAt: new Date(gen.createdAt),
+                  completedAt: gen.completedAt ? new Date(gen.completedAt) : undefined,
+                }
+              ])
+            )
+
+            return {
+              ...currentState,
+              activeGenerations: activeGenerationsMap,
+              generationHistory: (persisted.generationHistory || []).map((item: any) => ({
+                ...item,
+                request: {
+                  ...item.request,
+                  createdAt: new Date(item.request.createdAt),
+                  completedAt: item.request.completedAt ? new Date(item.request.completedAt) : undefined,
+                }
+              })),
+              maxConcurrentGenerations: persisted.maxConcurrentGenerations || 3,
+            }
+          },
+        }
+      ),
       { name: 'AIGenerationStore' }
     )
   )

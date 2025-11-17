@@ -8,13 +8,14 @@ interface MediaAssetCardProps {
   isSelected: boolean;
   onClick: (e: React.MouseEvent) => void;
   onDelete?: () => void;
+  onPreview?: () => void;
 }
 
 /**
  * MediaAssetCard component for displaying media asset thumbnail and metadata
  */
 export const MediaAssetCard = memo(
-  ({ asset, isSelected, onClick, onDelete }: MediaAssetCardProps) => {
+  ({ asset, isSelected, onClick, onDelete, onPreview }: MediaAssetCardProps) => {
     // Format file size
     const formatSize = (bytes: number): string => {
       if (bytes < 1024) return `${bytes} B`;
@@ -83,6 +84,14 @@ export const MediaAssetCard = memo(
       [onDelete]
     );
 
+    const handleDoubleClick = useCallback(
+      (e: React.MouseEvent) => {
+        e.stopPropagation();
+        onPreview?.();
+      },
+      [onPreview]
+    );
+
     return (
       <Card
         className={`
@@ -92,6 +101,7 @@ export const MediaAssetCard = memo(
           ${isSelected ? 'ring-2 ring-blue-500 border-blue-500' : ''}
         `}
         onClick={onClick}
+        onDoubleClick={handleDoubleClick}
         onKeyDown={handleKeyDown}
         tabIndex={0}
         role="button"

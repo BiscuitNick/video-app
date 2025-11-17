@@ -225,12 +225,13 @@ export const createMediaStore = () => {
       loadAssets: async (page: number = 1, perPage: number = 50) => {
         try {
           const response = await api.get<{
-            items: Array<{
+            assets: Array<{
               id: string
               name: string
               file_type: string
               file_size: number
               s3_key: string
+              url?: string
               thumbnail_url?: string
               status: string
               metadata?: Record<string, unknown>
@@ -245,12 +246,12 @@ export const createMediaStore = () => {
           })
 
           set((state) => {
-            response.items.forEach((item) => {
+            response.assets.forEach((item) => {
               const asset: MediaAsset = {
                 id: item.id,
                 name: item.name,
                 type: item.file_type as 'image' | 'video' | 'audio',
-                url: item.s3_key, // TODO: Get presigned URL if needed
+                url: item.url || item.s3_key, // Use presigned URL from backend, fallback to s3_key
                 thumbnailUrl: item.thumbnail_url,
                 duration: 0, // TODO: Extract from metadata
                 size: item.file_size,
@@ -262,7 +263,7 @@ export const createMediaStore = () => {
             })
           })
 
-          toast.success(`Loaded ${response.items.length} assets`)
+          toast.success(`Loaded ${response.assets.length} assets`)
         } catch (error) {
           console.error('Failed to load assets:', error)
           toast.error('Failed to load media assets')

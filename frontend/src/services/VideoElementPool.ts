@@ -81,7 +81,8 @@ export class VideoElementPool {
   async getVideoElement(
     assetId: string,
     asset: MediaAsset,
-    targetTime: number
+    targetTime: number,
+    isPlaying: boolean = false
   ): Promise<HTMLVideoElement> {
     // Check if we already have this asset loaded
     let videoState = this.pool.find((vs) => vs.currentAssetId === assetId)
@@ -89,11 +90,22 @@ export class VideoElementPool {
     if (videoState) {
       // Update last used time
       videoState.lastUsedTime = Date.now()
-
-      // Seek to target time if needed
       const video = videoState.element
-      if (Math.abs(video.currentTime - targetTime) > 0.1) {
-        await this.seekVideo(video, targetTime)
+
+      // During playback, allow small drift but resync if too far off
+      // When paused, seek to exact position for scrubbing
+      const timeDiff = Math.abs(video.currentTime - targetTime)
+
+      if (!isPlaying) {
+        // Paused/scrubbing - seek to exact position if > 1 frame
+        if (timeDiff > 0.033) {  // ~1 frame at 30fps
+          await this.seekVideo(video, targetTime)
+        }
+      } else {
+        // Playing - only seek if drift is significant (> 3 frames to avoid choppiness)
+        if (timeDiff > 0.1) {  // ~3 frames at 30fps
+          await this.seekVideo(video, targetTime)
+        }
       }
 
       return video
@@ -121,6 +133,11 @@ export class VideoElementPool {
   ): Promise<void> {
     const video = videoState.element
 
+    // Validate URL
+    if (!asset.url) {
+      throw new Error(`Video asset ${asset.name} has no URL`)
+    }
+
     // Update state
     videoState.isLoading = true
     videoState.isPrepared = false
@@ -130,12 +147,15 @@ export class VideoElementPool {
     // Cache asset info
     this.assetCache.set(assetId, asset)
 
+    console.log(`[VideoPool] Loading video: ${asset.name} from ${asset.url}`)
+
     return new Promise((resolve, reject) => {
       const handleCanPlay = () => {
         videoState.isLoading = false
         videoState.isPrepared = true
         video.removeEventListener('canplay', handleCanPlay)
         video.removeEventListener('error', handleError)
+        console.log(`[VideoPool] Video loaded successfully: ${asset.name}`)
         resolve()
       }
 
@@ -145,6 +165,7 @@ export class VideoElementPool {
         videoState.currentAssetId = null
         video.removeEventListener('canplay', handleCanPlay)
         video.removeEventListener('error', handleError)
+        console.error(`[VideoPool] Failed to load video: ${asset.name}`, e)
         reject(new Error(`Failed to load video: ${asset.name}`))
       }
 

@@ -5,7 +5,6 @@ import GenerationQueue from './GenerationQueue'
 import GenerationHistory from './GenerationHistory'
 import { useAIGenerationStore, useMediaStore, useWebSocketStore } from '../../contexts/StoreContext'
 import { generateImage, generateVideo, cancelGeneration as cancelGenerationAPI } from '../../services/aiGenerationService'
-import { importFromUrl } from '../../services/uploadService'
 import type { GenerationType, QualityTier } from '../../types/stores'
 
 export default function AIGenerationPanel() {
@@ -25,7 +24,8 @@ export default function AIGenerationPanel() {
   const toggleFavorite = useAIGenerationStore((state) => state.toggleFavorite)
   const removeFromHistory = useAIGenerationStore((state) => state.removeFromHistory)
 
-  const addAsset = useMediaStore((state) => state.addAsset)
+  // Get media store action for refreshing assets
+  const loadAssets = useMediaStore((state) => state.loadAssets)
 
   // Memoize the sorted array to prevent infinite loops
   const activeGenerations = useMemo(
@@ -123,76 +123,8 @@ export default function AIGenerationPanel() {
     [queueGeneration, updateGenerationStatus]
   )
 
-  // Polling fallback for job status (in case WebSocket fails)
-  // This is critical for long-running video generation where WebSocket may timeout
-  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null)
-
-  // Configurable polling interval (in milliseconds) - default 5 seconds
-  // Can be overridden via VITE_AI_POLLING_INTERVAL_MS environment variable
-  const POLLING_INTERVAL_MS = import.meta.env.VITE_AI_POLLING_INTERVAL_MS
-    ? Number(import.meta.env.VITE_AI_POLLING_INTERVAL_MS)
-    : 5000
-
-  useEffect(() => {
-    const pollJobStatus = async () => {
-      // Poll ALL jobs that are generating or queued (not just 'generating')
-      // This ensures we catch jobs that started before WebSocket connected
-      const activeJobs = Array.from(activeGenerationsMap.values()).filter(
-        (gen) => (gen.status === 'generating' || gen.status === 'queued') && gen.jobId
-      )
-
-      console.log(`[AIGenerationPanel] Polling ${activeJobs.length} active jobs`)
-
-      for (const job of activeJobs) {
-        if (!job.jobId) continue
-
-        try {
-          const { getGenerationStatus } = await import('../../services/aiGenerationService')
-          const status = await getGenerationStatus(job.jobId)
-
-          if (status.status === 'succeeded' && job.status !== 'completed') {
-            console.log(`[AIGenerationPanel] Polling detected completion for job ${job.jobId}`)
-            updateGenerationStatus(job.id, 'completed', {
-              resultUrl: status.result_url,
-              progress: 100,
-            })
-          } else if (status.status === 'failed') {
-            console.log(`[AIGenerationPanel] Polling detected failure for job ${job.jobId}`)
-            updateGenerationStatus(job.id, 'failed', {
-              error: status.error || 'Generation failed',
-            })
-          } else if (status.progress !== undefined && status.progress !== job.progress) {
-            // Update progress if it changed
-            updateGenerationStatus(job.id, 'generating', {
-              progress: status.progress,
-            })
-          }
-        } catch (error) {
-          console.error(`Failed to poll job ${job.jobId}:`, error)
-        }
-      }
-    }
-
-    const hasActiveJobs = Array.from(activeGenerationsMap.values()).some(
-      (gen) => gen.status === 'generating' || gen.status === 'queued'
-    )
-
-    if (hasActiveJobs && !pollingIntervalRef.current) {
-      // Start polling with configurable interval (default 5 seconds)
-      console.log(`[AIGenerationPanel] Starting polling with ${POLLING_INTERVAL_MS}ms interval`)
-      pollingIntervalRef.current = setInterval(pollJobStatus, POLLING_INTERVAL_MS)
-      pollJobStatus() // Run immediately
-    } else if (!hasActiveJobs && pollingIntervalRef.current) {
-      clearInterval(pollingIntervalRef.current)
-      pollingIntervalRef.current = null
-    }
-
-    return () => {
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current)
-      }
-    }
-  }, [activeGenerationsMap, updateGenerationStatus])
+  // NOTE: Polling fallback is now handled in RootLayout.tsx for persistence
+  // across navigation and panel open/close states. No need for component-level polling here.
 
   // Handle generation cancellation
   const handleCancelGeneration = useCallback(
@@ -312,7 +244,19 @@ export default function AIGenerationPanel() {
         const resultUrl = resolveResultUrl(job.result)
 
         if (resultUrl) {
-          console.log(`[AIGenerationPanel] Job ${generation.jobId} completed with URL: ${resultUrl}`)
+          // Log full payload for debugging
+          console.log(`[AIGenerationPanel] Job ${generation.jobId} completed successfully`)
+          console.log('[AIGenerationPanel] Full job payload:', JSON.stringify(job, null, 2))
+          console.log('[AIGenerationPanel] Generation metadata:', {
+            id: generation.id,
+            jobId: generation.jobId,
+            type: generation.type,
+            prompt: generation.prompt,
+            qualityTier: generation.qualityTier,
+            aspectRatio: generation.aspectRatio,
+            status: generation.status,
+          })
+          console.log('[AIGenerationPanel] Result URL:', resultUrl)
 
           // Mark as processed
           processedJobsRef.current.set(generation.jobId, {
@@ -326,62 +270,26 @@ export default function AIGenerationPanel() {
             progress: 100,
           })
 
-          // Import to S3 and persist to database
-          const assetName = `AI ${generation.type === 'image' ? 'Image' : 'Video'}: ${generation.prompt.substring(0, 30)}...`
+          // ✅ REMOVED: importFromUrl() call
+          // The backend webhook now handles importing to S3 automatically.
+          // The MediaAsset will be created by the worker after successful S3 upload.
+          // Frontend will see the asset when it refreshes the media list.
 
-          // Start import process (async, don't block UI)
-          importFromUrl(
-            resultUrl,
-            assetName,
-            generation.type === 'image' ? 'image' : 'video',
-            {
-              aiGenerated: true,
-              prompt: generation.prompt,
-              generationType: generation.type,
-              qualityTier: generation.qualityTier,
-              aspectRatio: generation.aspectRatio,
-              replicateJobId: generation.jobId,
-            }
-          )
-            .then((importedAsset) => {
-              console.log(`[AIGenerationPanel] Successfully imported asset to S3: ${importedAsset.id}`)
+          console.log(`[AIGenerationPanel] Job completed. Backend webhook will handle import automatically.`)
 
-              // Add the persisted asset to media store with permanent S3 URL
-              addAsset({
-                id: importedAsset.id,
-                name: importedAsset.name,
-                type: generation.type === 'image' ? 'image' : 'video',
-                url: importedAsset.url, // Permanent S3 URL
-                thumbnailUrl: importedAsset.thumbnail_url || (generation.type === 'image' ? importedAsset.url : undefined),
-                size: importedAsset.size,
-                duration: generation.type === 'video' ? 5 : undefined, // Default 5s for videos
-                createdAt: new Date(importedAsset.created_at),
-                metadata: importedAsset.metadata,
+          // Refresh media library to show newly imported asset
+          // Add a small delay to ensure worker has time to create MediaAsset
+          setTimeout(() => {
+            console.log('[AIGenerationPanel] Refreshing media library after job completion')
+            loadAssets()
+              .then(() => {
+                console.log('[AIGenerationPanel] Media library refreshed successfully')
+                // Note: loadAssets() already shows a toast notification
               })
-            })
-            .catch((error) => {
-              console.error(`[AIGenerationPanel] Failed to import asset:`, error)
-
-              // Fallback: Add temporary asset with Replicate URL
-              addAsset({
-                id: `ai-${generation.id}`,
-                name: assetName,
-                type: generation.type === 'image' ? 'image' : 'video',
-                url: resultUrl,
-                thumbnailUrl: generation.type === 'image' ? resultUrl : undefined,
-                size: 0,
-                duration: generation.type === 'video' ? 5 : undefined,
-                createdAt: new Date(),
-                metadata: {
-                  aiGenerated: true,
-                  prompt: generation.prompt,
-                  generationType: generation.type,
-                  qualityTier: generation.qualityTier,
-                  importFailed: true,
-                  importError: error instanceof Error ? error.message : 'Unknown error',
-                },
+              .catch((error) => {
+                console.error('[AIGenerationPanel] Failed to refresh media library:', error)
               })
-            })
+          }, 2000) // 2 second delay for worker to complete (reduced from 3s)
         } else {
           console.warn(
             `[AIGenerationPanel] Job ${generation.jobId} succeeded but no result URL found`,
@@ -445,7 +353,7 @@ export default function AIGenerationPanel() {
         }
       }
     })
-  }, [wsJobs, activeGenerations, updateGenerationStatus, addAsset, resolveResultUrl])
+  }, [wsJobs, activeGenerations, updateGenerationStatus, resolveResultUrl, loadAssets])
 
   return (
     <div className="flex flex-col h-full bg-zinc-950">

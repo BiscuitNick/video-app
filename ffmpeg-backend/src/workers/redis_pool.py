@@ -31,6 +31,7 @@ class RedisConnectionManager:
         socket_connect_timeout: int = 5,
         retry_on_timeout: bool = True,
         health_check_interval: int = 30,
+        decode_responses: bool = True,
     ) -> None:
         """Initialize Redis connection manager.
 
@@ -41,6 +42,7 @@ class RedisConnectionManager:
             socket_connect_timeout: Socket connection timeout in seconds
             retry_on_timeout: Whether to retry on timeout
             health_check_interval: Interval between health checks in seconds
+            decode_responses: Whether to decode responses to strings (True for API, False for RQ workers)
         """
         self.url = url or str(settings.redis_url)
         self.max_connections = max_connections or settings.redis_max_connections
@@ -48,6 +50,7 @@ class RedisConnectionManager:
         self.socket_connect_timeout = socket_connect_timeout
         self.retry_on_timeout = retry_on_timeout
         self.health_check_interval = health_check_interval
+        self.decode_responses = decode_responses
 
         self._pool: ConnectionPool | None = None
         self._client: Redis | None = None
@@ -84,7 +87,7 @@ class RedisConnectionManager:
                 retry_on_timeout=self.retry_on_timeout,
                 retry=retry,
                 health_check_interval=self.health_check_interval,
-                decode_responses=True,  # Automatically decode responses to strings
+                decode_responses=self.decode_responses,
             )
 
             logger.info("Created Redis connection pool successfully")
@@ -333,18 +336,32 @@ class RedisConnectionManager:
         return self._is_healthy
 
 
-# Global Redis connection manager instance
-redis_connection_manager = RedisConnectionManager()
+# Global Redis connection manager instances
+# API connection (decode responses to strings)
+redis_connection_manager = RedisConnectionManager(decode_responses=True)
+
+# Worker connection (keep binary for RQ pickle serialization)
+redis_worker_manager = RedisConnectionManager(decode_responses=False)
 
 
-def get_redis_connection() -> Redis:
+def get_redis_connection(for_worker: bool = False) -> Redis:
     """Get a Redis connection from the global connection manager.
+
+    Args:
+        for_worker: If True, returns connection for RQ workers (binary mode)
+                   If False, returns connection for API (string decode mode)
 
     Returns:
         Redis: Redis client instance
 
     Example:
+        # For API/normal use
         redis_conn = get_redis_connection()
         redis_conn.set('key', 'value')
+
+        # For RQ workers
+        worker_conn = get_redis_connection(for_worker=True)
     """
+    if for_worker:
+        return redis_worker_manager.get_connection()
     return redis_connection_manager.get_connection()

@@ -143,8 +143,8 @@ export class UploadManager {
         id: result.id,
         name: result.name,
         type: this.getAssetType(result.file_type),
-        url: '', // URL will be populated from S3 when needed
-        thumbnailUrl: undefined,
+        url: result.url, // Use URL from upload result
+        thumbnailUrl: result.thumbnail_url,
         size: result.file_size,
         createdAt: new Date(),
         metadata: {},

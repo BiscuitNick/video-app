@@ -1,4 +1,4 @@
-import { Lock, LockOpen, Eye, EyeOff, Volume2, VolumeX } from 'lucide-react'
+import { Lock, LockOpen, Eye, EyeOff, Volume2, VolumeX, Trash2 } from 'lucide-react'
 import type { Track, Clip, MediaAsset } from '../../types/stores'
 import { framesToPixels, pixelsToFrames } from '../../lib/timebase'
 import { ClipRenderer } from './ClipRenderer'
@@ -20,6 +20,7 @@ interface TrackItemProps {
   onClipTrim?: (clipId: string, updates: Partial<Clip>) => void
   onTrackUpdate?: (trackId: string, updates: Partial<Track>) => void
   onAssetDrop?: (asset: MediaAsset, trackId: string, startFrame: number) => void
+  onDeleteTrack?: (trackId: string) => void
 }
 
 export const TrackItem = memo(function TrackItem({
@@ -37,6 +38,7 @@ export const TrackItem = memo(function TrackItem({
   onClipTrim,
   onTrackUpdate,
   onAssetDrop,
+  onDeleteTrack,
 }: TrackItemProps) {
   const mediaAssets = useMediaStore((state) => state.assets)
   const totalWidth = framesToPixels(duration, fps, zoom)
@@ -53,6 +55,12 @@ export const TrackItem = memo(function TrackItem({
   const handleToggleMuted = () => {
     if (track.type === 'audio') {
       onTrackUpdate?.(track.id, { muted: !track.muted })
+    }
+  }
+
+  const handleDeleteTrack = () => {
+    if (window.confirm(`Are you sure you want to delete "${track.name}"? This will also delete all clips on this track.`)) {
+      onDeleteTrack?.(track.id)
     }
   }
 
@@ -146,42 +154,55 @@ export const TrackItem = memo(function TrackItem({
         </div>
 
         {/* Track controls */}
-        <div className="flex items-center gap-1 mt-2">
-          <button
-            onClick={handleToggleLock}
-            className="p-1 hover:bg-zinc-800 rounded transition-colors"
-            title={track.locked ? 'Unlock track' : 'Lock track'}
-          >
-            {track.locked ? (
-              <Lock className="w-3 h-3 text-zinc-400" />
-            ) : (
-              <LockOpen className="w-3 h-3 text-zinc-500" />
-            )}
-          </button>
-
-          <button
-            onClick={handleToggleHidden}
-            className="p-1 hover:bg-zinc-800 rounded transition-colors"
-            title={track.hidden ? 'Show track' : 'Hide track'}
-          >
-            {track.hidden ? (
-              <EyeOff className="w-3 h-3 text-zinc-400" />
-            ) : (
-              <Eye className="w-3 h-3 text-zinc-500" />
-            )}
-          </button>
-
-          {track.type === 'audio' && (
+        <div className="flex items-center justify-between gap-1 mt-2">
+          <div className="flex items-center gap-1">
             <button
-              onClick={handleToggleMuted}
+              onClick={handleToggleLock}
               className="p-1 hover:bg-zinc-800 rounded transition-colors"
-              title={track.muted ? 'Unmute track' : 'Mute track'}
+              title={track.locked ? 'Unlock track' : 'Lock track'}
             >
-              {track.muted ? (
-                <VolumeX className="w-3 h-3 text-zinc-400" />
+              {track.locked ? (
+                <Lock className="w-3 h-3 text-zinc-400" />
               ) : (
-                <Volume2 className="w-3 h-3 text-zinc-500" />
+                <LockOpen className="w-3 h-3 text-zinc-500" />
               )}
+            </button>
+
+            <button
+              onClick={handleToggleHidden}
+              className="p-1 hover:bg-zinc-800 rounded transition-colors"
+              title={track.hidden ? 'Show track' : 'Hide track'}
+            >
+              {track.hidden ? (
+                <EyeOff className="w-3 h-3 text-zinc-400" />
+              ) : (
+                <Eye className="w-3 h-3 text-zinc-500" />
+              )}
+            </button>
+
+            {track.type === 'audio' && (
+              <button
+                onClick={handleToggleMuted}
+                className="p-1 hover:bg-zinc-800 rounded transition-colors"
+                title={track.muted ? 'Unmute track' : 'Mute track'}
+              >
+                {track.muted ? (
+                  <VolumeX className="w-3 h-3 text-zinc-400" />
+                ) : (
+                  <Volume2 className="w-3 h-3 text-zinc-500" />
+                )}
+              </button>
+            )}
+          </div>
+
+          {/* Delete button in bottom right corner */}
+          {onDeleteTrack && (
+            <button
+              onClick={handleDeleteTrack}
+              className="p-1 hover:bg-red-900/50 rounded transition-colors"
+              title="Delete track"
+            >
+              <Trash2 className="w-3 h-3 text-red-400 hover:text-red-300" />
             </button>
           )}
         </div>

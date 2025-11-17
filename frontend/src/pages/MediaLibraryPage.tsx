@@ -4,6 +4,7 @@ import AIGenerationPanel from '../components/ai-generation/AIGenerationPanel';
 import { MediaLibraryUpload } from '../components/media/MediaLibraryUpload';
 import { UploadProgressList } from '../components/media/UploadProgressList';
 import { MediaAssetCard } from '../components/media/MediaAssetCard';
+import { MediaPreviewModal } from '../components/media/MediaPreviewModal';
 import {
   Dialog,
   DialogContent,
@@ -14,7 +15,7 @@ import {
 } from '../components/ui/dialog';
 import { Button } from '../components/ui/button';
 import { useMediaStore } from '../contexts/StoreContext';
-import type { MediaAssetType } from '../types/stores';
+import type { MediaAssetType, MediaAsset } from '../types/stores';
 
 /**
  * Media library page for asset management interface
@@ -26,6 +27,7 @@ export default function MediaLibraryPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<MediaAssetType | 'all'>('all');
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [previewAsset, setPreviewAsset] = useState<MediaAsset | null>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
   // Access MediaStore state and actions
@@ -37,6 +39,7 @@ export default function MediaLibraryPage() {
   const clearAssetSelection = useMediaStore((state) => state.clearAssetSelection);
   const removeAsset = useMediaStore((state) => state.removeAsset);
   const searchAssets = useMediaStore((state) => state.searchAssets);
+  const loadAssets = useMediaStore((state) => state.loadAssets);
 
   // Convert assets Map to array and apply filters
   const assetsArray = useMemo(() => {
@@ -124,6 +127,22 @@ export default function MediaLibraryPage() {
     },
     [removeAsset]
   );
+
+  // Handle asset preview
+  const handleAssetPreview = useCallback(
+    (asset: MediaAsset) => {
+      setPreviewAsset(asset);
+    },
+    []
+  );
+
+  // Load assets from backend on mount
+  useEffect(() => {
+    console.log('[MediaLibraryPage] Loading assets from backend');
+    loadAssets()
+      .then(() => console.log('[MediaLibraryPage] Assets loaded successfully'))
+      .catch((error) => console.error('[MediaLibraryPage] Failed to load assets:', error));
+  }, [loadAssets]);
 
   // Keyboard shortcut for select all (Ctrl/Cmd+A)
   useEffect(() => {
@@ -249,6 +268,7 @@ export default function MediaLibraryPage() {
                   isSelected={selectedAssetIds.includes(asset.id)}
                   onClick={(e) => handleAssetClick(asset.id, index, e)}
                   onDelete={() => handleDeleteSingleAsset(asset.id)}
+                  onPreview={() => handleAssetPreview(asset)}
                 />
               ))}
             </div>
@@ -359,6 +379,13 @@ export default function MediaLibraryPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Media Preview Modal */}
+      <MediaPreviewModal
+        asset={previewAsset}
+        isOpen={!!previewAsset}
+        onClose={() => setPreviewAsset(null)}
+      />
     </div>
   );
 }

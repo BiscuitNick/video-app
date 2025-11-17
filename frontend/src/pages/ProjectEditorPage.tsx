@@ -100,7 +100,8 @@ export default function ProjectEditorPage() {
 
       sampleAssets.forEach(asset => mediaStore.addAsset(asset));
     }
-  }, [timelineStore, mediaStore]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Calculate duration (default to 5 minutes if not set)
   const duration = timelineStore.duration > 0 ? timelineStore.duration : timelineStore.fps * 300;
@@ -119,12 +120,17 @@ export default function ProjectEditorPage() {
     });
   }, [timelineStore]);
 
+  // Event handler for deleting tracks
+  const handleDeleteTrack = useCallback((trackId: string) => {
+    timelineStore.removeTrack(trackId);
+  }, [timelineStore]);
+
   // Handle dropping media asset onto timeline track
   const handleAssetDrop = useCallback((asset: MediaAsset, trackId: string, startFrame: number) => {
     console.log('Asset dropped:', { asset, trackId, startFrame });
 
     // Convert duration from seconds to frames
-    const durationInFrames = asset.duration ? Math.floor(asset.duration * fps) : fps * 5; // Default 5 seconds for images
+    const durationInFrames = asset.duration ? Math.floor(asset.duration * fps) : fps * 2; // Default 2 seconds for images
 
     // Create a new clip from the media asset
     const newClip: Clip = {
@@ -174,24 +180,6 @@ export default function ProjectEditorPage() {
 
   return (
     <div className="h-full w-full flex flex-col bg-zinc-950">
-      {/* Editor Header */}
-      <div className="w-full bg-zinc-900 border-b border-zinc-800 px-6 py-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-zinc-100">Project Editor</h2>
-            <p className="text-sm text-zinc-500">Project ID: {projectId}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg transition-colors">
-              Save
-            </button>
-            <button className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors">
-              Export
-            </button>
-          </div>
-        </div>
-      </div>
-
       {/* Main Editor Area - Top Section */}
       <div className="flex-1 w-full flex overflow-hidden">
         {/* Media Library Widget - Left Side */}
@@ -278,8 +266,13 @@ export default function ProjectEditorPage() {
           onZoomChange={timelineStore.setZoom}
           onClipSelect={timelineStore.selectClip}
           onClipMove={timelineStore.moveClip}
+          onClipTrim={timelineStore.updateClip}
+          onSplitClip={timelineStore.splitClip}
+          onDuplicateClips={(clipIds) => clipIds.forEach(id => timelineStore.duplicateClip(id))}
+          onDeleteClips={(clipIds) => clipIds.forEach(id => timelineStore.removeClip(id))}
           onTrackUpdate={timelineStore.updateTrack}
           onAddTrack={handleAddTrack}
+          onDeleteTrack={handleDeleteTrack}
           onAssetDrop={handleAssetDrop}
         />
       </div>

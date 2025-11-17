@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { Clip, Transition } from '../../types/stores'
+import { useMediaStore } from '../../contexts/StoreContext'
 import { Label } from '../ui/label'
 import { Input } from '../ui/input'
 import { Slider } from '../ui/slider'
@@ -15,6 +16,10 @@ interface ClipPropertiesPanelProps {
 
 export function ClipPropertiesPanel({ clip, fps, onUpdate }: ClipPropertiesPanelProps) {
   const [aspectRatioLocked, setAspectRatioLocked] = useState(true)
+  const mediaAssets = useMediaStore((state) => state.assets)
+  const asset = mediaAssets.get(clip.assetId)
+  const isVideo = asset?.type === 'video'
+  const isImage = asset?.type === 'image'
 
   const handleOpacityChange = (value: number[]) => {
     onUpdate(clip.id, { opacity: value[0] / 100 })
@@ -69,24 +74,132 @@ export function ClipPropertiesPanel({ clip, fps, onUpdate }: ClipPropertiesPanel
 
   // Format duration as seconds
   const durationInSeconds = (clip.duration / fps).toFixed(2)
+  const startTimeInSeconds = (clip.startTime / fps).toFixed(2)
+
+  const handleStartTimeChange = (value: number) => {
+    const newStartTime = Math.round(value * fps)
+    onUpdate(clip.id, { startTime: Math.max(0, newStartTime) })
+  }
+
+  const handleDurationChange = (value: number) => {
+    const newDuration = Math.round(value * fps)
+    onUpdate(clip.id, { duration: Math.max(1, newDuration) })
+  }
+
+  const handleTrimStartChange = (value: number) => {
+    const newInPoint = Math.round(value * fps)
+    const maxInPoint = clip.outPoint - fps // Ensure at least 1 second of content
+    onUpdate(clip.id, {
+      inPoint: Math.max(0, Math.min(newInPoint, maxInPoint)),
+      duration: clip.outPoint - Math.max(0, Math.min(newInPoint, maxInPoint))
+    })
+  }
+
+  const handleTrimEndChange = (value: number) => {
+    const newOutPoint = Math.round(value * fps)
+    const minOutPoint = clip.inPoint + fps // Ensure at least 1 second of content
+    const assetDuration = asset?.duration ? Math.round(asset.duration * fps) : clip.outPoint
+    onUpdate(clip.id, {
+      outPoint: Math.min(assetDuration, Math.max(newOutPoint, minOutPoint)),
+      duration: Math.min(assetDuration, Math.max(newOutPoint, minOutPoint)) - clip.inPoint
+    })
+  }
 
   return (
-    <div className="p-4 space-y-6 bg-zinc-900 border-l border-zinc-700 overflow-y-auto">
-      <div>
-        <h3 className="text-sm font-semibold text-zinc-200 mb-3">Clip Properties</h3>
+    <div className="h-full flex flex-col bg-zinc-900 border-l border-zinc-700">
+      <div className="p-4 space-y-6 overflow-y-auto flex-1">
+        <div>
+          <h3 className="text-sm font-semibold text-zinc-200 mb-3">Clip Properties</h3>
 
-        {/* Basic Info */}
-        <div className="space-y-2 mb-4">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-zinc-400">Duration:</span>
-            <span className="text-zinc-200">{durationInSeconds}s ({clip.duration} frames)</span>
-          </div>
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-zinc-400">Start:</span>
-            <span className="text-zinc-200">{(clip.startTime / fps).toFixed(2)}s</span>
+          {/* Basic Info */}
+          <div className="space-y-3 mb-4">
+            {/* Start Time - Editable */}
+            <div className="space-y-1">
+              <Label htmlFor="startTime" className="text-xs text-zinc-400">Start Time</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="startTime"
+                  type="number"
+                  value={parseFloat(startTimeInSeconds)}
+                  onChange={(e) => handleStartTimeChange(parseFloat(e.target.value))}
+                  step={0.1}
+                  min={0}
+                  className="h-8 text-xs"
+                />
+                <span className="text-xs text-zinc-500 flex-shrink-0">s</span>
+              </div>
+            </div>
+
+            {/* Duration - Editable (for images this is the time_length) */}
+            <div className="space-y-1">
+              <Label htmlFor="duration" className="text-xs text-zinc-400">
+                {isImage ? 'Time Length' : 'Duration'}
+              </Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="duration"
+                  type="number"
+                  value={parseFloat(durationInSeconds)}
+                  onChange={(e) => handleDurationChange(parseFloat(e.target.value))}
+                  step={0.1}
+                  min={0.1}
+                  className="h-8 text-xs"
+                />
+                <span className="text-xs text-zinc-500 flex-shrink-0">s</span>
+              </div>
+              {isImage && (
+                <p className="text-[10px] text-zinc-500 mt-1">
+                  How long the image displays on timeline
+                </p>
+              )}
+            </div>
+
+            {/* Trim controls for videos */}
+            {isVideo && (
+              <>
+                <div className="space-y-1">
+                  <Label htmlFor="trimStart" className="text-xs text-zinc-400">Trim Start</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="trimStart"
+                      type="number"
+                      value={(clip.inPoint / fps).toFixed(2)}
+                      onChange={(e) => handleTrimStartChange(parseFloat(e.target.value))}
+                      step={0.1}
+                      min={0}
+                      max={asset?.duration ? asset.duration : (clip.outPoint / fps)}
+                      className="h-8 text-xs"
+                    />
+                    <span className="text-xs text-zinc-500 flex-shrink-0">s</span>
+                  </div>
+                  <p className="text-[10px] text-zinc-500 mt-1">
+                    Where to start playing from source video
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="trimEnd" className="text-xs text-zinc-400">Trim End</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="trimEnd"
+                      type="number"
+                      value={(clip.outPoint / fps).toFixed(2)}
+                      onChange={(e) => handleTrimEndChange(parseFloat(e.target.value))}
+                      step={0.1}
+                      min={(clip.inPoint / fps) + 0.1}
+                      max={asset?.duration ? asset.duration : (clip.outPoint / fps)}
+                      className="h-8 text-xs"
+                    />
+                    <span className="text-xs text-zinc-500 flex-shrink-0">s</span>
+                  </div>
+                  <p className="text-[10px] text-zinc-500 mt-1">
+                    Where to stop playing from source video
+                  </p>
+                </div>
+              </>
+            )}
           </div>
         </div>
-      </div>
 
       {/* Opacity */}
       <div className="space-y-2">
@@ -277,6 +390,7 @@ export function ClipPropertiesPanel({ clip, fps, onUpdate }: ClipPropertiesPanel
             </div>
           )}
         </div>
+      </div>
       </div>
     </div>
   )

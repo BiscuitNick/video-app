@@ -70,20 +70,23 @@ services:
     networks:
       - ffmpeg-network
 
-  # RQ worker for background job processing
+  # RQ worker for background job processing (media import, thumbnail generation, etc.)
   worker:
     build:
       context: .
       dockerfile: Dockerfile.dev
-    command: rq worker --url redis://redis:6379/0 default high low
+    command: python -m workers.run_worker
+    container_name: ffmpeg-backend-worker
     env_file:
       - .env
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-ffmpeg}:${POSTGRES_PASSWORD:-ffmpeg}@db:5432/${POSTGRES_DB:-ffmpeg_backend}
       REDIS_URL: redis://redis:6379/0
       ENVIRONMENT: development
+      WORKER_QUEUES: media_import,default
+      PYTHONPATH: /app/src
     volumes:
-      - ./src:/app/src:ro
+      - ./src:/app/src
       - media_data:/app/media
     depends_on:
       db:
@@ -93,8 +96,6 @@ services:
     restart: unless-stopped
     networks:
       - ffmpeg-network
-    deploy:
-      replicas: 2
 
   # Optional: RedisInsight for debugging Redis
   redis-insight:

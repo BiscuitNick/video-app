@@ -361,7 +361,9 @@ async def import_media_from_url(
 ) -> MediaImportFromUrlResponse:
     """Import media asset from external URL (e.g., Replicate CDN).
 
-    Downloads file from URL, uploads to S3, and creates MediaAsset record.
+    For images: Downloads file from URL, uploads to S3, and creates MediaAsset record.
+    For videos: Enqueues background job for download, processing, and upload (returns immediately).
+
     Useful for persisting AI-generated images/videos from temporary CDN URLs.
 
     Args:
@@ -369,7 +371,7 @@ async def import_media_from_url(
         db: Database session (injected)
 
     Returns:
-        MediaImportFromUrlResponse: Created media asset with S3 URL
+        MediaImportFromUrlResponse: Created media asset with S3 URL (or placeholder for videos)
 
     Raises:
         HTTPException: 400 for validation/download errors
@@ -384,11 +386,79 @@ async def import_media_from_url(
         extra={
             "asset_id": str(asset_id),
             "url": request.url,
-            "name": request.name,
-            "type": request.type,
+            "media_name": request.name,
+            "media_type": request.type,
         },
     )
 
+    # For videos, enqueue background job and return immediately
+    if request.type == MediaType.VIDEO:
+        try:
+            from workers.job_queue import enqueue_video_import
+
+            # Create placeholder MediaAsset record
+            media_asset = MediaAsset(
+                id=asset_id,
+                user_id=user_id,
+                name=request.name,
+                file_size=1,  # Placeholder (required by DB constraint) - will be updated by background job
+                file_type=MediaAssetType.VIDEO,
+                s3_key=generate_s3_key(user_id, asset_id, request.name),  # Use final s3_key format from the start
+                status=MediaAssetStatus.UPLOADING,
+                checksum="",  # Will be calculated by background job
+                file_metadata={
+                    **request.metadata,
+                    "source": "import",
+                    "source_url": request.url,
+                },
+                tags=["ai-generated"] if request.metadata.get("aiGenerated") else [],
+                is_deleted=False,
+            )
+
+            db.add(media_asset)
+            await db.commit()
+            await db.refresh(media_asset)
+
+            # Enqueue background job for video processing
+            job_id = enqueue_video_import(
+                url=request.url,
+                name=request.name,
+                user_id=str(user_id),
+                asset_id=str(asset_id),
+                metadata=request.metadata,
+            )
+
+            logger.info(
+                "Video import job enqueued",
+                extra={
+                    "asset_id": str(asset_id),
+                    "job_id": job_id,
+                },
+            )
+
+            return MediaImportFromUrlResponse(
+                id=asset_id,
+                name=request.name,
+                type=request.type,
+                url="",  # Will be available after background job completes
+                thumbnail_url=None,
+                size=0,  # Will be updated after background job completes
+                created_at=media_asset.created_at,
+                metadata={
+                    **request.metadata,
+                    "import_job_id": job_id,
+                    "status": "processing",
+                },
+            )
+
+        except Exception as e:
+            logger.exception(f"Failed to enqueue video import job: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to start video import",
+            ) from e
+
+    # For images, continue with synchronous processing
     temp_file_path = None
 
     try:

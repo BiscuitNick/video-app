@@ -7,12 +7,15 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from app.config import settings
+from sqlalchemy import create_engine
+from sqlalchemy.engine import Engine
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
+from sqlalchemy.orm import Session, sessionmaker
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +58,47 @@ AsyncSessionLocal = async_sessionmaker(
     class_=AsyncSession,
     expire_on_commit=False,  # Don't expire objects after commit
     autoflush=False,  # Disable autoflush for better control
+)
+
+
+# Create sync engine for background workers (RQ workers are synchronous)
+def get_sync_engine() -> Engine:
+    """
+    Create and configure synchronous database engine.
+
+    Used by RQ background workers which run in synchronous context.
+
+    Returns:
+        Engine: Configured sync database engine
+    """
+    # Use psycopg2 driver for sync connections
+    db_url = str(settings.database_url).replace("postgresql://", "postgresql+psycopg2://")
+
+    sync_engine = create_engine(
+        db_url,
+        echo=settings.environment == "development",
+        pool_pre_ping=True,
+        pool_size=settings.db_pool_size,
+        max_overflow=settings.db_max_overflow,
+        pool_recycle=3600,
+    )
+    logger.info(
+        "Created sync database engine for workers",
+        extra={
+            "pool_size": settings.db_pool_size,
+            "max_overflow": settings.db_max_overflow,
+        },
+    )
+    return sync_engine
+
+
+# Create sync engine and session factory for workers
+sync_engine = get_sync_engine()
+SessionLocal = sessionmaker(
+    bind=sync_engine,
+    class_=Session,
+    expire_on_commit=False,
+    autoflush=False,
 )
 
 
