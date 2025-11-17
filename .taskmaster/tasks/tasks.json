@@ -2,7 +2,7 @@
   "master": {
     "tasks": [
       {
-        "id": 1,
+        "id": "1",
         "title": "Setup React Router and Core Page Architecture",
         "description": "Implement React Router v7 with file-based routing and create the foundational page components for the Chronos Editor application shell",
         "details": "Install react-router@^7.9.4 and configure browser history SPA routing. Create routes configuration in src/routes/AppRoutes.tsx with paths for /, /projects, /projects/:projectId/editor, /media, /settings. Implement RootLayout.tsx with global shell structure including sidebar and topbar navigation. Create basic page components: LandingPage.tsx, ProjectsPage.tsx, ProjectEditorPage.tsx, MediaLibraryPage.tsx, SettingsPage.tsx, NotFoundPage.tsx. Ensure React Router 7 data loading patterns with loaders and actions are set up for type-safe routing.",
@@ -18,7 +18,8 @@
             "dependencies": [],
             "details": "Install react-router@^7.9.4 and react-router-dom dependencies. Configure TypeScript types for React Router v7. Set up browser history for SPA routing. Create initial router provider setup in main.tsx or App.tsx. Configure route type definitions and ensure proper TypeScript integration for type-safe routing throughout the application.",
             "status": "done",
-            "testStrategy": "Verify package installation, test TypeScript compilation with route types, validate browser history initialization"
+            "testStrategy": "Verify package installation, test TypeScript compilation with route types, validate browser history initialization",
+            "parentId": "undefined"
           },
           {
             "id": 2,
@@ -29,7 +30,8 @@
             ],
             "details": "Create src/routes/AppRoutes.tsx with route definitions for all paths: /, /projects, /projects/:projectId/editor, /media, /settings. Define route types and interfaces for parameters. Implement type-safe route helper functions for navigation. Set up route constants to prevent hardcoded strings. Configure nested routing structure for project editor routes.",
             "status": "done",
-            "testStrategy": "Unit test route configuration object, verify TypeScript types for route params, test route path generation helpers"
+            "testStrategy": "Unit test route configuration object, verify TypeScript types for route params, test route path generation helpers",
+            "parentId": "undefined"
           },
           {
             "id": 3,
@@ -40,7 +42,8 @@
             ],
             "details": "Create RootLayout.tsx as the application shell wrapper. Build sidebar navigation component with links to all main routes using NavLink components. Implement topbar with branding and user controls. Set up Outlet for nested route rendering. Apply responsive layout styles and ensure proper navigation highlighting for active routes. Integrate with shadcn/ui components for consistent styling.",
             "status": "done",
-            "testStrategy": "Test layout rendering, verify navigation link active states, test responsive behavior, validate Outlet rendering"
+            "testStrategy": "Test layout rendering, verify navigation link active states, test responsive behavior, validate Outlet rendering",
+            "parentId": "undefined"
           },
           {
             "id": 4,
@@ -51,7 +54,8 @@
             ],
             "details": "Create LandingPage.tsx with welcome content and getting started guide. Build ProjectsPage.tsx with project list placeholder. Implement ProjectEditorPage.tsx with basic editor shell and route param handling. Create MediaLibraryPage.tsx for asset management interface. Build SettingsPage.tsx with configuration options. Ensure each component properly integrates with the layout and handles route-specific data.",
             "status": "done",
-            "testStrategy": "Test each page component renders correctly, verify route parameter extraction in editor page, test component mounting/unmounting"
+            "testStrategy": "Test each page component renders correctly, verify route parameter extraction in editor page, test component mounting/unmounting",
+            "parentId": "undefined"
           },
           {
             "id": 5,
@@ -62,7 +66,8 @@
             ],
             "details": "Create NotFoundPage.tsx with user-friendly 404 message and navigation back to home. Implement ErrorBoundary component for route-level error catching. Set up error recovery mechanisms and logging. Configure catch-all route for 404 handling. Add error boundaries at strategic component levels. Implement user-friendly error messages and recovery actions for common routing errors.",
             "status": "done",
-            "testStrategy": "Test 404 page rendering for invalid routes, verify error boundary catches component errors, test error recovery flows"
+            "testStrategy": "Test 404 page rendering for invalid routes, verify error boundary catches component errors, test error recovery flows",
+            "parentId": "undefined"
           },
           {
             "id": 6,
@@ -73,19 +78,23 @@
             ],
             "details": "Wire up all navigation links in sidebar and other UI elements. Implement programmatic navigation helpers using useNavigate hook. Set up route guards if needed for protected routes. Verify deep linking works correctly. Test browser back/forward button functionality. Ensure route transitions are smooth. Add loading states for lazy-loaded routes if applicable. Perform end-to-end navigation testing across all routes.",
             "status": "done",
-            "testStrategy": "End-to-end navigation testing, verify browser history manipulation, test deep linking, validate route parameter passing"
+            "testStrategy": "End-to-end navigation testing, verify browser history manipulation, test deep linking, validate route parameter passing",
+            "parentId": "undefined"
           }
-        ]
+        ],
+        "complexity": 5,
+        "recommendedSubtasks": 6,
+        "expansionPrompt": "Break down React Router setup into: 1) Install and configure React Router v7 with TypeScript, 2) Create AppRoutes configuration with type-safe route definitions, 3) Build RootLayout component with navigation structure, 4) Create core page components for each route, 5) Implement NotFoundPage and error boundaries, 6) Wire up navigation and verify complete routing system"
       },
       {
-        "id": 2,
+        "id": "2",
         "title": "Implement Dark Mode UI Theme System",
         "description": "Configure TailwindCSS with dark-mode-first design system and integrate Shadcn UI component library for consistent theming",
         "details": "Configure Tailwind 4.x with dark mode as default, implementing the zinc color palette (zinc-950 background, zinc-900 surfaces, zinc-800 elements, zinc-700 borders). Install and configure Shadcn UI components via CLI (shadcn@^3.5.0). Set up design tokens in tailwind.config.ts for consistent theming. Create ThemeProvider component for managing theme state. Implement CSS variables for dynamic theming support. Ensure all components follow the dark-mode-first aesthetic with blue-500 accent colors for interactive elements.",
         "testStrategy": "Visual regression testing for theme consistency, test theme provider context, verify Shadcn components render with correct dark theme styles, validate CSS variables are applied correctly",
         "priority": "high",
         "dependencies": [
-          1
+          "1"
         ],
         "status": "done",
         "subtasks": [
@@ -96,7 +105,8 @@
             "dependencies": [],
             "details": "Install Tailwind CSS 4.x dependencies. Configure tailwind.config.ts to use dark mode as default with class-based switching. Define the zinc color palette: zinc-950 for backgrounds, zinc-900 for surfaces, zinc-800 for UI elements, zinc-700 for borders. Set blue-500 as the primary accent color for interactive elements. Configure CSS variables for dynamic color theming. Ensure proper color contrast ratios for accessibility.",
             "status": "done",
-            "testStrategy": "Verify Tailwind configuration loads correctly, test color palette values are applied, validate CSS variable generation, check dark mode class switching functionality"
+            "testStrategy": "Verify Tailwind configuration loads correctly, test color palette values are applied, validate CSS variable generation, check dark mode class switching functionality",
+            "parentId": "undefined"
           },
           {
             "id": 2,
@@ -107,7 +117,8 @@
             ],
             "details": "Run npx shadcn@latest init to initialize Shadcn UI with TypeScript and Tailwind CSS support. Configure components.json to use the zinc color scheme and dark theme as default. Install essential components like Button, Card, Dialog, Input, and Select using the CLI. Verify all components inherit the dark theme styles correctly. Update component CSS variables to match the zinc palette. Ensure component styles integrate seamlessly with Tailwind configuration.",
             "status": "done",
-            "testStrategy": "Test component installation process, verify component rendering with dark theme, validate CSS variable inheritance, check component styling consistency"
+            "testStrategy": "Test component installation process, verify component rendering with dark theme, validate CSS variable inheritance, check component styling consistency",
+            "parentId": "undefined"
           },
           {
             "id": 3,
@@ -118,7 +129,8 @@
             ],
             "details": "Create ThemeContext using React.createContext with theme state and toggle function. Implement ThemeProvider component that wraps the application and manages theme state. Add localStorage persistence for user theme preference. Implement system preference detection using window.matchMedia for prefers-color-scheme. Create useTheme custom hook for consuming theme context in components. Add theme switching logic that updates document root class for Tailwind. Prevent flash of unstyled content on initial load.",
             "status": "done",
-            "testStrategy": "Test context provider functionality, verify localStorage persistence, test system preference detection, validate theme switching without FOUC, test useTheme hook behavior"
+            "testStrategy": "Test context provider functionality, verify localStorage persistence, test system preference detection, validate theme switching without FOUC, test useTheme hook behavior",
+            "parentId": "undefined"
           },
           {
             "id": 4,
@@ -130,7 +142,8 @@
             ],
             "details": "Create design token structure in tailwind.config.ts for consistent spacing scale, typography settings, and shadow values. Define semantic color tokens for primary, secondary, success, warning, and error states using CSS variables. Configure border radius tokens for consistent component styling. Set up animation tokens for transitions and interactions. Create utility classes for common patterns like glass morphism effects and gradient backgrounds. Document token usage patterns for developer reference.",
             "status": "done",
-            "testStrategy": "Validate design token application across components, test CSS variable fallbacks, verify token consistency in generated CSS, test responsive token values"
+            "testStrategy": "Validate design token application across components, test CSS variable fallbacks, verify token consistency in generated CSS, test responsive token values",
+            "parentId": "undefined"
           },
           {
             "id": 5,
@@ -144,19 +157,23 @@
             ],
             "details": "Wrap the application root with ThemeProvider component in main.tsx or App.tsx. Apply dark theme classes to all existing components and pages. Verify Shadcn UI components respond correctly to theme changes. Test theme persistence across page refreshes and navigation. Validate color contrast ratios meet WCAG accessibility standards. Create a theme toggle component for user control. Ensure all interactive elements use the blue-500 accent color consistently. Document theme usage guidelines for future development.",
             "status": "done",
-            "testStrategy": "End-to-end testing of theme switching, visual regression testing for theme consistency, accessibility testing for color contrast, performance testing for theme switching speed"
+            "testStrategy": "End-to-end testing of theme switching, visual regression testing for theme consistency, accessibility testing for color contrast, performance testing for theme switching speed",
+            "parentId": "undefined"
           }
-        ]
+        ],
+        "complexity": 6,
+        "recommendedSubtasks": 5,
+        "expansionPrompt": "Break down dark mode theme system into: 1) Configure Tailwind 4.x with zinc color palette and dark mode defaults, 2) Install and configure Shadcn UI component library via CLI, 3) Create ThemeProvider component for managing theme state, 4) Set up design tokens in tailwind configuration for consistent theming, 5) Integrate ThemeProvider and verify dark-mode-first implementation"
       },
       {
-        "id": 3,
+        "id": "3",
         "title": "Build Core Zustand State Management Architecture",
         "description": "Set up Zustand 5.x stores for managing editor state, timeline state, media library, and project data with proper TypeScript typing",
         "details": "Install zustand@^5.0.0 with middleware (persist, devtools, immer). Create vanilla stores with React Context pattern: TimelineStore (clips, tracks, playhead, zoom), MediaStore (assets, folders, upload queue), ProjectStore (project metadata, dirty state, autosave), EditorStore (preview settings, tool selection). Implement proper TypeScript interfaces for all store states. Set up store providers and custom hooks (useTimelineStore, useMediaStore, etc). Configure IndexedDB persistence for thumbnails and local caching strategies.",
         "testStrategy": "Unit test all store actions and selectors, test middleware functionality (persistence, devtools), verify store updates trigger proper React re-renders, test store reset and initialization",
         "priority": "high",
         "dependencies": [
-          1
+          "1"
         ],
         "status": "done",
         "subtasks": [
@@ -167,7 +184,8 @@
             "dependencies": [],
             "details": "Run npm install zustand@^5.0.0 immer zustand/middleware. Create src/stores directory structure with subdirectories for each store type. Set up initial TypeScript configuration for Zustand with strict typing. Install @types/node for IndexedDB types if needed. Create a stores/index.ts barrel export file for centralized store access.",
             "status": "done",
-            "testStrategy": "Verify package installation and imports work correctly, test that middleware can be imported without errors"
+            "testStrategy": "Verify package installation and imports work correctly, test that middleware can be imported without errors",
+            "parentId": "undefined"
           },
           {
             "id": 2,
@@ -178,7 +196,8 @@
             ],
             "details": "Create types/stores.ts with interfaces: ITimelineState (clips array, tracks array, playhead number, zoom level), IMediaState (assets map, folders array, uploadQueue array), IProjectState (metadata object, isDirty boolean, lastSaved timestamp), IEditorState (previewSettings object, selectedTool enum). Define action types for each store. Create utility types for common patterns like clips, tracks, and assets. Ensure all types are exported for use across stores.",
             "status": "done",
-            "testStrategy": "Type-check all interfaces with TypeScript compiler, ensure no any types are used, validate type inference works correctly"
+            "testStrategy": "Type-check all interfaces with TypeScript compiler, ensure no any types are used, validate type inference works correctly",
+            "parentId": "undefined"
           },
           {
             "id": 3,
@@ -189,7 +208,8 @@
             ],
             "details": "Create stores/timelineStore.ts with createStore pattern. Implement state: clips (Map<string, Clip>), tracks (array with video/audio/text types), playhead (frame number), zoom (0.25-8x range). Add actions: addClip, removeClip, updateClip, moveClip, addTrack, removeTrack, setPlayhead, setZoom. Use immer for immutable updates. Implement computed values for visible clips based on viewport. Add selection state management for multi-clip operations.",
             "status": "done",
-            "testStrategy": "Unit test all timeline actions, verify state updates trigger re-renders, test clip visibility calculations, validate zoom constraints"
+            "testStrategy": "Unit test all timeline actions, verify state updates trigger re-renders, test clip visibility calculations, validate zoom constraints",
+            "parentId": "undefined"
           },
           {
             "id": 4,
@@ -200,7 +220,8 @@
             ],
             "details": "Create stores/mediaStore.ts with asset management structure. Implement state: assets (Map<string, MediaAsset>), folders (hierarchical structure), uploadQueue (array with progress tracking), thumbnailCache (Map). Add actions: addAsset, removeAsset, moveAsset, createFolder, queueUpload, updateUploadProgress, cacheThumbnail. Include file type validation and size limits. Implement search/filter functionality for assets. Add batch operations support for multiple file handling.",
             "status": "done",
-            "testStrategy": "Test asset CRUD operations, verify upload queue processing, test folder hierarchy operations, validate thumbnail caching"
+            "testStrategy": "Test asset CRUD operations, verify upload queue processing, test folder hierarchy operations, validate thumbnail caching",
+            "parentId": "undefined"
           },
           {
             "id": 5,
@@ -211,7 +232,8 @@
             ],
             "details": "Create stores/projectStore.ts with project lifecycle management. Implement state: metadata (name, description, createdAt, updatedAt), settings (fps, resolution, duration), isDirty (boolean), lastSaved (timestamp), autosaveInterval (number). Add actions: updateMetadata, setDirty, saveProject, loadProject, exportProject. Implement autosave timer logic with configurable intervals. Add version tracking for project format migrations. Include project validation before save operations.",
             "status": "done",
-            "testStrategy": "Test metadata updates, verify dirty state tracking, test autosave timer functionality, validate save/load operations"
+            "testStrategy": "Test metadata updates, verify dirty state tracking, test autosave timer functionality, validate save/load operations",
+            "parentId": "undefined"
           },
           {
             "id": 6,
@@ -222,7 +244,8 @@
             ],
             "details": "Create stores/editorStore.ts for editor UI state. Implement state: previewSettings (quality, resolution, fullscreen), selectedTool (enum: select, trim, split, text), workspace (panel visibility, layout), shortcuts (customizable keybindings). Add actions: setPreviewQuality, selectTool, togglePanel, updateLayout, registerShortcut. Include tool-specific state (brush size for text, selection mode). Implement workspace preset management for different editing workflows.",
             "status": "done",
-            "testStrategy": "Test tool selection changes, verify preview settings updates, test workspace layout persistence, validate shortcut registration"
+            "testStrategy": "Test tool selection changes, verify preview settings updates, test workspace layout persistence, validate shortcut registration",
+            "parentId": "undefined"
           },
           {
             "id": 7,
@@ -236,7 +259,8 @@
             ],
             "details": "Create contexts/StoreContext.tsx with createContext for each store. Implement StoreProvider component that initializes all stores and provides them via context. Create custom hooks: useTimelineStore, useMediaStore, useProjectStore, useEditorStore with useContext and useSyncExternalStore. Add selector support for performance optimization (useTimelineStore(state => state.playhead)). Implement store reset functionality for testing. Ensure proper TypeScript inference for all hooks.",
             "status": "done",
-            "testStrategy": "Test context providers render correctly, verify hooks return correct store instances, test selector performance, validate TypeScript types"
+            "testStrategy": "Test context providers render correctly, verify hooks return correct store instances, test selector performance, validate TypeScript types",
+            "parentId": "undefined"
           },
           {
             "id": 8,
@@ -247,19 +271,23 @@
             ],
             "details": "Configure zustand/middleware persist with IndexedDB adapter for ProjectStore and MediaStore. Implement custom storage engine for thumbnail blob caching in IndexedDB. Set up Redux DevTools integration with proper action names and state snapshots. Create migration strategies for store schema changes. Implement cache invalidation logic for stale data. Add storage quota management and cleanup routines. Configure different persistence strategies per store (memory-only for EditorStore, persist for ProjectStore).",
             "status": "done",
-            "testStrategy": "Test persistence across page reloads, verify IndexedDB storage limits, test DevTools time-travel debugging, validate migration logic"
+            "testStrategy": "Test persistence across page reloads, verify IndexedDB storage limits, test DevTools time-travel debugging, validate migration logic",
+            "parentId": "undefined"
           }
-        ]
+        ],
+        "complexity": 7,
+        "recommendedSubtasks": 8,
+        "expansionPrompt": "Break down Zustand state management into: 1) Install Zustand 5.x with middleware packages, 2) Design TypeScript interfaces for all store states, 3) Implement TimelineStore with clips, tracks, and playhead management, 4) Create MediaStore for assets and upload queue, 5) Build ProjectStore for metadata and autosave, 6) Implement EditorStore for preview and tool selection, 7) Set up store providers with React Context pattern, 8) Configure IndexedDB persistence and devtools integration"
       },
       {
-        "id": 4,
+        "id": "4",
         "title": "Create Timeline Component with Virtualization",
         "description": "Build the core timeline component with track management, clip rendering, and efficient virtualization for performance",
         "details": "Install react-virtuoso@^4.6.2 for virtualization. Create Timeline component structure: TimelineRuler (time markers, zoom controls), TrackList (virtualized track rendering), ClipRenderer (optimized clip display). Implement frame-based timebase calculations (30fps default). Add zoom controls (0.25x-8x range) with keyboard shortcuts. Create track types (video, audio, text) with controls (lock, mute, labels). Implement horizontal scroll synchronization between ruler and tracks. Add clip selection, snapping logic, and basic drag-and-drop support. Optimize rendering to only show visible clips based on scroll position.",
         "testStrategy": "Performance test with 100+ clips, test virtualization scroll behavior, verify zoom calculations, test clip visibility calculations, validate track synchronization, test memory usage with large timelines",
         "priority": "high",
         "dependencies": [
-          3
+          "3"
         ],
         "status": "done",
         "subtasks": [
@@ -270,7 +298,8 @@
             "dependencies": [],
             "details": "Install react-virtuoso@^4.6.2 via npm. Create a basic virtualization configuration file with default settings for row height estimation, overscan, and scroll behavior. Set up TypeScript types for virtuoso components. Configure virtuoso to work with horizontal scrolling for timeline implementation.",
             "status": "done",
-            "testStrategy": "Test virtuoso installation and basic rendering, verify TypeScript types compile correctly, test basic list virtualization with mock data"
+            "testStrategy": "Test virtuoso installation and basic rendering, verify TypeScript types compile correctly, test basic list virtualization with mock data",
+            "parentId": "undefined"
           },
           {
             "id": 2,
@@ -279,7 +308,8 @@
             "dependencies": [],
             "details": "Create TimelineRuler component with dynamic time marker generation based on zoom level. Implement time formatting (00:00:00:00 for hours:minutes:seconds:frames). Calculate marker intervals dynamically (every second, 5 seconds, 30 seconds based on zoom). Style ruler with zinc-800 background following dark theme. Add major and minor tick marks for visual hierarchy.",
             "status": "done",
-            "testStrategy": "Test time marker calculations at different zoom levels, verify correct time formatting, test ruler responsiveness to window resizing"
+            "testStrategy": "Test time marker calculations at different zoom levels, verify correct time formatting, test ruler responsiveness to window resizing",
+            "parentId": "undefined"
           },
           {
             "id": 3,
@@ -290,7 +320,8 @@
             ],
             "details": "Create TrackList component using Virtuoso's List component. Implement variable height tracks support for different track types. Set up track data structure with id, type, height, and clips array. Configure virtuoso scrolling behavior for smooth performance. Implement track header rendering with controls. Set up proper item rendering with React.memo for optimization.",
             "status": "done",
-            "testStrategy": "Test rendering performance with 100+ tracks, verify virtualization only renders visible tracks, test scroll performance metrics"
+            "testStrategy": "Test rendering performance with 100+ tracks, verify virtualization only renders visible tracks, test scroll performance metrics",
+            "parentId": "undefined"
           },
           {
             "id": 4,
@@ -301,7 +332,8 @@
             ],
             "details": "Create ClipRenderer component that only renders clips within viewport. Implement clip visibility calculation based on timeline scroll position and zoom level. Add clip thumbnail rendering with lazy loading. Create clip selection visual feedback with border highlighting. Optimize with React.memo and useMemo for expensive calculations. Add clip duration display and resize handles.",
             "status": "done",
-            "testStrategy": "Test clip visibility calculations, verify only visible clips render, test memory usage with large number of clips, validate selection state updates"
+            "testStrategy": "Test clip visibility calculations, verify only visible clips render, test memory usage with large number of clips, validate selection state updates",
+            "parentId": "undefined"
           },
           {
             "id": 5,
@@ -310,7 +342,8 @@
             "dependencies": [],
             "details": "Create TimebaseCalculator utility class with methods for frame-to-time, time-to-frame, and pixel-to-frame conversions. Implement support for different framerates (24, 25, 30, 60 fps). Create hooks for accessing timebase calculations in components. Add SMPTE timecode formatting support. Implement frame snapping logic for precise editing. Cache calculations for performance optimization.",
             "status": "done",
-            "testStrategy": "Unit test all conversion functions with edge cases, verify frame accuracy at different framerates, test pixel-to-frame calculations at various zoom levels"
+            "testStrategy": "Unit test all conversion functions with edge cases, verify frame accuracy at different framerates, test pixel-to-frame calculations at various zoom levels",
+            "parentId": "undefined"
           },
           {
             "id": 6,
@@ -322,7 +355,8 @@
             ],
             "details": "Create ZoomControls component with slider and preset buttons (fit to window, 1:1, zoom in/out). Implement keyboard shortcuts (Ctrl/Cmd + Plus/Minus for zoom, Ctrl/Cmd + 0 for fit). Add smooth zoom transitions with requestAnimationFrame. Update timeline pixel calculations on zoom changes. Maintain playhead position during zoom. Store zoom level in Zustand TimelineStore.",
             "status": "done",
-            "testStrategy": "Test zoom range limits, verify keyboard shortcuts work correctly, test zoom performance with complex timelines, validate playhead position preservation"
+            "testStrategy": "Test zoom range limits, verify keyboard shortcuts work correctly, test zoom performance with complex timelines, validate playhead position preservation",
+            "parentId": "undefined"
           },
           {
             "id": 7,
@@ -333,7 +367,8 @@
             ],
             "details": "Create VideoTrack component with thumbnail previews and opacity controls. Build AudioTrack with waveform visualization placeholder and volume controls. Implement TextTrack for titles/captions with text preview. Add track controls: lock/unlock, show/hide, mute (for audio), solo, track color coding. Create track height adjustment functionality. Implement track reordering with drag handles.",
             "status": "done",
-            "testStrategy": "Test each track type renders correctly, verify track controls update state properly, test track type switching, validate track reordering logic"
+            "testStrategy": "Test each track type renders correctly, verify track controls update state properly, test track type switching, validate track reordering logic",
+            "parentId": "undefined"
           },
           {
             "id": 8,
@@ -345,7 +380,8 @@
             ],
             "details": "Create TimelineScrollContext for managing shared scroll state. Implement scroll event handlers that update all timeline components simultaneously. Add smooth scroll behavior with debouncing for performance. Ensure ruler and tracks stay perfectly aligned during scrolling. Handle scroll position persistence in TimelineStore. Add programmatic scrolling for playhead following.",
             "status": "done",
-            "testStrategy": "Test scroll synchronization accuracy, verify no visual lag between components, test scroll performance with heavy content, validate scroll position persistence"
+            "testStrategy": "Test scroll synchronization accuracy, verify no visual lag between components, test scroll performance with heavy content, validate scroll position persistence",
+            "parentId": "undefined"
           },
           {
             "id": 9,
@@ -357,19 +393,23 @@
             ],
             "details": "Implement clip selection with click, shift-click for multiple selection, and marquee selection. Add magnetic snapping to other clips, markers, and playhead with configurable snap threshold. Create drag-and-drop system using HTML5 drag API or custom mouse events. Implement clip movement constraints within track bounds. Add visual feedback during dragging with ghost preview. Store selection state in TimelineStore.",
             "status": "done",
-            "testStrategy": "Test selection logic with various interaction patterns, verify snapping accuracy at different zoom levels, test drag-and-drop across tracks, validate undo/redo for clip movements"
+            "testStrategy": "Test selection logic with various interaction patterns, verify snapping accuracy at different zoom levels, test drag-and-drop across tracks, validate undo/redo for clip movements",
+            "parentId": "undefined"
           }
-        ]
+        ],
+        "complexity": 8,
+        "recommendedSubtasks": 9,
+        "expansionPrompt": "Break down timeline component into: 1) Install and configure react-virtuoso, 2) Build TimelineRuler with time markers and zoom controls, 3) Implement TrackList with virtualized rendering, 4) Create ClipRenderer with optimized display, 5) Implement frame-based timebase calculations, 6) Add zoom controls with keyboard shortcuts, 7) Build track type system (video/audio/text), 8) Implement horizontal scroll synchronization, 9) Add clip selection, snapping, and drag-and-drop"
       },
       {
-        "id": 5,
+        "id": "5",
         "title": "Implement Media Upload System with S3 Integration",
         "description": "Create direct-to-S3 upload system with presigned URLs, progress tracking, and media asset management",
         "details": "Create MediaUpload component with drag-and-drop support and file picker. Implement upload flow: request presigned URL from backend POST /api/v1/media/upload, validate file size/type against environment limits (100MB images, 1GB videos, 500MB audio), upload directly to S3 with XMLHttpRequest for progress tracking, confirm upload completion with backend. Create upload queue management in MediaStore. Implement thumbnail generation requests post-upload. Add upload progress UI with cancel capability. Handle multiple concurrent uploads with proper error recovery.",
         "testStrategy": "Test file validation logic, mock S3 uploads for unit tests, test progress tracking accuracy, verify error handling for failed uploads, test concurrent upload limits, validate presigned URL handling",
         "priority": "high",
         "dependencies": [
-          3
+          "3"
         ],
         "status": "done",
         "subtasks": [
@@ -380,7 +420,8 @@
             "dependencies": [],
             "details": "Create MediaUpload.tsx component using React hooks. Implement drag-and-drop zone with onDragEnter, onDragLeave, onDragOver, and onDrop handlers. Add file input element with multiple file selection support. Create visual feedback states (idle, drag-over, uploading) using Tailwind classes. Include drop zone UI with upload icon and instructional text. Integrate with Shadcn UI components for consistent styling. Handle both drag-and-drop and click-to-browse file selection methods.",
             "status": "done",
-            "testStrategy": "Test drag event handlers with mock files, verify file input works for multiple selections, test visual state transitions, validate component renders correctly with dark theme"
+            "testStrategy": "Test drag event handlers with mock files, verify file input works for multiple selections, test visual state transitions, validate component renders correctly with dark theme",
+            "parentId": "undefined"
           },
           {
             "id": 2,
@@ -389,7 +430,8 @@
             "dependencies": [],
             "details": "Build validateFile function that checks against environment-configured limits: 100MB for images (jpg, png, webp, gif), 1GB for videos (mp4, webm, mov, avi), 500MB for audio (mp3, wav, ogg, m4a). Create FileValidationError class with specific error types (INVALID_TYPE, FILE_TOO_LARGE). Implement batch validation for multiple files. Add user-friendly error messages for each validation failure. Store validation rules in a configuration object for easy maintenance. Return detailed validation results including which files passed/failed and why.",
             "status": "done",
-            "testStrategy": "Unit test validation logic with various file sizes and types, test edge cases at size boundaries, verify error messages are descriptive, test batch validation with mixed valid/invalid files"
+            "testStrategy": "Unit test validation logic with various file sizes and types, test edge cases at size boundaries, verify error messages are descriptive, test batch validation with mixed valid/invalid files",
+            "parentId": "undefined"
           },
           {
             "id": 3,
@@ -400,7 +442,8 @@
             ],
             "details": "Create uploadService.ts with requestPresignedUrl function. Make POST request to /api/v1/media/upload with file metadata (name, size, type, checksum). Handle authentication headers if required. Parse response containing presigned URL, S3 key, and upload parameters. Implement retry logic with exponential backoff for failed requests. Add request timeout handling (30 seconds). Cache presigned URLs temporarily with expiration tracking. Handle various error responses (401, 403, 413, 429, 500) with appropriate user messaging.",
             "status": "done",
-            "testStrategy": "Mock API responses for success and error cases, test retry logic with network failures, verify request payload structure, test timeout handling, validate error response parsing"
+            "testStrategy": "Mock API responses for success and error cases, test retry logic with network failures, verify request payload structure, test timeout handling, validate error response parsing",
+            "parentId": "undefined"
           },
           {
             "id": 4,
@@ -411,7 +454,8 @@
             ],
             "details": "Create S3Uploader class using XMLHttpRequest for direct browser-to-S3 uploads. Implement upload method that takes presigned URL and file. Set up progress event listeners to track upload percentage in real-time. Configure proper CORS headers for S3 requests. Handle upload.onload for success confirmation and upload.onerror for failures. Implement chunk-based uploading for large files if needed. Add abort functionality to cancel in-progress uploads. Parse S3 response headers for ETag verification. Send completion confirmation to backend with S3 key and ETag.",
             "status": "done",
-            "testStrategy": "Mock XMLHttpRequest for unit tests, test progress event calculations, verify abort functionality works correctly, test error handling for network failures, validate S3 response parsing"
+            "testStrategy": "Mock XMLHttpRequest for unit tests, test progress event calculations, verify abort functionality works correctly, test error handling for network failures, validate S3 response parsing",
+            "parentId": "undefined"
           },
           {
             "id": 5,
@@ -423,7 +467,8 @@
             ],
             "details": "Create UploadProgress component with progress bar, percentage display, upload speed (MB/s), and estimated time remaining. Implement progress calculation logic using XMLHttpRequest progress events. Add circular progress indicator for individual files and linear progress for overall batch. Calculate and display transfer rate using moving average algorithm. Show file name, size, and status (queued, uploading, completed, failed). Add pause/resume and cancel buttons for each upload. Create toast notifications for upload completion and failures. Implement smooth progress animations using CSS transitions.",
             "status": "done",
-            "testStrategy": "Test progress calculations with various file sizes, verify time remaining estimates, test UI updates with mock progress events, validate cancel/pause functionality, test animation performance"
+            "testStrategy": "Test progress calculations with various file sizes, verify time remaining estimates, test UI updates with mock progress events, validate cancel/pause functionality, test animation performance",
+            "parentId": "undefined"
           },
           {
             "id": 6,
@@ -434,7 +479,8 @@
             ],
             "details": "Extend MediaStore with upload queue functionality: addToQueue, removeFromQueue, updateProgress, setStatus methods. Create UploadItem interface with id, file, progress, status, error, retryCount properties. Implement queue ordering with priority support. Add concurrent upload limit control (default 3 simultaneous uploads). Create queue persistence to localStorage for recovery after page refresh. Implement automatic queue processing when uploads complete. Add batch operations for queue management (clear completed, retry all failed). Track overall queue progress statistics. Integrate with React components using useMediaStore hook.",
             "status": "done",
-            "testStrategy": "Test queue operations (add, remove, reorder), verify concurrent upload limits, test persistence and recovery, validate state updates trigger re-renders, test batch operations"
+            "testStrategy": "Test queue operations (add, remove, reorder), verify concurrent upload limits, test persistence and recovery, validate state updates trigger re-renders, test batch operations",
+            "parentId": "undefined"
           },
           {
             "id": 7,
@@ -446,19 +492,23 @@
             ],
             "details": "Create UploadManager class to coordinate multiple concurrent uploads with configurable limit (max 3). Implement exponential backoff retry strategy (3 attempts, 2-4-8 second delays). Handle various error types: network failures, S3 errors, timeout errors, validation errors. Add automatic retry for transient errors (network, 503, 429). Implement manual retry option for permanent failures. Create error recovery mechanism to resume interrupted uploads. Add upload health monitoring to detect stuck uploads. Implement graceful degradation when S3 is unavailable. Log detailed error information for debugging. Provide clear user feedback for each error type with actionable messages.",
             "status": "done",
-            "testStrategy": "Test retry logic with simulated failures, verify concurrent upload limiting, test error recovery scenarios, validate exponential backoff timing, test stuck upload detection"
+            "testStrategy": "Test retry logic with simulated failures, verify concurrent upload limiting, test error recovery scenarios, validate exponential backoff timing, test stuck upload detection",
+            "parentId": "undefined"
           }
-        ]
+        ],
+        "complexity": 6,
+        "recommendedSubtasks": 7,
+        "expansionPrompt": "Break down media upload system into: 1) Create MediaUpload component with drag-and-drop UI, 2) Implement file validation against size/type limits, 3) Request presigned URLs from backend API, 4) Implement direct-to-S3 upload with XMLHttpRequest, 5) Build upload progress tracking system, 6) Create upload queue management in MediaStore, 7) Handle concurrent uploads with error recovery and retry logic"
       },
       {
-        "id": 6,
+        "id": "6",
         "title": "Build Playback Engine with DOM-based Preview",
         "description": "Implement hybrid DOM and canvas-based preview engine for real-time playback of timeline compositions",
         "details": "Create PlaybackEngine class managing playback state (play, pause, seek). Implement frame ticker using requestAnimationFrame for smooth playback. Build preview renderer: compute active clips at current frame, render video tracks using single video element with source switching, overlay images/text as positioned DOM layers, apply CSS transforms for opacity/scale/position. Add playback controls component with play/pause, frame stepping, speed control. Implement audio synchronization with Web Audio API. Handle preview quality settings and performance optimization. Ensure sub-100ms response for timeline interactions.",
         "testStrategy": "Test playback accuracy at different speeds, verify frame calculations, test clip transition timing, validate audio sync, performance test with complex compositions, test memory management during playback",
         "priority": "medium",
         "dependencies": [
-          4
+          "4"
         ],
         "status": "done",
         "subtasks": [
@@ -469,7 +519,8 @@
             "dependencies": [],
             "details": "Create PlaybackEngine.ts class with TypeScript interfaces for PlaybackState (playing, paused, stopped), currentTime, duration, playbackRate. Implement methods: play(), pause(), stop(), seek(time), setPlaybackRate(rate). Use MobX or Zustand for reactive state management. Initialize with timeline reference and emit state change events.",
             "status": "done",
-            "testStrategy": "Unit test state transitions, verify event emissions, test edge cases for seek boundaries"
+            "testStrategy": "Unit test state transitions, verify event emissions, test edge cases for seek boundaries",
+            "parentId": "undefined"
           },
           {
             "id": 2,
@@ -480,7 +531,8 @@
             ],
             "details": "Create FrameTicker class managing requestAnimationFrame loop. Calculate delta time between frames for accurate playback timing. Implement start/stop controls tied to PlaybackEngine state. Handle tab visibility changes to pause/resume ticker. Maintain target FPS (30/60) with frame dropping for performance. Calculate current playback position based on elapsed time and playback rate.",
             "status": "done",
-            "testStrategy": "Test frame rate consistency, verify delta time calculations, test pause/resume on visibility change"
+            "testStrategy": "Test frame rate consistency, verify delta time calculations, test pause/resume on visibility change",
+            "parentId": "undefined"
           },
           {
             "id": 3,
@@ -491,7 +543,8 @@
             ],
             "details": "Create ClipResolver class with getActiveClips(timestamp) method. Build indexed data structure for O(log n) clip lookups. Handle overlapping clips across multiple tracks. Calculate clip local time based on in/out points. Support clip trimming offsets. Cache active clip sets for performance. Update resolver when timeline changes. Return sorted array by track z-index.",
             "status": "done",
-            "testStrategy": "Test clip resolution accuracy, benchmark performance with 100+ clips, verify cache invalidation"
+            "testStrategy": "Test clip resolution accuracy, benchmark performance with 100+ clips, verify cache invalidation",
+            "parentId": "undefined"
           },
           {
             "id": 4,
@@ -502,7 +555,8 @@
             ],
             "details": "Build VideoElementPool managing reusable video elements. Implement preloading strategy for upcoming clips. Handle seamless source switching without visual glitches. Synchronize video currentTime with playback position. Manage video element lifecycle (load, play, pause, seek). Implement buffering detection and handling. Support multiple video formats (mp4, webm). Handle video load errors gracefully.",
             "status": "done",
-            "testStrategy": "Test source switching timing, verify no frame drops during transitions, test error recovery"
+            "testStrategy": "Test source switching timing, verify no frame drops during transitions, test error recovery",
+            "parentId": "undefined"
           },
           {
             "id": 5,
@@ -513,7 +567,8 @@
             ],
             "details": "Create DOMCompositor class managing absolutely positioned div layers. Build layer stack matching timeline track order. Implement efficient DOM node reuse pool. Update only changed layers per frame. Handle layer visibility based on clip timing. Support different blend modes via CSS. Manage z-index ordering automatically. Clear unused layers from DOM.",
             "status": "done",
-            "testStrategy": "Test layer ordering accuracy, verify DOM update efficiency, test blend mode rendering"
+            "testStrategy": "Test layer ordering accuracy, verify DOM update efficiency, test blend mode rendering",
+            "parentId": "undefined"
           },
           {
             "id": 6,
@@ -524,7 +579,8 @@
             ],
             "details": "Create TransformEngine applying clip properties to DOM elements. Build transform matrix calculations for combined transforms. Implement smooth interpolation for keyframed properties. Apply CSS transforms via style.transform property. Handle opacity via style.opacity. Support transform origin adjustments. Optimize by batching transform updates. Use CSS will-change for performance.",
             "status": "done",
-            "testStrategy": "Test transform accuracy, verify interpolation smoothness, benchmark rendering performance"
+            "testStrategy": "Test transform accuracy, verify interpolation smoothness, benchmark rendering performance",
+            "parentId": "undefined"
           },
           {
             "id": 7,
@@ -535,7 +591,8 @@
             ],
             "details": "Build PlaybackControls React component with Shadcn UI components. Implement play/pause toggle button with space bar shortcut. Create scrub bar with frame-accurate seeking. Add frame step buttons (arrow keys). Build playback speed selector (0.25x to 2x). Display current time and duration. Add volume control for audio. Implement keyboard shortcuts. Style with dark theme following design system.",
             "status": "done",
-            "testStrategy": "Test control interactions, verify keyboard shortcuts, test scrubbing accuracy"
+            "testStrategy": "Test control interactions, verify keyboard shortcuts, test scrubbing accuracy",
+            "parentId": "undefined"
           },
           {
             "id": 8,
@@ -546,7 +603,8 @@
             ],
             "details": "Create AudioEngine class using Web Audio API context. Build audio buffer management for audio clips. Implement precise scheduling using context.currentTime. Synchronize audio with video playback position. Handle audio source switching for clips. Support volume and pan controls per clip. Implement crossfading for transitions. Manage audio context lifecycle. Handle browser autoplay policies.",
             "status": "done",
-            "testStrategy": "Test audio-video sync accuracy, verify volume controls, test crossfade timing"
+            "testStrategy": "Test audio-video sync accuracy, verify volume controls, test crossfade timing",
+            "parentId": "undefined"
           },
           {
             "id": 9,
@@ -557,7 +615,8 @@
             ],
             "details": "Create PreviewSettings with quality levels (draft, half, full resolution). Implement dynamic resolution scaling for video preview. Add frame rate limiting option (15/30/60 fps). Build performance monitoring showing FPS and frame drops. Implement automatic quality adjustment based on performance. Add toggle for effects preview. Cache rendered frames when possible. Provide manual override controls in UI.",
             "status": "done",
-            "testStrategy": "Test quality level switching, verify performance improvements, test auto-adjustment logic"
+            "testStrategy": "Test quality level switching, verify performance improvements, test auto-adjustment logic",
+            "parentId": "undefined"
           },
           {
             "id": 10,
@@ -568,19 +627,23 @@
             ],
             "details": "Profile and optimize critical render paths. Implement debouncing for expensive operations. Use web workers for heavy calculations. Add request idle callback for non-critical updates. Optimize React re-renders with memo and callbacks. Implement virtual scrolling for long timelines. Cache computed values aggressively. Use CSS containment for render optimization. Monitor and log interaction response times.",
             "status": "done",
-            "testStrategy": "Benchmark interaction response times, test with complex projects, verify no UI blocking"
+            "testStrategy": "Benchmark interaction response times, test with complex projects, verify no UI blocking",
+            "parentId": "undefined"
           }
-        ]
+        ],
+        "complexity": 9,
+        "recommendedSubtasks": 10,
+        "expansionPrompt": "Break down playback engine into: 1) Create PlaybackEngine class structure, 2) Implement frame ticker with requestAnimationFrame, 3) Build frame-to-clip resolver for active clips, 4) Implement video source switching for video tracks, 5) Create DOM layer system for images/text overlays, 6) Apply CSS transforms for clip properties, 7) Build playback controls UI component, 8) Implement Web Audio API for audio synchronization, 9) Add preview quality settings, 10) Optimize for sub-100ms interaction response"
       },
       {
-        "id": 7,
+        "id": "7",
         "title": "Create WebSocket Real-time Updates System",
         "description": "Implement WebSocket connection management for receiving job updates, export progress, and AI generation status",
         "details": "Create WebSocketService class with reconnection logic and heartbeat management. Implement message handlers for job.update events (queued, running, succeeded, failed, canceled). Set up Redux/Zustand integration for state updates from WebSocket messages. Create connection status indicator UI. Handle authentication/session management for WebSocket connections. Implement exponential backoff for reconnection attempts. Add message queuing for offline scenarios. Create typed message interfaces matching backend JobUpdateMessage schema.",
         "testStrategy": "Test reconnection logic with network interruptions, verify message parsing and state updates, test authentication flow, validate heartbeat mechanism, test message queuing during disconnections",
         "priority": "medium",
         "dependencies": [
-          3
+          "3"
         ],
         "status": "done",
         "subtasks": [
@@ -591,7 +654,8 @@
             "dependencies": [],
             "details": "Create src/services/WebSocketService.ts with singleton pattern. Implement connect() method that establishes WebSocket connection to backend URL from environment config. Add disconnect() method for clean shutdown. Create message send queue and event emitter for incoming messages. Handle WebSocket readyState transitions. Store connection instance and provide getters for connection status.",
             "status": "done",
-            "testStrategy": "Unit test singleton pattern, mock WebSocket constructor, test connect/disconnect lifecycle, verify event emitter functionality"
+            "testStrategy": "Unit test singleton pattern, mock WebSocket constructor, test connect/disconnect lifecycle, verify event emitter functionality",
+            "parentId": "undefined"
           },
           {
             "id": 2,
@@ -602,7 +666,8 @@
             ],
             "details": "Implement reconnection strategy with initial delay of 1 second, max delay of 30 seconds, and backoff multiplier of 1.5. Add reconnectAttempts counter and maxReconnectAttempts limit (default 10). Create handleConnectionLost() method that triggers backoff timer. Implement resetBackoff() on successful connection. Add reconnection events for UI updates. Handle permanent failure scenarios with error callbacks.",
             "status": "done",
-            "testStrategy": "Test backoff calculation logic, simulate connection failures, verify reconnection attempts, test max attempts limit"
+            "testStrategy": "Test backoff calculation logic, simulate connection failures, verify reconnection attempts, test max attempts limit",
+            "parentId": "undefined"
           },
           {
             "id": 3,
@@ -613,7 +678,8 @@
             ],
             "details": "Create heartbeat interval timer (default 30 seconds) that sends ping messages. Implement pong timeout detection (5 seconds). Add heartbeatInterval and pongTimeout configuration options. Create startHeartbeat() and stopHeartbeat() methods. Handle missing pong responses by triggering reconnection. Ensure heartbeat stops during disconnection and resumes after reconnection. Add heartbeat status to connection health metrics.",
             "status": "done",
-            "testStrategy": "Test ping message sending, simulate pong timeouts, verify reconnection trigger on heartbeat failure"
+            "testStrategy": "Test ping message sending, simulate pong timeouts, verify reconnection trigger on heartbeat failure",
+            "parentId": "undefined"
           },
           {
             "id": 4,
@@ -624,7 +690,8 @@
             ],
             "details": "Create src/types/websocket.ts with JobUpdateMessage interface matching backend schema. Implement message router that dispatches based on event type. Create handlers for job.queued, job.running, job.succeeded, job.failed, job.canceled events. Add progress update handling for export and AI generation tasks. Implement message validation and error handling for malformed messages. Create type guards for message type checking.",
             "status": "done",
-            "testStrategy": "Test message parsing and validation, verify each event handler, test malformed message handling"
+            "testStrategy": "Test message parsing and validation, verify each event handler, test malformed message handling",
+            "parentId": "undefined"
           },
           {
             "id": 5,
@@ -635,7 +702,8 @@
             ],
             "details": "Create useWebSocketStore for connection status management. Integrate job update messages with existing job/export stores. Implement store update methods for each job event type. Add optimistic updates with rollback capability. Create subscription mechanism for components to listen to specific event types. Ensure store updates are batched for performance. Handle race conditions between REST API and WebSocket updates.",
             "status": "done",
-            "testStrategy": "Test store updates from WebSocket messages, verify state consistency, test optimistic update rollback"
+            "testStrategy": "Test store updates from WebSocket messages, verify state consistency, test optimistic update rollback",
+            "parentId": "undefined"
           },
           {
             "id": 6,
@@ -647,7 +715,8 @@
             ],
             "details": "Create ConnectionStatus.tsx component with visual indicators (green=connected, yellow=connecting, red=disconnected). Add to application header or status bar. Show reconnection attempt counter during reconnection. Implement tooltip with detailed connection info (latency, last message time). Add subtle animations for state transitions. Create optional verbose mode showing message count and data transfer stats. Use Shadcn UI components for consistent styling.",
             "status": "done",
-            "testStrategy": "Test status indicator state changes, verify UI updates match connection state, test tooltip content"
+            "testStrategy": "Test status indicator state changes, verify UI updates match connection state, test tooltip content",
+            "parentId": "undefined"
           },
           {
             "id": 7,
@@ -658,7 +727,8 @@
             ],
             "details": "Add authentication token to WebSocket connection URL or as first message after connection. Implement token refresh mechanism when receiving auth error messages. Handle session expiration by acquiring new token and reconnecting. Store authentication state in WebSocketService. Create auth error handlers with user notification. Implement secure token storage and transmission. Add logout handling to close WebSocket connection cleanly.",
             "status": "done",
-            "testStrategy": "Test token inclusion in connection, simulate auth failures, verify token refresh flow, test session expiration handling"
+            "testStrategy": "Test token inclusion in connection, simulate auth failures, verify token refresh flow, test session expiration handling",
+            "parentId": "undefined"
           },
           {
             "id": 8,
@@ -670,19 +740,23 @@
             ],
             "details": "Create MessageQueue class with in-memory storage for outgoing messages. Implement queue size limits (default 100 messages) with FIFO eviction. Add message persistence to localStorage for critical messages. Create flushQueue() method called after successful reconnection. Implement message deduplication to prevent duplicates. Add queue status metrics for monitoring. Handle queue overflow scenarios with user notification. Ensure idempotent message handling on backend.",
             "status": "done",
-            "testStrategy": "Test message queuing during disconnection, verify queue flush on reconnection, test queue size limits and overflow"
+            "testStrategy": "Test message queuing during disconnection, verify queue flush on reconnection, test queue size limits and overflow",
+            "parentId": "undefined"
           }
-        ]
+        ],
+        "complexity": 7,
+        "recommendedSubtasks": 8,
+        "expansionPrompt": "Break down WebSocket system into: 1) Create WebSocketService class with connection management, 2) Implement reconnection logic with exponential backoff, 3) Build heartbeat/ping-pong mechanism, 4) Create message handlers for job.update events, 5) Integrate with Zustand stores for state updates, 6) Implement connection status indicator UI, 7) Handle authentication and session management, 8) Add message queuing for offline scenarios"
       },
       {
-        "id": 8,
+        "id": "8",
         "title": "Implement Export System with FFmpeg Pipeline",
         "description": "Build export modal and workflow for rendering compositions through the FFmpeg backend pipeline",
         "details": "Create ExportModal component with settings: name, aspect ratio (16:9, 9:16, 1:1), resolution (1080p, 720p, 480p), format (mp4/h264, webm), quality preset (CRF mapping), frame rate (24, 30, 60). Implement export submission flow: POST /api/v1/compositions/ with project data and settings, receive job_id for tracking, listen to WebSocket updates for progress, display progress bar and status. Add download button when export completes. Handle export errors with detailed messages. Implement export queue visualization.",
         "testStrategy": "Test export settings validation, mock backend API calls, verify WebSocket progress updates, test error handling for failed exports, validate download URL handling",
         "priority": "medium",
         "dependencies": [
-          7
+          "7"
         ],
         "status": "done",
         "subtasks": [
@@ -693,7 +767,8 @@
             "dependencies": [],
             "details": "Create ExportModal.tsx component using Shadcn Dialog. Implement form with controlled inputs for: project name field, aspect ratio selector (16:9, 9:16, 1:1), resolution dropdown (1080p, 720p, 480p), format selector (mp4/h264, webm), quality slider with CRF mapping (18-28 range), frame rate selector (24, 30, 60 fps). Use React Hook Form for form management and zod for schema validation. Style with Tailwind dark mode classes following zinc color palette.",
             "status": "done",
-            "testStrategy": "Test form rendering with all inputs, verify controlled component behavior, test form state management, validate accessibility of modal and form elements"
+            "testStrategy": "Test form rendering with all inputs, verify controlled component behavior, test form state management, validate accessibility of modal and form elements",
+            "parentId": "undefined"
           },
           {
             "id": 2,
@@ -704,7 +779,8 @@
             ],
             "details": "Build validation schema using zod for export settings. Implement compatibility matrix for format/codec combinations (mp4 requires h264, webm requires vp8/vp9). Validate resolution against aspect ratio constraints. Check CRF values are within valid ranges for selected codec. Implement real-time validation feedback showing incompatible selections. Create helper functions to calculate output dimensions based on aspect ratio and resolution. Add validation for maximum file size estimates based on settings.",
             "status": "done",
-            "testStrategy": "Unit test validation rules for each setting, test invalid setting combinations, verify error messages are clear and actionable, test edge cases in compatibility matrix"
+            "testStrategy": "Unit test validation rules for each setting, test invalid setting combinations, verify error messages are clear and actionable, test edge cases in compatibility matrix",
+            "parentId": "undefined"
           },
           {
             "id": 3,
@@ -715,7 +791,8 @@
             ],
             "details": "Create composition serializer that transforms TimelineStore state into backend JSON format. Map clip objects with timestamps, transforms, and effects to backend schema. Include track information and layering order. Serialize transition data between clips. Convert media asset references to S3 URLs or asset IDs. Include export settings in the payload structure. Implement data validation before serialization. Create TypeScript interfaces matching backend API contract for type safety.",
             "status": "done",
-            "testStrategy": "Test serialization with various timeline configurations, verify output matches backend schema, test with empty timelines, test with complex multi-track compositions"
+            "testStrategy": "Test serialization with various timeline configurations, verify output matches backend schema, test with empty timelines, test with complex multi-track compositions",
+            "parentId": "undefined"
           },
           {
             "id": 4,
@@ -726,7 +803,8 @@
             ],
             "details": "Create exportComposition function in api/export.ts using fetch or axios. Implement POST request to /api/v1/compositions/ endpoint with serialized composition data and export settings. Handle authentication headers if required. Parse response to extract job_id for tracking. Implement proper error handling for network failures, validation errors, and server errors. Create custom error types for different failure scenarios. Add request timeout handling. Store job_id in ExportStore for progress tracking.",
             "status": "done",
-            "testStrategy": "Mock API responses for different scenarios, test error handling for various HTTP status codes, verify request payload structure, test timeout and retry logic"
+            "testStrategy": "Mock API responses for different scenarios, test error handling for various HTTP status codes, verify request payload structure, test timeout and retry logic",
+            "parentId": "undefined"
           },
           {
             "id": 5,
@@ -737,7 +815,8 @@
             ],
             "details": "Create WebSocket client to connect to backend progress endpoint using job_id. Implement message handlers for different event types: progress percentage, status changes (queued, processing, completed, failed), error messages. Parse WebSocket messages and update ExportStore with progress data. Handle WebSocket reconnection logic for connection drops. Implement cleanup on component unmount or export completion. Create event emitter pattern for progress updates. Handle heartbeat/ping-pong to maintain connection.",
             "status": "done",
-            "testStrategy": "Test WebSocket connection establishment, mock progress events and verify UI updates, test reconnection logic, verify cleanup on unmount"
+            "testStrategy": "Test WebSocket connection establishment, mock progress events and verify UI updates, test reconnection logic, verify cleanup on unmount",
+            "parentId": "undefined"
           },
           {
             "id": 6,
@@ -748,7 +827,8 @@
             ],
             "details": "Create ExportProgress component with animated progress bar using Framer Motion. Display percentage complete and time remaining estimates. Show current export status (queued, processing, encoding, finalizing). Implement queue visualization showing multiple export jobs if applicable. Add cancel button to abort in-progress exports. Create status indicators with appropriate colors (blue for processing, green for complete, red for errors). Display detailed error messages when exports fail. Add smooth transitions between status states.",
             "status": "done",
-            "testStrategy": "Test progress bar animation and accuracy, verify status transitions are smooth, test queue visualization with multiple jobs, validate error message display"
+            "testStrategy": "Test progress bar animation and accuracy, verify status transitions are smooth, test queue visualization with multiple jobs, validate error message display",
+            "parentId": "undefined"
           },
           {
             "id": 7,
@@ -759,20 +839,24 @@
             ],
             "details": "Listen for WebSocket completion event containing download URL. Create download button that appears on successful export using signed S3 URL. Implement automatic download option with browser download API. Add export history tracking in localStorage or IndexedDB. Show success toast notification with file details. Handle expired download URLs with refresh mechanism. Implement error recovery options (retry export, modify settings). Clear export job from queue after download. Add option to save export settings as preset.",
             "status": "done",
-            "testStrategy": "Test download URL handling and expiration, verify success notifications appear correctly, test error recovery flows, validate export history persistence"
+            "testStrategy": "Test download URL handling and expiration, verify success notifications appear correctly, test error recovery flows, validate export history persistence",
+            "parentId": "undefined"
           }
-        ]
+        ],
+        "complexity": 6,
+        "recommendedSubtasks": 7,
+        "expansionPrompt": "Break down export system into: 1) Create ExportModal component with all settings inputs, 2) Implement export settings validation, 3) Build composition data serialization for backend, 4) Create POST request to /api/v1/compositions/, 5) Implement WebSocket listener for export progress, 6) Build progress visualization UI, 7) Handle export completion with download functionality and error states"
       },
       {
-        "id": 9,
+        "id": "9",
         "title": "Build AI Generation Interface for Images and Videos",
         "description": "Create UI for AI-powered media generation using Replicate models (Nano-Banana for images, Wan Video I2V for videos)",
         "details": "Create AIGenerationPanel with prompt input and generation controls. Implement generation flow for images (POST /api/v1/replicate/nano-banana) and videos (POST /api/v1/replicate/wan-video-i2v). Add quality tier selection (draft vs production). Include aspect ratio selection in generation requests. Create generation queue visualization with MAX_GENERATIONS concurrency limit. Handle job lifecycle: submission, polling status via WebSocket, adding generated assets to media library. Implement generation history and re-run capability.",
         "testStrategy": "Test API request formatting, verify aspect ratio handling, test concurrency limits, validate WebSocket status updates, test media library integration after generation",
         "priority": "low",
         "dependencies": [
-          5,
-          7
+          "5",
+          "7"
         ],
         "status": "done",
         "subtasks": [
@@ -783,7 +867,8 @@
             "dependencies": [],
             "details": "Create src/components/ai-generation/AIGenerationPanel.tsx with main container layout. Set up three sections: prompt/controls area at top, generation queue in middle, generation history at bottom. Use existing UI components from the design system. Add responsive layout with proper spacing. Include placeholder sections for each major feature area. Set up component state management hooks for UI interactions.",
             "status": "done",
-            "testStrategy": "Test component renders correctly, verify layout responsiveness, test section visibility toggles, validate accessibility"
+            "testStrategy": "Test component renders correctly, verify layout responsiveness, test section visibility toggles, validate accessibility",
+            "parentId": "undefined"
           },
           {
             "id": 2,
@@ -794,7 +879,8 @@
             ],
             "details": "Create PromptInput component with textarea for prompt entry, character counter, and prompt history dropdown. Add QualityTierSelector with draft/production options. Build AspectRatioSelector with common ratios (16:9, 4:3, 1:1, 9:16). Create GenerationTypeToggle for switching between image/video modes. Add validation for prompt length and required fields. Style components consistently with existing UI patterns.",
             "status": "done",
-            "testStrategy": "Test input validation, verify quality tier selection state, test aspect ratio calculations, validate form submission logic"
+            "testStrategy": "Test input validation, verify quality tier selection state, test aspect ratio calculations, validate form submission logic",
+            "parentId": "undefined"
           },
           {
             "id": 3,
@@ -805,7 +891,8 @@
             ],
             "details": "Create generateImage function in src/services/ai-generation.ts. Implement POST request to /api/v1/replicate/nano-banana with prompt, quality tier, and aspect ratio. Add request queue management respecting MAX_GENERATIONS limit. Create polling mechanism for job status updates. Handle success/error responses and update UI state accordingly. Add retry logic for failed generations. Store generation metadata for history tracking.",
             "status": "done",
-            "testStrategy": "Test API request formatting, verify error handling, test concurrency limits, validate retry logic, mock API responses for testing"
+            "testStrategy": "Test API request formatting, verify error handling, test concurrency limits, validate retry logic, mock API responses for testing",
+            "parentId": "undefined"
           },
           {
             "id": 4,
@@ -816,7 +903,8 @@
             ],
             "details": "Create generateVideo function in src/services/ai-generation.ts. Implement POST request to /api/v1/replicate/wan-video-i2v with prompt and generation parameters. Set up WebSocket listener for real-time status updates on generation progress. Handle video-specific parameters like duration and frame rate. Implement progress visualization showing generation stages. Add proper error handling for video-specific failures. Cache generated video URLs for quick re-access.",
             "status": "done",
-            "testStrategy": "Test video generation parameters, verify WebSocket connection handling, test progress updates, validate video URL handling"
+            "testStrategy": "Test video generation parameters, verify WebSocket connection handling, test progress updates, validate video URL handling",
+            "parentId": "undefined"
           },
           {
             "id": 5,
@@ -828,7 +916,8 @@
             ],
             "details": "Create GenerationQueue component showing job cards with status indicators. Implement queue state management tracking pending, active, completed, and failed jobs. Add MAX_GENERATIONS concurrency enforcement preventing excess simultaneous generations. Create job status indicators with progress bars for active jobs. Add cancel functionality for pending/active jobs. Implement queue persistence to localStorage for recovery. Add estimated time remaining calculations based on average generation times.",
             "status": "done",
-            "testStrategy": "Test concurrency limits enforcement, verify queue state updates, test job cancellation, validate progress tracking accuracy"
+            "testStrategy": "Test concurrency limits enforcement, verify queue state updates, test job cancellation, validate progress tracking accuracy",
+            "parentId": "undefined"
           },
           {
             "id": 6,
@@ -839,19 +928,23 @@
             ],
             "details": "Create auto-import workflow adding completed generations to media library. Implement asset metadata tagging with generation parameters and prompts. Build GenerationHistory component showing past generations with thumbnails. Add re-run functionality copying previous generation parameters. Create bulk actions for history management (delete, export, favorite). Implement search/filter for generation history by prompt keywords or date. Set up automatic cleanup for old generation records based on configured retention policy.",
             "status": "done",
-            "testStrategy": "Test media library insertion, verify metadata preservation, test re-run functionality, validate history search/filter features"
+            "testStrategy": "Test media library insertion, verify metadata preservation, test re-run functionality, validate history search/filter features",
+            "parentId": "undefined"
           }
-        ]
+        ],
+        "complexity": 5,
+        "recommendedSubtasks": 6,
+        "expansionPrompt": "Break down AI generation interface into: 1) Create AIGenerationPanel UI component, 2) Build prompt input and quality tier selection, 3) Implement image generation flow with Nano-Banana API, 4) Implement video generation flow with Wan Video I2V API, 5) Create generation queue with concurrency limits, 6) Add generated assets to media library and implement generation history"
       },
       {
-        "id": 10,
+        "id": "10",
         "title": "Implement Clip Editing Features and Transitions",
         "description": "Build comprehensive clip editing capabilities including trimming, splitting, transforms, and basic transitions",
         "details": "Implement clip operations: trim handles (drag in/out points), split at playhead functionality, clip duplication and deletion. Add transform controls: opacity slider (0-100%), scale controls with aspect ratio lock, X/Y position with visual handles, rotation control. Create transition system: fade in/out, cross dissolve, basic wipes. Implement clip properties panel with inline editing. Add keyboard shortcuts for common operations (S for split, Delete, Ctrl+D for duplicate). Integrate all operations with undo/redo system using Zustand middleware.",
         "testStrategy": "Test each clip operation for accuracy, verify undo/redo for all operations, test keyboard shortcuts, validate transform calculations, test transition rendering in preview",
         "priority": "medium",
         "dependencies": [
-          4
+          "4"
         ],
         "status": "pending",
         "subtasks": [
@@ -862,7 +955,8 @@
             "dependencies": [],
             "details": "Build TrimHandles component with draggable start/end points. Implement mouse event handlers for drag operations. Update clip duration and position in TimelineStore on drag. Show timecode tooltips during drag. Ensure frame-accurate trimming with snap-to-frame logic. Handle edge cases like minimum clip length and collision with adjacent clips.",
             "status": "pending",
-            "testStrategy": "Test drag interactions with different clip durations, verify frame-accurate trimming, test boundary conditions and clip collisions"
+            "testStrategy": "Test drag interactions with different clip durations, verify frame-accurate trimming, test boundary conditions and clip collisions",
+            "parentId": "undefined"
           },
           {
             "id": 2,
@@ -871,7 +965,8 @@
             "dependencies": [],
             "details": "Add split action to TimelineStore that divides clip at playhead position. Calculate new clip durations and start/end times based on split point. Preserve all clip properties (effects, transforms) in both segments. Update clip IDs and maintain proper ordering. Handle splitting of clips with transitions. Ensure split respects minimum clip length constraints.",
             "status": "pending",
-            "testStrategy": "Test splitting at various playhead positions, verify property preservation in split clips, test edge cases at clip boundaries"
+            "testStrategy": "Test splitting at various playhead positions, verify property preservation in split clips, test edge cases at clip boundaries",
+            "parentId": "undefined"
           },
           {
             "id": 3,
@@ -880,7 +975,8 @@
             "dependencies": [],
             "details": "Create duplicate action in TimelineStore that clones selected clips with new IDs. Position duplicated clips intelligently (offset or next available space). Implement delete action with confirmation for destructive operations. Support multi-selection for batch operations. Update timeline layout after operations. Handle deletion of clips with dependencies or transitions.",
             "status": "pending",
-            "testStrategy": "Test single and multi-clip duplication, verify proper ID generation, test deletion with confirmation, validate timeline reflow"
+            "testStrategy": "Test single and multi-clip duplication, verify proper ID generation, test deletion with confirmation, validate timeline reflow",
+            "parentId": "undefined"
           },
           {
             "id": 4,
@@ -889,7 +985,8 @@
             "dependencies": [],
             "details": "Create TransformControls component with opacity slider (0-100%), scale controls with aspect ratio lock toggle, X/Y position controls with visual on-canvas handles, rotation control with degree input and visual rotation handle. Implement real-time preview updates. Store transform data in clip properties. Add reset buttons for each transform. Ensure transforms apply correctly in preview renderer.",
             "status": "pending",
-            "testStrategy": "Test each transform control for accuracy, verify aspect ratio lock functionality, test visual handle interactions, validate preview updates"
+            "testStrategy": "Test each transform control for accuracy, verify aspect ratio lock functionality, test visual handle interactions, validate preview updates",
+            "parentId": "undefined"
           },
           {
             "id": 5,
@@ -900,7 +997,8 @@
             ],
             "details": "Build TransitionManager with fade in/out, cross dissolve, and basic wipe transitions (left, right, up, down). Create transition UI overlay on timeline between clips. Implement transition duration controls (0.5s to 3s). Store transition data in timeline state. Calculate transition regions and affected frames. Ensure transitions render correctly in preview with proper alpha blending.",
             "status": "pending",
-            "testStrategy": "Test each transition type rendering, verify duration adjustments, test transition removal, validate preview accuracy"
+            "testStrategy": "Test each transition type rendering, verify duration adjustments, test transition removal, validate preview accuracy",
+            "parentId": "undefined"
           },
           {
             "id": 6,
@@ -912,7 +1010,8 @@
             ],
             "details": "Design ClipPropertiesPanel component with sections for basic info (name, duration, source), transform properties with numeric inputs, applied effects list, transition settings. Implement inline editing with validation and immediate preview updates. Add property grouping and collapsible sections. Include preset management for common settings. Sync panel state with selected clip in timeline.",
             "status": "pending",
-            "testStrategy": "Test inline editing with validation, verify immediate preview updates, test panel synchronization with timeline selection"
+            "testStrategy": "Test inline editing with validation, verify immediate preview updates, test panel synchronization with timeline selection",
+            "parentId": "undefined"
           },
           {
             "id": 7,
@@ -925,7 +1024,8 @@
             ],
             "details": "Create KeyboardShortcutManager using native browser keyboard events. Implement default shortcuts: S for split at playhead, Delete/Backspace for clip deletion, Ctrl/Cmd+D for duplication, Spacebar for play/pause, I/O for in/out points. Add shortcut hint tooltips on hover. Create keyboard shortcut reference panel. Ensure shortcuts don't conflict with browser defaults.",
             "status": "pending",
-            "testStrategy": "Test each shortcut functionality, verify no conflicts with browser shortcuts, test shortcut customization, validate tooltip display"
+            "testStrategy": "Test each shortcut functionality, verify no conflicts with browser shortcuts, test shortcut customization, validate tooltip display",
+            "parentId": "undefined"
           },
           {
             "id": 8,
@@ -942,21 +1042,25 @@
             ],
             "details": "Configure Zustand temporal middleware for TimelineStore with proper state snapshots. Define undoable actions for all clip operations (trim, split, duplicate, delete, transform, transitions). Implement efficient state diffing to minimize memory usage. Add undo/redo UI buttons with keyboard shortcuts (Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z). Display action history with descriptive labels. Set reasonable history limit (50 actions).",
             "status": "pending",
-            "testStrategy": "Test undo/redo for each operation type, verify state consistency after multiple undo/redo cycles, test history limit behavior"
+            "testStrategy": "Test undo/redo for each operation type, verify state consistency after multiple undo/redo cycles, test history limit behavior",
+            "parentId": "undefined"
           }
-        ]
+        ],
+        "complexity": 7,
+        "recommendedSubtasks": 8,
+        "expansionPrompt": "Break down clip editing features into: 1) Implement trim handles with drag in/out points, 2) Create split at playhead functionality, 3) Build clip duplication and deletion operations, 4) Implement transform controls (opacity, scale, position, rotation), 5) Create transition system (fade, cross dissolve, wipes), 6) Build clip properties panel with inline editing, 7) Add keyboard shortcuts for common operations, 8) Integrate undo/redo system with Zustand middleware"
       },
       {
-        "id": 11,
+        "id": "11",
         "title": "Implement Project Management UI Integration",
         "description": "Wire up ProjectsPage with ProjectStore to enable complete project CRUD operations and seamless navigation to editor",
         "details": "Integrate ProjectsPage with ProjectStore for full project lifecycle management. Create NewProjectDialog modal using Shadcn Dialog component with form inputs for project name, description, and settings (fps, resolution, aspect ratio). Implement project grid/list display showing project cards with thumbnails, metadata (name, last modified, duration), and action buttons. Add project selection handler that navigates to /projects/:projectId/editor using React Router's useNavigate. Implement delete project functionality with confirmation dialog and ProjectStore.removeProject integration. Create search/filter bar for finding projects by name or metadata. Display empty state when no projects exist with create project CTA. Follow React best practices: use useState for component state, useCallback for event handlers, immutable state updates in ProjectStore. Use Zustand selectors to prevent unnecessary re-renders. Implement loading states during project operations. Add toast notifications for success/error feedback.",
         "testStrategy": "Test project creation modal form validation, verify project list renders from ProjectStore, test project selection navigates to correct route, validate delete confirmation and state updates, test search/filter functionality, verify empty state displays correctly, test immutable state updates",
         "priority": "high",
         "dependencies": [
-          3
+          "3"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -965,7 +1069,8 @@
             "dependencies": [],
             "details": "Extend ProjectStore with projects Map<string, ProjectMetadata> state. Implement addProject action that creates new project with generated ID and adds to Map using immutable updates (spread or set). Add removeProject action that deletes project from Map and clears any related data. Implement updateProject for editing project metadata. Create getProjects selector that returns array of projects sorted by updatedAt. Add getCurrentProject selector that returns active project by ID. Ensure all updates use Zustand's set with shallow merge and follow immutable patterns from DeepWiki research (no direct mutations, create new Maps/objects).",
             "status": "pending",
-            "testStrategy": "Test addProject creates project with unique ID, verify removeProject deletes correctly, test updateProject preserves other projects, validate selectors return correct filtered data, test immutability of state updates"
+            "testStrategy": "Test addProject creates project with unique ID, verify removeProject deletes correctly, test updateProject preserves other projects, validate selectors return correct filtered data, test immutability of state updates",
+            "parentId": "undefined"
           },
           {
             "id": 2,
@@ -974,7 +1079,8 @@
             "dependencies": [],
             "details": "Create NewProjectDialog.tsx component using Shadcn Dialog component. Implement form with React Hook Form and Zod schema validation for project name (required, max 100 chars), description (optional, max 500 chars), fps selector (24/30/60), resolution dropdown (1920x1080, 1280x720, 3840x2160), aspect ratio selector (16:9, 9:16, 1:1, 4:3). Add form validation with error messages below each field. Use Shadcn Form components (Input, Select, Textarea) for consistent styling. Implement controlled form state with register/handleSubmit from React Hook Form. Create DialogTrigger button that opens modal. Style with dark theme zinc palette. Add cancel and create buttons in DialogFooter.",
             "status": "pending",
-            "testStrategy": "Test form validation rules trigger error messages, verify controlled inputs update correctly, test dialog open/close behavior, validate Zod schema catches invalid inputs, test form submission with valid data"
+            "testStrategy": "Test form validation rules trigger error messages, verify controlled inputs update correctly, test dialog open/close behavior, validate Zod schema catches invalid inputs, test form submission with valid data",
+            "parentId": "undefined"
           },
           {
             "id": 3,
@@ -986,7 +1092,8 @@
             ],
             "details": "Create handleCreateProject function using useCallback to prevent recreations. On form submit, call ProjectStore.addProject with form data to create new project entry. Use useProjectStore selector to access addProject action. Generate unique project ID using crypto.randomUUID() or timestamp. Set default values for settings not in form (autosaveInterval, etc). After successful creation, use React Router's useNavigate to navigate to /projects/:projectId/editor with new project ID. Close dialog and show success toast using Shadcn toast component. Handle errors with error toast. Follow immutable state update pattern - addProject should return new project object.",
             "status": "pending",
-            "testStrategy": "Test form submission creates project in store, verify navigation to editor with correct ID, test error handling shows toast, validate project has all required fields, test dialog closes after creation"
+            "testStrategy": "Test form submission creates project in store, verify navigation to editor with correct ID, test error handling shows toast, validate project has all required fields, test dialog closes after creation",
+            "parentId": "undefined"
           },
           {
             "id": 4,
@@ -995,7 +1102,8 @@
             "dependencies": [],
             "details": "Create ProjectCard.tsx as functional component accepting project prop. Display project thumbnail (placeholder image if none exists) using Next Image or img tag. Show project name as heading, last modified date using date-fns or Intl.DateTimeFormat, and duration in readable format. Add hover state with elevated shadow and border highlight using Tailwind. Include action buttons: open project (primary) and delete project (destructive, icon only). Use Shadcn Card component for container. Apply zinc color palette for dark theme. Optimize with React.memo to prevent unnecessary re-renders. Add click handler for card body to open project.",
             "status": "pending",
-            "testStrategy": "Test component renders with project data, verify thumbnail displays or shows placeholder, test hover states apply correctly, validate date formatting, test action buttons fire onClick handlers, verify memo prevents re-renders"
+            "testStrategy": "Test component renders with project data, verify thumbnail displays or shows placeholder, test hover states apply correctly, validate date formatting, test action buttons fire onClick handlers, verify memo prevents re-renders",
+            "parentId": "undefined"
           },
           {
             "id": 5,
@@ -1007,7 +1115,8 @@
             ],
             "details": "In ProjectsPage.tsx, use useProjectStore with selector to read projects array (use shallow equality from zustand/shallow). Implement grid layout using CSS Grid or Tailwind grid classes (grid-cols-1 md:grid-cols-2 lg:grid-cols-3). Map over projects array and render ProjectCard for each project. Add loading state using useState while projects load from IndexedDB. Show empty state when projects.length === 0 with illustration and Create Project button. Implement search/filter functionality using useState for search term, filter projects array based on search. Use useCallback for filter function to prevent recreations. Add sort dropdown for sorting by name, date, or duration.",
             "status": "pending",
-            "testStrategy": "Test grid renders all projects from store, verify empty state shows when no projects, test search filter updates grid, validate sort options reorder correctly, test loading state displays during initialization, verify shallow selector prevents unnecessary re-renders"
+            "testStrategy": "Test grid renders all projects from store, verify empty state shows when no projects, test search filter updates grid, validate sort options reorder correctly, test loading state displays during initialization, verify shallow selector prevents unnecessary re-renders",
+            "parentId": "undefined"
           },
           {
             "id": 6,
@@ -1020,22 +1129,24 @@
             ],
             "details": "Create handleOpenProject function using useCallback that takes projectId and calls navigate(`/projects/${projectId}/editor`) using useNavigate hook. Wire this to ProjectCard click and open button. Create DeleteConfirmDialog component using Shadcn AlertDialog for destructive confirmation. Implement handleDeleteProject using useCallback that shows confirmation dialog, and on confirm calls ProjectStore.removeProject(projectId) and shows success toast. Handle errors with error toast. Add optimistic updates - immediately update UI then rollback on error using useOptimistic pattern from React 19. Prevent deletion of currently open project with validation check.",
             "status": "pending",
-            "testStrategy": "Test project selection navigates to correct route, verify delete confirmation dialog shows, test delete removes project from store and UI, validate optimistic updates work correctly, test error handling rolls back optimistic update, verify cannot delete open project"
+            "testStrategy": "Test project selection navigates to correct route, verify delete confirmation dialog shows, test delete removes project from store and UI, validate optimistic updates work correctly, test error handling rolls back optimistic update, verify cannot delete open project",
+            "parentId": "undefined"
           }
-        ]
+        ],
+        "updatedAt": "2025-11-17T00:36:17.969Z"
       },
       {
-        "id": 12,
+        "id": "12",
         "title": "Implement Media Library UI Integration",
         "description": "Integrate MediaUpload component into MediaLibraryPage and connect upload workflow with MediaStore",
         "details": "Wire up MediaLibraryPage with MediaUpload component and MediaStore for complete media asset management. Import and render MediaUpload component in MediaLibraryPage, passing onFilesSelected callback that queues files in MediaStore. Implement media grid display showing asset thumbnails from MediaStore with metadata (name, type, size, upload date). Create upload progress indicator UI showing active uploads from MediaStore.uploadQueue with progress bars, file names, and cancel buttons. Add asset selection functionality with click/shift-click for multi-select, storing selected IDs in MediaStore. Implement delete assets functionality with confirmation dialog calling MediaStore.removeAsset. Create folder management UI with create/navigate/delete folder operations. Add search/filter bar using MediaStore.searchAssets. Display empty state when no media exists with upload CTA. Connect Upload Media buttons (header and empty state) to trigger MediaUpload file picker programmatically. Follow React best practices: functional components with hooks, immutable state updates, useCallback for event handlers. Use Zustand selectors for optimal performance. Implement loading states and error handling with toast notifications.",
         "testStrategy": "Test MediaUpload component renders and file selection works, verify upload queue displays with progress tracking, test asset grid renders from MediaStore, validate asset selection and multi-select, test delete confirmation and state updates, verify search/filter functionality, test folder operations, validate empty state and upload button integration",
         "priority": "high",
         "dependencies": [
-          3,
-          5
+          "3",
+          "5"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -1044,7 +1155,8 @@
             "dependencies": [],
             "details": "In MediaLibraryPage.tsx, import MediaUpload component. Create handleFilesSelected callback using useCallback that takes File[] array. Call MediaStore.queueUpload for each file using useMediaStore selector to access queueUpload action. Add MediaUpload component to page layout (conditionally show when no uploads active, or always show in dedicated area). Pass onFilesSelected={handleFilesSelected} prop to MediaUpload. Wire up header Upload Media button using useRef to store MediaUpload ref and trigger file picker programmatically. Also wire empty state Upload button to same trigger. Handle file validation errors with toast notifications. Follow immutable state updates in MediaStore queue.",
             "status": "pending",
-            "testStrategy": "Test MediaUpload renders in page, verify file selection callback queues in MediaStore, test Upload buttons trigger file picker, validate error toasts show for invalid files"
+            "testStrategy": "Test MediaUpload renders in page, verify file selection callback queues in MediaStore, test Upload buttons trigger file picker, validate error toasts show for invalid files",
+            "parentId": "undefined"
           },
           {
             "id": 2,
@@ -1055,7 +1167,8 @@
             ],
             "details": "Create UploadProgressList.tsx component. Use useMediaStore selector to read uploadQueue array (use shallow from zustand/shallow). Map over uploadQueue and render UploadProgressItem for each upload. Create UploadProgressItem showing file name, size, progress bar (use Shadcn Progress component), upload speed (MB/s), estimated time remaining, status (queued/uploading/completed/failed), and cancel button. Calculate progress percentage from uploadItem.progress (0-100). Implement handleCancelUpload callback that calls MediaStore.cancelUpload(uploadId). Show success/error toast on upload complete/failed. Use React.memo on UploadProgressItem to prevent unnecessary re-renders. Display list as floating panel or in sidebar.",
             "status": "pending",
-            "testStrategy": "Test progress list renders active uploads, verify progress bars update correctly, test cancel button stops upload, validate success/error toasts appear, test memo prevents re-renders"
+            "testStrategy": "Test progress list renders active uploads, verify progress bars update correctly, test cancel button stops upload, validate success/error toasts appear, test memo prevents re-renders",
+            "parentId": "undefined"
           },
           {
             "id": 3,
@@ -1064,7 +1177,8 @@
             "dependencies": [],
             "details": "Create MediaAssetCard.tsx functional component accepting asset and isSelected props. Display thumbnail using asset.thumbnailUrl or MediaStore.thumbnailCache for images/videos, or file type icon for audio. Show asset name, type badge (image/video/audio), file size formatted (e.g. 2.5 MB), upload date using Intl.DateTimeFormat. Add checkbox for selection (controlled by isSelected prop). Implement hover state with elevated card and overlay actions (delete, download). Use Shadcn Card component with zinc theme. Add click handler that toggles selection. Optimize with React.memo comparing asset.id and isSelected. Support keyboard navigation (Tab, Space to select).",
             "status": "pending",
-            "testStrategy": "Test card renders with asset data, verify thumbnail displays correctly, test selection checkbox state, validate hover actions appear, test click toggles selection, verify memo optimization"
+            "testStrategy": "Test card renders with asset data, verify thumbnail displays correctly, test selection checkbox state, validate hover actions appear, test click toggles selection, verify memo optimization",
+            "parentId": "undefined"
           },
           {
             "id": 4,
@@ -1075,7 +1189,8 @@
             ],
             "details": "In MediaLibraryPage, use useMediaStore to read assets Map and selectedAssetIds array with shallow selector. Convert assets Map to array and filter by currentFolderId if set. Implement grid layout with Tailwind grid (grid-cols-2 md:grid-cols-4 lg:grid-cols-6). Map over assets and render MediaAssetCard with isSelected={selectedAssetIds.includes(asset.id)}. Create handleAssetClick callback using useCallback that calls MediaStore.selectAsset(assetId, event.shiftKey) for multi-select support. Implement shift-click range selection by tracking lastSelectedIndex. Add Ctrl/Cmd+A keyboard shortcut to select all visible assets. Show selected count in header toolbar. Display loading state while assets load from IndexedDB persistence.",
             "status": "pending",
-            "testStrategy": "Test grid renders all assets from store, verify selection updates MediaStore state, test shift-click range selection, validate Ctrl+A selects all, test loading state displays, verify shallow selector prevents re-renders"
+            "testStrategy": "Test grid renders all assets from store, verify selection updates MediaStore state, test shift-click range selection, validate Ctrl+A selects all, test loading state displays, verify shallow selector prevents re-renders",
+            "parentId": "undefined"
           },
           {
             "id": 5,
@@ -1086,7 +1201,8 @@
             ],
             "details": "Create search input in page header using Shadcn Input with search icon. Use useState for searchQuery state. Implement useEffect that calls MediaStore.searchAssets(searchQuery) and stores results. Display filtered results in grid instead of all assets. Add filter dropdown for asset type (all/images/videos/audio). Create DeleteConfirmDialog using Shadcn AlertDialog showing count of selected assets. Implement handleDeleteAssets using useCallback that shows confirmation, then calls MediaStore.removeAsset for each selectedAssetId on confirm. Clear selection after delete. Show success toast with count deleted. Handle errors with error toast. Use optimistic updates - remove from UI immediately then rollback on error.",
             "status": "pending",
-            "testStrategy": "Test search filters assets correctly, verify type filter works, test delete confirmation shows correct count, validate delete removes assets from store, test optimistic updates rollback on error, verify selection clears after delete"
+            "testStrategy": "Test search filters assets correctly, verify type filter works, test delete confirmation shows correct count, validate delete removes assets from store, test optimistic updates rollback on error, verify selection clears after delete",
+            "parentId": "undefined"
           },
           {
             "id": 6,
@@ -1097,22 +1213,24 @@
             ],
             "details": "Create FolderSidebar component showing folder tree from MediaStore.folders array. Display folders in hierarchical structure with indentation for nested folders. Add Create Folder button that shows input for new folder name and calls MediaStore.createFolder. Implement handleFolderClick that calls MediaStore.setCurrentFolder(folderId) and filters assets in grid. Show active folder with highlight. Add delete folder button (icon) with confirmation dialog calling MediaStore.removeFolder. Display asset count for each folder. Use Shadcn Collapsible for nested folder expand/collapse. Handle drag-and-drop to move assets between folders using MediaStore.moveAsset. Show All Media option at top for unfiltered view.",
             "status": "pending",
-            "testStrategy": "Test folder tree renders hierarchy correctly, verify create folder adds to store, test folder selection filters grid, validate delete removes folder and moves assets, test drag-and-drop moves assets, verify asset counts are accurate"
+            "testStrategy": "Test folder tree renders hierarchy correctly, verify create folder adds to store, test folder selection filters grid, validate delete removes folder and moves assets, test drag-and-drop moves assets, verify asset counts are accurate",
+            "parentId": "undefined"
           }
-        ]
+        ],
+        "updatedAt": "2025-11-17T00:36:19.293Z"
       },
       {
-        "id": 13,
+        "id": "13",
         "title": "Implement Timeline UI Integration into Project Editor Page",
         "description": "Wire up Timeline component into ProjectEditorPage to enable complete timeline editing functionality at route /projects/:projectId/editor",
         "details": "Integrate Timeline component into ProjectEditorPage with complete TimelineStore connection for interactive timeline editing. Import Timeline component and useTimelineStore hook from contexts. Replace placeholder timeline div (lines 68-75) with actual Timeline component rendering. Initialize default tracks (video, audio, text) on component mount using TimelineStore.addTrack if no tracks exist. Wire up all Timeline props to TimelineStore: tracks array, clips Map, selectedClipIds array, playhead position, zoom level, duration, and fps. Connect Timeline event handlers to store actions: onPlayheadChange calls TimelineStore.setPlayhead, onZoomChange calls setZoom, onClipSelect calls selectClip, onClipMove calls moveClip, onTrackUpdate calls updateTrack, onAddTrack calls addTrack. Ensure proper layout integration maintaining preview area above and properties panel on right side. Follow React best practices from DeepWiki research: use Zustand selectors with useShallow for optimal performance, prevent unnecessary re-renders by selecting only needed state slices, ensure immutable state updates in all store actions. Verify Timeline is fully interactive at route /projects/:projectId/editor with proper store synchronization.",
         "testStrategy": "Test Timeline component renders in ProjectEditorPage at route /projects/:projectId/editor, verify all timeline interactions (playhead drag, zoom, clip selection, track management) update TimelineStore correctly, validate store state changes trigger Timeline re-renders, test default tracks initialize on first mount, verify layout integration with preview and properties panels, test performance with useShallow selectors prevents unnecessary re-renders, validate immutable state updates throughout",
         "priority": "high",
         "dependencies": [
-          3,
-          4
+          "3",
+          "4"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -1121,7 +1239,8 @@
             "dependencies": [],
             "details": "In ProjectEditorPage.tsx, add import statement for Timeline component from '../components/timeline'. Import useTimelineStore hook from '../contexts/StoreContext'. Import useEffect and useCallback hooks from React for component lifecycle and event handlers. Verify imports are correctly typed with TypeScript. Ensure no import errors and all paths resolve correctly.",
             "status": "pending",
-            "testStrategy": "Test file compiles without import errors, verify Timeline component type is recognized, validate useTimelineStore hook provides correct store interface"
+            "testStrategy": "Test file compiles without import errors, verify Timeline component type is recognized, validate useTimelineStore hook provides correct store interface",
+            "parentId": "undefined"
           },
           {
             "id": 2,
@@ -1132,7 +1251,8 @@
             ],
             "details": "Create useEffect hook in ProjectEditorPage that runs once on mount (empty dependency array). Get timelineStore instance using useTimelineStore(). Check if timelineStore.tracks.length === 0 to determine if initialization needed. If no tracks exist, call timelineStore.addTrack three times to create default tracks: 1) Video track with type 'video', name 'Video 1', height 80, order 0, 2) Audio track with type 'audio', name 'Audio 1', height 60, order 1, 3) Text track with type 'text', name 'Text/Titles', height 60, order 2. Follow same pattern as TimelinePage.tsx for consistency. Set all tracks with locked: false, hidden: false, muted: false initially.",
             "status": "pending",
-            "testStrategy": "Test tracks are created on first component mount, verify tracks not recreated on subsequent renders, validate track properties match expected defaults, test TimelineStore.tracks array contains exactly 3 tracks after initialization"
+            "testStrategy": "Test tracks are created on first component mount, verify tracks not recreated on subsequent renders, validate track properties match expected defaults, test TimelineStore.tracks array contains exactly 3 tracks after initialization",
+            "parentId": "undefined"
           },
           {
             "id": 3,
@@ -1144,7 +1264,8 @@
             ],
             "details": "In ProjectEditorPage.tsx, locate placeholder timeline div at lines 68-75. Delete entire placeholder div including parent container. Add Timeline component in same location within the timeline area container. Maintain h-64 height class on parent div for consistent layout. Keep bg-zinc-900 and border-t border-zinc-800 styling on timeline container. Remove p-4 padding since Timeline handles its own internal spacing. Ensure Timeline component is properly nested within the main editor layout structure, appearing below the preview area and properties panel.",
             "status": "pending",
-            "testStrategy": "Test placeholder is completely removed, verify Timeline component renders in correct position, validate layout maintains proper spacing and sizing, test timeline area has correct height and background styling"
+            "testStrategy": "Test placeholder is completely removed, verify Timeline component renders in correct position, validate layout maintains proper spacing and sizing, test timeline area has correct height and background styling",
+            "parentId": "undefined"
           },
           {
             "id": 4,
@@ -1156,7 +1277,8 @@
             ],
             "details": "Import useShallow from 'zustand/react/shallow' for optimal selector performance. Use useTimelineStore with useShallow to select multiple state properties: const { tracks, clips, selectedClipIds, playhead, zoom, fps } = useTimelineStore(useShallow((state) => ({ tracks: state.tracks, clips: state.clips, selectedClipIds: state.selectedClipIds, playhead: state.playhead, zoom: state.zoom, fps: state.fps }))). Calculate duration: const duration = timelineStore.duration > 0 ? timelineStore.duration : timelineStore.fps * 300 (5 minutes default, matching TimelinePage pattern). Pass all props to Timeline component: tracks={tracks}, clips={clips}, selectedClipIds={selectedClipIds}, playhead={playhead}, zoom={zoom}, duration={duration}, fps={fps}. This ensures Timeline only re-renders when these specific state slices change, following DeepWiki best practices.",
             "status": "pending",
-            "testStrategy": "Test Timeline receives correct state values from store, verify useShallow prevents unnecessary re-renders, validate duration calculation works correctly, test Timeline re-renders only when selected state changes"
+            "testStrategy": "Test Timeline receives correct state values from store, verify useShallow prevents unnecessary re-renders, validate duration calculation works correctly, test Timeline re-renders only when selected state changes",
+            "parentId": "undefined"
           },
           {
             "id": 5,
@@ -1167,7 +1289,8 @@
             ],
             "details": "Get store instance with const timelineStore = useTimelineStore(). Create event handler for adding tracks: const handleAddTrack = useCallback(() => { const trackNumber = timelineStore.tracks.length + 1; timelineStore.addTrack({ type: 'video', name: `Track ${trackNumber}`, height: 80, locked: false, hidden: false, muted: false, order: timelineStore.tracks.length }); }, [timelineStore]). Wire up Timeline event props: onPlayheadChange={timelineStore.setPlayhead}, onZoomChange={timelineStore.setZoom}, onClipSelect={timelineStore.selectClip}, onClipMove={timelineStore.moveClip}, onTrackUpdate={timelineStore.updateTrack}, onAddTrack={handleAddTrack}. Use useCallback only for complex handlers like handleAddTrack; simple store method references don't need wrapping per DeepWiki guidance.",
             "status": "pending",
-            "testStrategy": "Test playhead changes update store when dragging timeline, verify zoom controls modify store zoom level, validate clip selection updates selectedClipIds in store, test clip dragging calls moveClip with correct parameters, verify track updates persist to store, test add track button creates new track in store"
+            "testStrategy": "Test playhead changes update store when dragging timeline, verify zoom controls modify store zoom level, validate clip selection updates selectedClipIds in store, test clip dragging calls moveClip with correct parameters, verify track updates persist to store, test add track button creates new track in store",
+            "parentId": "undefined"
           },
           {
             "id": 6,
@@ -1182,12 +1305,14 @@
             ],
             "details": "Start development server and navigate to /projects/test-project-123/editor route (or any valid projectId). Verify Timeline component renders with default tracks visible. Test all interactive features: drag playhead and confirm it moves smoothly, use zoom controls and verify timeline scales correctly, click clips to select them and see selection highlight, drag clips between tracks and verify position updates, click Add Track button and confirm new track appears. Monitor React DevTools to ensure no excessive re-renders occur. Verify TimelineStore state updates reflected in Timeline UI immediately. Test browser back/forward navigation preserves timeline state. Confirm layout looks correct with preview area above, properties panel on right, and timeline at bottom.",
             "status": "pending",
-            "testStrategy": "Test route /projects/:projectId/editor loads ProjectEditorPage with Timeline, verify all Timeline interactions work correctly and update store, validate no console errors or warnings, test performance with React DevTools profiler shows minimal re-renders, verify layout responsive and maintains proper structure"
+            "testStrategy": "Test route /projects/:projectId/editor loads ProjectEditorPage with Timeline, verify all Timeline interactions work correctly and update store, validate no console errors or warnings, test performance with React DevTools profiler shows minimal re-renders, verify layout responsive and maintains proper structure",
+            "parentId": "undefined"
           }
-        ]
+        ],
+        "updatedAt": "2025-11-17T00:36:20.506Z"
       },
       {
-        "id": 14,
+        "id": "14",
         "title": "Create Database Schema Migration for Projects and Media",
         "description": "Implement Alembic migration 002_add_projects_media_schema.py to add database tables for users, projects, media_assets, folders, export_jobs, and ai_generation_jobs",
         "details": "Create Alembic migration file 002_add_projects_media_schema.py in ffmpeg-backend/migrations/versions/. Add users table (id UUID PK, created_at, updated_at). Add projects table (id UUID PK, owner_user_id FK, name, thumbnail_url, last_modified_at, created_at, updated_at). Add media_assets table (id UUID PK, owner_user_id FK, type enum, url, thumbnail_url, filename, size_bytes, duration_seconds, width, height, frame_rate, codec, tags ARRAY, folder_id FK nullable, created_at, updated_at). Add folders table (id UUID PK, name, parent_id self-FK nullable, path, owner_user_id FK, created_at, updated_at). Add export_jobs table (id UUID PK, project_id FK, composition_id FK, status enum, progress int, settings JSONB, download_url, error_code, error_message, created_at, updated_at). Add ai_generation_jobs table (id UUID PK, owner_user_id FK, job_type enum, status enum, prompt, settings JSONB, media_asset_id FK nullable, error_message, created_at, updated_at). Update compositions table to add project_id FK, owner_user_id FK, aspect_ratio, timebase_fps columns. Keep tracks/clips/transitions as JSONB initially. Add indexes on foreign keys and frequently queried columns (owner_user_id, created_at). Follow SQLAlchemy 2.0 async patterns and Pydantic v2 for models.",
@@ -1203,7 +1328,8 @@
             "dependencies": [],
             "details": "Create users table in the migration with id (UUID primary key using gen_random_uuid()), created_at (timestamp with timezone, server default now()), and updated_at (timestamp with timezone, server default now()). Apply the update_updated_at_column trigger to automatically manage updated_at. Create indexes on created_at for query performance. This table will serve as the base reference for owner_user_id foreign keys throughout the schema. Follow the existing migration pattern from 001_initial_schema.py using PostgreSQL-specific features.",
             "status": "done",
-            "testStrategy": "Verify users table creation with correct UUID generation, test trigger function updates updated_at on record modification, validate indexes are created, ensure table can be referenced by foreign keys"
+            "testStrategy": "Verify users table creation with correct UUID generation, test trigger function updates updated_at on record modification, validate indexes are created, ensure table can be referenced by foreign keys",
+            "parentId": "undefined"
           },
           {
             "id": 2,
@@ -1214,7 +1340,8 @@
             ],
             "details": "Create projects table with id (UUID PK), owner_user_id (UUID FK to users.id with CASCADE delete), name (String 255), thumbnail_url (String 1024 nullable), last_modified_at (timestamp with timezone), created_at, and updated_at. Create folders table with id (UUID PK), name (String 255), parent_id (UUID self-FK nullable for hierarchy), path (String 1024 for materialized path), owner_user_id (UUID FK), created_at, and updated_at. Add indexes on owner_user_id and created_at for both tables, plus parent_id for folders. Apply update_updated_at_column trigger to both tables. Follow FK naming conventions from migration 001.",
             "status": "done",
-            "testStrategy": "Test foreign key constraints to users table, verify self-referential FK in folders works correctly, validate CASCADE delete behavior, test hierarchical folder structure queries"
+            "testStrategy": "Test foreign key constraints to users table, verify self-referential FK in folders works correctly, validate CASCADE delete behavior, test hierarchical folder structure queries",
+            "parentId": "undefined"
           },
           {
             "id": 3,
@@ -1226,7 +1353,8 @@
             ],
             "details": "Create media_assets table with id (UUID PK), owner_user_id (UUID FK), type (ENUM: video, audio, image), url (String 1024), thumbnail_url (String 1024 nullable), filename (String 500), size_bytes (BigInteger), duration_seconds (Numeric 10,2 nullable), width (Integer nullable), height (Integer nullable), frame_rate (Numeric 5,2 nullable), codec (String 100 nullable), tags (ARRAY of String), folder_id (UUID FK to folders.id nullable with SET NULL), created_at, and updated_at. Create the media_type enum using the idempotent DO $$ BEGIN pattern. Add indexes on owner_user_id, folder_id, type, created_at, and a GIN index on tags array. Apply naming conventions and trigger.",
             "status": "done",
-            "testStrategy": "Test enum type creation and usage, verify ARRAY column operations for tags, test nullable fields behavior, validate foreign key relationships, test GIN index performance on tags"
+            "testStrategy": "Test enum type creation and usage, verify ARRAY column operations for tags, test nullable fields behavior, validate foreign key relationships, test GIN index performance on tags",
+            "parentId": "undefined"
           },
           {
             "id": 4,
@@ -1239,7 +1367,8 @@
             ],
             "details": "Create export_jobs table with id (UUID PK), project_id (UUID FK), composition_id (UUID FK to compositions.id), status (ENUM: pending, queued, processing, completed, failed, cancelled), progress (Integer 0-100), settings (JSONB), download_url (String 1024 nullable), error_code (String 100 nullable), error_message (Text nullable), created_at, and updated_at. Create ai_generation_jobs table with id (UUID PK), owner_user_id (UUID FK), job_type (ENUM: text_to_video, image_to_video, audio_generation), status (same enum), prompt (Text), settings (JSONB), media_asset_id (UUID FK nullable), error_message (Text nullable), created_at, and updated_at. Create enums using idempotent patterns. Add GIN indexes on JSONB columns and regular indexes on status, created_at, and foreign keys.",
             "status": "done",
-            "testStrategy": "Test both job status enums work correctly, verify JSONB column storage and querying, test foreign key relationships including nullable ones, validate progress constraints (0-100), test GIN index performance"
+            "testStrategy": "Test both job status enums work correctly, verify JSONB column storage and querying, test foreign key relationships including nullable ones, validate progress constraints (0-100), test GIN index performance",
+            "parentId": "undefined"
           },
           {
             "id": 5,
@@ -1251,19 +1380,20 @@
             ],
             "details": "Use ALTER TABLE to add project_id (UUID FK to projects.id nullable initially), owner_user_id (UUID FK to users.id nullable initially), aspect_ratio (String 20 for ratios like '16:9', '9:16'), and timebase_fps (Integer default 30) to compositions table. Add indexes on new foreign key columns. In the downgrade() function, implement complete reversal: drop all 6 new tables in correct order (ai_generation_jobs, export_jobs, media_assets, folders, projects, users), remove new columns from compositions, drop all created enum types (job_status, ai_job_type, media_type), and ensure no orphaned objects remain. Test both upgrade and downgrade paths thoroughly.",
             "status": "done",
-            "testStrategy": "Test ALTER TABLE operations don't break existing data, verify new columns work with existing compositions, test complete downgrade removes all new objects cleanly, validate no data loss on existing compositions during migration"
+            "testStrategy": "Test ALTER TABLE operations don't break existing data, verify new columns work with existing compositions, test complete downgrade removes all new objects cleanly, validate no data loss on existing compositions during migration",
+            "parentId": "undefined"
           }
         ]
       },
       {
-        "id": 15,
+        "id": "15",
         "title": "Implement Media Asset API Endpoints",
         "description": "Create FastAPI routes for media asset management including upload, list, get, delete, and batch operations per API specification",
         "details": "Create ffmpeg-backend/src/app/api/v1/media.py with FastAPI router. Implement POST /media/upload endpoint: validate file metadata (name, size, type, checksum), check file size limits (100MB images, 1GB videos, 500MB audio), generate presigned S3 URL using boto3 with 15-minute expiration, create MediaAsset record with PENDING_UPLOAD status, return presigned URL and upload parameters. Implement PATCH /media/{id} endpoint: confirm upload completion, run FFmpeg probe to extract metadata (duration, width, height, frame_rate, codec), update MediaAsset status to READY, enqueue thumbnail generation worker job. Implement GET /media endpoint: list assets with pagination (page, per_page), filter by type/folder_id/tag/search query, sort by created_at/updated_at/name, return lightweight asset list. Implement GET /media/{id}: return single asset with full metadata. Implement DELETE /media/{id}: soft delete with is_deleted flag, schedule S3 cleanup worker job. Implement POST /media/{id}/thumbnail: enqueue RQ worker job for thumbnail regeneration. Implement POST /media/batch/delete: bulk soft delete with asset IDs array. Implement POST /media/batch/tag: add/remove tags from multiple assets. Implement POST /media/batch/move: move assets to folder_id. Use AsyncSession for all database operations, async boto3 for S3, proper error handling with custom error codes (INVALID_FILE_TYPE, FILE_TOO_LARGE, UPLOAD_FAILED). Follow patterns from existing compositions.py endpoint.",
         "testStrategy": "Test presigned URL generation and S3 upload flow, verify FFmpeg metadata extraction, test pagination and filtering, validate soft delete and cleanup, test batch operations, verify error handling for invalid inputs, test concurrent uploads",
         "priority": "high",
         "dependencies": [
-          14
+          "14"
         ],
         "status": "done",
         "subtasks": [
@@ -1274,7 +1404,8 @@
             "dependencies": [],
             "details": "Create ffmpeg-backend/src/db/models/media.py with MediaAsset model including fields: id (UUID), user_id, name, file_size, file_type (enum: IMAGE/VIDEO/AUDIO), s3_key, thumbnail_s3_key, status (enum: PENDING_UPLOAD/UPLOADING/READY/FAILED/DELETED), checksum, metadata (JSON with duration, width, height, frame_rate, codec), folder_id (FK), tags (array), created_at, updated_at, is_deleted. Define MediaAssetType and MediaAssetStatus enums. Add proper indexes for performance on commonly queried fields (user_id, folder_id, status, is_deleted). Update db/models/__init__.py to export the new model and enums.",
             "status": "done",
-            "testStrategy": "Unit tests for model creation, field validation, enum constraints, and database migrations"
+            "testStrategy": "Unit tests for model creation, field validation, enum constraints, and database migrations",
+            "parentId": "undefined"
           },
           {
             "id": 2,
@@ -1283,7 +1414,8 @@
             "dependencies": [],
             "details": "Create ffmpeg-backend/src/app/api/schemas/media.py with Pydantic models: MediaUploadRequest (name, size, type, checksum), MediaUploadResponse (id, presigned_url, upload_params), MediaAssetResponse (full asset data), MediaListResponse (paginated list), MediaMetadataUpdate (metadata fields from FFprobe), MediaBatchDeleteRequest (asset_ids array), MediaBatchTagRequest (asset_ids, tags, operation), MediaBatchMoveRequest (asset_ids, folder_id). Include proper validation for file sizes (100MB images, 1GB videos, 500MB audio), allowed file types, and checksum format. Export all schemas in app/api/schemas/__init__.py.",
             "status": "done",
-            "testStrategy": "Test schema validation, serialization, field constraints, and edge cases with invalid data"
+            "testStrategy": "Test schema validation, serialization, field constraints, and edge cases with invalid data",
+            "parentId": "undefined"
           },
           {
             "id": 3,
@@ -1295,7 +1427,8 @@
             ],
             "details": "Create ffmpeg-backend/src/app/api/v1/media.py with FastAPI router. Implement POST /media/upload endpoint that: validates file metadata against size limits and allowed types, checks checksum format validity, generates presigned S3 URL using boto3 with 15-minute expiration and proper CORS headers, creates MediaAsset record with PENDING_UPLOAD status using AsyncSession, returns presigned URL with upload parameters (method, headers, fields). Add helper function generate_presigned_post_url in S3Manager class that handles multipart upload initialization for large files. Include proper error handling for S3 failures, database errors, and validation issues with custom error codes (INVALID_FILE_TYPE, FILE_TOO_LARGE).",
             "status": "done",
-            "testStrategy": "Test presigned URL generation, S3 mock responses, file validation logic, database transaction handling"
+            "testStrategy": "Test presigned URL generation, S3 mock responses, file validation logic, database transaction handling",
+            "parentId": "undefined"
           },
           {
             "id": 4,
@@ -1308,7 +1441,8 @@
             ],
             "details": "Implement PATCH /media/{id} endpoint that: confirms upload completion by checking S3 object exists using head_object, runs FFprobe to extract metadata (duration, width, height, frame_rate, codec, bitrate) using existing InputFileManager class from services/ffmpeg/input_manager.py, updates MediaAsset status from PENDING_UPLOAD to READY and stores metadata in JSON field, enqueues RQ worker job for thumbnail generation using existing worker.enqueue_job function with job parameters (media_id, s3_key, media_type). Create helper function extract_media_metadata that wraps InputFileManager.get_file_info and handles both local files and S3 URLs. Handle edge cases: missing files, corrupted media, FFprobe failures with appropriate error responses.",
             "status": "done",
-            "testStrategy": "Test FFprobe integration, metadata extraction for various formats, worker job enqueuing, error handling for corrupted files"
+            "testStrategy": "Test FFprobe integration, metadata extraction for various formats, worker job enqueuing, error handling for corrupted files",
+            "parentId": "undefined"
           },
           {
             "id": 5,
@@ -1320,20 +1454,21 @@
             ],
             "details": "Implement GET /media endpoint with: pagination using page/per_page parameters (max 100 per page), filtering by type/folder_id/tag/search query using SQLAlchemy queries, sorting by created_at/updated_at/name with proper indexes, lightweight response without full metadata. Implement GET /media/{id} returning complete asset with metadata. Implement DELETE /media/{id} with soft delete setting is_deleted=true and scheduling S3 cleanup worker job. Implement POST /media/batch/delete accepting array of IDs for bulk soft delete in single transaction. Implement POST /media/batch/tag for adding/removing tags from multiple assets. Implement POST /media/batch/move to update folder_id for multiple assets. Follow existing patterns from compositions.py for query building, pagination, and error handling.",
             "status": "done",
-            "testStrategy": "Test pagination logic, filtering combinations, batch operation atomicity, soft delete behavior, concurrent request handling"
+            "testStrategy": "Test pagination logic, filtering combinations, batch operation atomicity, soft delete behavior, concurrent request handling",
+            "parentId": "undefined"
           }
         ]
       },
       {
-        "id": 16,
+        "id": "16",
         "title": "Implement Folder API Endpoints",
         "description": "Create FastAPI routes for folder management with tree structure support and media organization per API specification",
         "details": "Create ffmpeg-backend/src/app/api/v1/folders.py with FastAPI router. Implement POST /folders endpoint: create folder with name and optional parent_id, compute materialized path from parent hierarchy (/parent/child format), validate no circular references, return created folder. Implement GET /folders endpoint: list all user folders as tree structure with children arrays, use recursive CTE or eager loading for hierarchy, return sorted by path. Implement GET /folders/{id} endpoint: get single folder details with asset count. Implement PATCH /folders/{id} endpoint: rename folder (update name), move folder (change parent_id), recalculate paths for all descendants when moving, validate no circular references on move. Implement DELETE /folders/{id} endpoint: check if folder empty or cascade delete to children based on policy, update affected media_assets to null folder_id or move to parent, return deletion status. Implement GET /folders/{id}/contents endpoint: get folder media assets and subfolders with pagination, optional include_subfolders parameter for recursive listing, return assets and folders arrays. Use AsyncSession for database operations, implement efficient tree traversal with materialized path pattern, validate folder operations don't create orphaned data, follow patterns from existing API endpoints.",
         "testStrategy": "Test folder creation with parent hierarchy, verify tree structure queries, test folder renaming and moving, validate path recalculation for descendants, test delete with empty/non-empty folders, verify circular reference prevention, test contents listing with pagination",
         "priority": "high",
         "dependencies": [
-          14,
-          15
+          "14",
+          "15"
         ],
         "status": "done",
         "subtasks": [
@@ -1344,7 +1479,8 @@
             "dependencies": [],
             "details": "Create ffmpeg-backend/src/db/models/folder.py defining the Folder SQLAlchemy model with id (UUID), name, parent_id (self-reference), path (materialized path like /parent/child), owner_user_id fields. Configure foreign key relationships to users and self-referential parent folder. Add relationship properties for parent, children, and owner navigation. Implement path computation logic in model methods. Add the model to db/models/__init__.py exports.",
             "status": "done",
-            "testStrategy": "Unit tests for folder model creation, parent-child relationships, and path computation"
+            "testStrategy": "Unit tests for folder model creation, parent-child relationships, and path computation",
+            "parentId": "undefined"
           },
           {
             "id": 2,
@@ -1353,7 +1489,8 @@
             "dependencies": [],
             "details": "Create ffmpeg-backend/src/app/api/schemas/folder.py with FolderBase schema (name validation), FolderCreate (extends Base with optional parent_id), FolderUpdate (name, parent_id for move operations), FolderResponse (id, name, path, parent_id, asset_count, created_at, updated_at), FolderTreeNode (recursive schema with children array for tree representation), FolderListResponse (folders array with tree structure), FolderContentsResponse (paginated assets and subfolders arrays). Implement validators for circular reference prevention and name constraints.",
             "status": "done",
-            "testStrategy": "Validate schema serialization, tree structure nesting, and field validation rules"
+            "testStrategy": "Validate schema serialization, tree structure nesting, and field validation rules",
+            "parentId": "undefined"
           },
           {
             "id": 3,
@@ -1365,7 +1502,8 @@
             ],
             "details": "Create ffmpeg-backend/src/app/api/v1/folders.py with FastAPI router. Implement POST /folders to create folder with name/parent_id, compute materialized path from parent hierarchy, validate no circular references, return FolderResponse. Implement GET /folders/{id} to retrieve single folder with asset count aggregation. Implement PATCH /folders/{id} for rename (update name) and move (change parent_id) operations with path recalculation for descendants. Implement DELETE /folders/{id} with empty check or cascade policy, handle orphaned assets. Use AsyncSession dependency injection and proper error handling.",
             "status": "done",
-            "testStrategy": "Test each CRUD operation, validate path updates on moves, test cascade deletes"
+            "testStrategy": "Test each CRUD operation, validate path updates on moves, test cascade deletes",
+            "parentId": "undefined"
           },
           {
             "id": 4,
@@ -1378,7 +1516,8 @@
             ],
             "details": "In folders.py router, implement GET /folders endpoint to list all user folders as tree structure. Use recursive CTE query or eager loading with relationship joins to build hierarchy efficiently. Transform flat query results into nested tree structure with children arrays. Sort folders by materialized path for consistent ordering. Implement tree depth limiting and folder count aggregation. Return FolderTreeNode array with proper nesting. Handle empty trees gracefully.",
             "status": "done",
-            "testStrategy": "Test tree construction with multiple levels, verify sorting and performance with large hierarchies"
+            "testStrategy": "Test tree construction with multiple levels, verify sorting and performance with large hierarchies",
+            "parentId": "undefined"
           },
           {
             "id": 5,
@@ -1391,23 +1530,24 @@
             ],
             "details": "In folders.py, implement GET /folders/{id}/contents endpoint with pagination (page, per_page params). Query media_assets filtered by folder_id with optional include_subfolders parameter for recursive listing using path prefix matching. Return paginated FolderContentsResponse with assets and subfolders arrays. Add total counts and pagination metadata. Update ffmpeg-backend/src/app/api/v1/__init__.py to import and include folders router with /folders prefix and folders tag. Ensure proper async patterns and error handling throughout.",
             "status": "done",
-            "testStrategy": "Test pagination, recursive folder contents, verify router integration and API accessibility"
+            "testStrategy": "Test pagination, recursive folder contents, verify router integration and API accessibility",
+            "parentId": "undefined"
           }
         ]
       },
       {
-        "id": 17,
+        "id": "17",
         "title": "Implement Project API Endpoints",
         "description": "Create FastAPI routes for project CRUD operations, autosave, duplication, and versioning per API specification",
         "details": "Create ffmpeg-backend/src/app/api/v1/projects.py with FastAPI router. Implement POST /projects endpoint: create project with name/aspect_ratio/timebase_fps, automatically create linked Composition with matching settings in same transaction, return full Project with nested composition. Implement GET /projects endpoint: list projects with pagination (page, per_page), search by name query parameter, sort by last_modified_at or created_at, return lightweight project list without full composition data for performance. Implement GET /projects/{id} endpoint: get single project with full composition including tracks/clips/transitions JSONB data, return complete project structure. Implement PUT /projects/{id} endpoint (autosave): accept project name, thumbnail_url, and full composition object with tracks/clips/transitions, update last_modified_at timestamp, implement optimistic locking using updated_at comparison to prevent concurrent edit conflicts, return updated project. Implement DELETE /projects/{id} endpoint: soft delete with is_deleted flag, preserve data for recovery. Implement POST /projects/{id}/duplicate endpoint: deep copy project and composition, append 'Copy' to project name, generate new UUIDs, return duplicated project. Implement GET /projects/{id}/versions endpoint: return version history if versioning implemented (future feature). Implement POST /projects/{id}/versions/{v}/restore endpoint: restore project to previous version (future feature). Use AsyncSession for all operations, proper error handling, integrate with existing Composition model, handle project-composition one-to-one relationship carefully in transactions.",
         "testStrategy": "Test project creation with composition, verify list pagination and search, test autosave with optimistic locking, validate duplicate creates independent copy, test soft delete, verify version endpoints return not implemented status, test concurrent autosave conflict handling",
         "priority": "high",
         "dependencies": [
-          14,
-          15,
-          16
+          "14",
+          "15",
+          "16"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -1416,7 +1556,8 @@
             "dependencies": [],
             "details": "Create ffmpeg-backend/src/db/models/project.py defining Project model with fields: id (UUID primary key), name (string, required, indexed), user_id (UUID, indexed), thumbnail_url (string, nullable), aspect_ratio (string with validation for formats like '16:9'), timebase_fps (integer, default 30), composition_id (UUID, unique foreign key to Composition.id), is_deleted (boolean, default False for soft deletes), created_at, updated_at, last_modified_at (indexed for sorting). Establish bidirectional one-to-one relationship with Composition model using relationship() with back_populates. Create Alembic migration script to add projects table with proper indexes and constraints. Update db/models/__init__.py to export Project model.",
             "status": "pending",
-            "testStrategy": "Test model creation with valid and invalid data, verify relationship constraints, test soft delete behavior, validate unique composition_id constraint, test cascade behavior when deleting projects"
+            "testStrategy": "Test model creation with valid and invalid data, verify relationship constraints, test soft delete behavior, validate unique composition_id constraint, test cascade behavior when deleting projects",
+            "parentId": "undefined"
           },
           {
             "id": 2,
@@ -1427,7 +1568,8 @@
             ],
             "details": "Create ffmpeg-backend/src/app/api/schemas/project.py with comprehensive schemas: ProjectCreateRequest (name, aspect_ratio with regex validation for formats, timebase_fps with range 1-120), ProjectUpdateRequest (name optional, thumbnail_url optional, composition with full nested structure), ProjectResponse (all fields plus nested CompositionResponse), ProjectListItemResponse (lightweight without full composition data), ProjectListResponse (paginated with items, total, page, per_page), ProjectDuplicateResponse, ProjectVersionResponse (placeholder for future). Add custom validators for aspect_ratio format (e.g., '16:9', '4:3', '1:1'), ensure timebase_fps is reasonable (1-120), validate composition structure if provided. Import and use existing CompositionResponse and related schemas from composition.py.",
             "status": "pending",
-            "testStrategy": "Test schema validation with valid and invalid inputs, verify aspect ratio validation accepts common formats, test fps range validation, ensure nested composition validation works, test serialization and deserialization"
+            "testStrategy": "Test schema validation with valid and invalid inputs, verify aspect ratio validation accepts common formats, test fps range validation, ensure nested composition validation works, test serialization and deserialization",
+            "parentId": "undefined"
           },
           {
             "id": 3,
@@ -1439,7 +1581,8 @@
             ],
             "details": "Create ffmpeg-backend/src/app/api/v1/projects.py FastAPI router. Implement POST /projects: create project with automatic Composition creation in same transaction using async context manager, validate input, generate UUIDs, set matching aspect_ratio and timebase_fps in composition_config JSONB, return full ProjectResponse with nested composition. Implement GET /projects: support pagination (page, per_page parameters), search by name using ILIKE query, sort by last_modified_at or created_at, exclude deleted projects, return ProjectListResponse without full composition data for performance. Implement GET /projects/{id}: fetch single project with eager loading of composition using selectinload, return 404 if not found or soft deleted, return complete ProjectResponse. Implement DELETE /projects/{id}: set is_deleted=True, update last_modified_at, keep data for recovery, return success confirmation. Follow existing error handling patterns with try-catch blocks and proper HTTP status codes.",
             "status": "pending",
-            "testStrategy": "Test project creation with composition in single transaction, verify list endpoint pagination and search filters, test single project retrieval with full composition data, validate soft delete preserves data, test 404 responses for missing projects"
+            "testStrategy": "Test project creation with composition in single transaction, verify list endpoint pagination and search filters, test single project retrieval with full composition data, validate soft delete preserves data, test 404 responses for missing projects",
+            "parentId": "undefined"
           },
           {
             "id": 4,
@@ -1452,7 +1595,8 @@
             ],
             "details": "Implement PUT /projects/{id} endpoint in projects.py for autosave functionality. Accept ProjectUpdateRequest with optional name, thumbnail_url, and full composition object containing tracks/clips/transitions JSONB structure. Implement optimistic locking: include updated_at in request, compare with database value before update, return 409 Conflict if timestamps don't match indicating concurrent edit. Update project fields if provided, update composition.composition_config with new tracks/clips/transitions structure if provided, set last_modified_at to current time. Use database transaction to ensure atomic updates of both project and composition. Return updated ProjectResponse with fresh updated_at for next autosave. Add proper error handling for database conflicts and validation errors. Consider implementing debouncing logic documentation for frontend.",
             "status": "pending",
-            "testStrategy": "Test successful autosave with composition updates, verify optimistic locking prevents concurrent updates, test 409 conflict response with stale updated_at, validate partial updates work correctly, test transaction rollback on errors"
+            "testStrategy": "Test successful autosave with composition updates, verify optimistic locking prevents concurrent updates, test 409 conflict response with stale updated_at, validate partial updates work correctly, test transaction rollback on errors",
+            "parentId": "undefined"
           },
           {
             "id": 5,
@@ -1465,19 +1609,21 @@
             ],
             "details": "Implement POST /projects/{id}/duplicate: deep copy project and composition in transaction, generate new UUIDs for both project and composition, append ' (Copy)' to project name with incrementing number if duplicate exists, copy all composition_config JSONB data maintaining structure, reset timestamps to current time, clear any output_url or processing status, return new ProjectDuplicateResponse. Implement GET /projects/{id}/versions: return 501 Not Implemented with message about future feature, document expected response structure in schema. Implement POST /projects/{id}/versions/{version_id}/restore: return 501 Not Implemented, document expected behavior in comments. Update router registration in v1/__init__.py to include new projects router. Add comprehensive logging for all operations especially duplication for debugging.",
             "status": "pending",
-            "testStrategy": "Test project duplication creates independent copy with new IDs, verify duplicate name handling with incrementing numbers, test version endpoints return 501 status, validate deep copy includes all nested composition data, ensure no references to original project remain"
+            "testStrategy": "Test project duplication creates independent copy with new IDs, verify duplicate name handling with incrementing numbers, test version endpoints return 501 status, validate deep copy includes all nested composition data, ensure no references to original project remain",
+            "parentId": "undefined"
           }
-        ]
+        ],
+        "updatedAt": "2025-11-17T00:36:21.618Z"
       },
       {
-        "id": 18,
+        "id": "18",
         "title": "Complete Export API per Specification",
         "description": "Enhance existing /api/v1/compositions endpoints with download, cancel, and cancel-all functionality matching API contract",
         "details": "Update ffmpeg-backend/src/app/api/v1/compositions.py to complete export API. Add GET /compositions/{id}/download endpoint: check composition status is SUCCEEDED, generate presigned S3 download URL using boto3 with 15-minute expiration, return {download_url, expires_at} response. Add POST /compositions/{id}/cancel endpoint: check job status is QUEUED or RUNNING, update status to CANCELLED in database, terminate worker process using RQ job.cancel() or worker signal, return cancelled composition. Add POST /compositions/cancel-all endpoint: accept optional project_id and status_in filters (array of statuses), find matching compositions, cancel all jobs using bulk operations, return {canceled_count, composition_ids} response. Update CompositionResponse Pydantic model: add optional download_url field, add optional error_code field (enum: FFMPEG_ERROR, S3_ERROR, INVALID_INPUT, etc.), add optional error_message field for detailed errors. Ensure export job status transitions follow spec: queued -> running -> succeeded/failed. Update WebSocket job.update messages in ffmpeg-backend/src/app/websocket.py to include download_url, error_code, error_message fields in payload. Use existing compositions.py patterns, integrate with RQ worker cancellation logic, handle edge cases like cancelling already completed jobs.",
         "testStrategy": "Test download URL generation for succeeded exports, verify presigned URL expiration, test cancel stops running job, validate cancel-all with filters, test error fields populate correctly, verify WebSocket updates include new fields, test concurrent cancel operations",
         "priority": "medium",
         "dependencies": [
-          14
+          "14"
         ],
         "status": "pending",
         "subtasks": [
@@ -1488,7 +1634,8 @@
             "dependencies": [],
             "details": "In ffmpeg-backend/src/app/api/schemas/composition.py, create ErrorCode enum with values: FFMPEG_ERROR, S3_ERROR, INVALID_INPUT, TIMEOUT, CANCELLED, UNKNOWN. Then update ffmpeg-backend/src/db/models/composition.py to add error_code field as nullable String. Run database migration to add the new column. This establishes the foundation for categorizing errors throughout the export process.",
             "status": "pending",
-            "testStrategy": "Verify ErrorCode enum imports correctly, test database migration applies successfully, validate error_code field saves and retrieves properly through ORM, test that existing records handle null error_code gracefully"
+            "testStrategy": "Verify ErrorCode enum imports correctly, test database migration applies successfully, validate error_code field saves and retrieves properly through ORM, test that existing records handle null error_code gracefully",
+            "parentId": "undefined"
           },
           {
             "id": 2,
@@ -1499,7 +1646,8 @@
             ],
             "details": "In ffmpeg-backend/src/app/api/schemas/composition.py, update CompositionResponse class (lines 220-236) to add: optional download_url: str | None field for direct download links, optional error_code: ErrorCode | None field for categorized errors. Ensure fields are properly validated with Pydantic. Update all endpoints that return CompositionResponse to populate these fields when appropriate, especially in the download and error scenarios.",
             "status": "pending",
-            "testStrategy": "Test CompositionResponse serialization with and without optional fields, verify backward compatibility with existing clients, test that download_url appears only for COMPLETED compositions, validate error_code populates correctly on failures"
+            "testStrategy": "Test CompositionResponse serialization with and without optional fields, verify backward compatibility with existing clients, test that download_url appears only for COMPLETED compositions, validate error_code populates correctly on failures",
+            "parentId": "undefined"
           },
           {
             "id": 3,
@@ -1510,7 +1658,8 @@
             ],
             "details": "In ffmpeg-backend/src/app/api/v1/compositions.py (lines 496-671), change s3_manager.generate_presigned_url() expiration parameter from 3600 to 900 seconds (15 minutes). Update the expires_at calculation to reflect this change. Ensure DownloadResponse properly includes the expires_at timestamp. Add error handling for S3_ERROR if presigned URL generation fails, setting appropriate error_code in the response.",
             "status": "pending",
-            "testStrategy": "Verify presigned URLs expire after exactly 15 minutes, test download functionality before and after expiration, validate error handling when S3 is unavailable, confirm expires_at timestamp is accurate in response"
+            "testStrategy": "Verify presigned URLs expire after exactly 15 minutes, test download functionality before and after expiration, validate error handling when S3 is unavailable, confirm expires_at timestamp is accurate in response",
+            "parentId": "undefined"
           },
           {
             "id": 4,
@@ -1521,7 +1670,8 @@
             ],
             "details": "In ffmpeg-backend/src/app/api/v1/compositions.py (lines 1012-1149), modify cancel_all_compositions() function to accept optional project_id: UUID | None and status_in: list[CompositionStatus] | None parameters. Update the SQLAlchemy query to filter compositions by these parameters when provided. Default status_in to [QUEUED, PROCESSING] if not specified. Ensure BulkCancelResponse accurately reflects the filtered cancellations. Add validation to prevent cancelling COMPLETED/FAILED compositions.",
             "status": "pending",
-            "testStrategy": "Test cancel-all with no filters cancels all eligible compositions, verify project_id filter only cancels matching project, test status_in filter with various status combinations, validate that completed/failed compositions are never cancelled"
+            "testStrategy": "Test cancel-all with no filters cancels all eligible compositions, verify project_id filter only cancels matching project, test status_in filter with various status combinations, validate that completed/failed compositions are never cancelled",
+            "parentId": "undefined"
           },
           {
             "id": 5,
@@ -1533,24 +1683,25 @@
             ],
             "details": "In ffmpeg-backend/src/app/api/schemas/websocket.py, update WSStatusMessage and WSErrorMessage to include error_code field. In ffmpeg-backend/src/workers/job_callbacks.py, modify on_success and on_failure callbacks to populate error_code when errors occur, categorizing them appropriately (FFMPEG_ERROR for processing failures, S3_ERROR for upload failures, etc.). Update WebSocket message publishing in ffmpeg-backend/src/services/websocket/ to include download_url in success messages. Ensure all error paths set both error_message and error_code consistently.",
             "status": "pending",
-            "testStrategy": "Test WebSocket messages include error_code on failures, verify download_url appears in success notifications, test real-time updates during job cancellation, validate error categorization accuracy across different failure scenarios"
+            "testStrategy": "Test WebSocket messages include error_code on failures, verify download_url appears in success notifications, test real-time updates during job cancellation, validate error categorization accuracy across different failure scenarios",
+            "parentId": "undefined"
           }
         ]
       },
       {
-        "id": 19,
+        "id": "19",
         "title": "Wire Frontend Stores to Backend APIs",
         "description": "Implement backend integration for projectStore and mediaStore with autosave, upload flow, and WebSocket job updates",
         "details": "In frontend/src/stores/projectStore.ts: replace TODO in saveProject() with PUT /projects/{id} API call using fetch, implement loadProject() with GET /projects/{id}, implement exportProject() with POST /compositions/, add autosave debouncing with 2-second delay using custom hook or lodash debounce per state diagram spec, update metadata.updatedAt on every change. In frontend/src/stores/mediaStore.ts: implement upload flow: call POST /media/upload to get presigned S3 URL, upload file to S3 using PUT with XMLHttpRequest for progress tracking, confirm upload with PATCH /media/{id}, add asset listing with GET /media using pagination, implement delete with DELETE /media/{id}, fetch thumbnails from backend thumbnail_url field. Integrate WebSocket job updates: in projectStore add listeners for export job updates (job.update events), update export job status map (queued/running/succeeded/failed), in mediaStore add listeners for thumbnail generation and AI generation job updates, update store state when jobs complete/fail with asset IDs. Follow React best practices: async/await with try-catch error handling, loading state flags (isLoading, isSaving), toast notifications on success/error using Shadcn toast. Use Zustand immutable updates with immer middleware. Test end-to-end: create project -> autosave -> load project -> upload media -> trigger export.",
         "testStrategy": "Test saveProject API integration, verify autosave debouncing works, test loadProject fetches data, verify upload flow with S3, test WebSocket job updates, validate error handling and toasts, test loading states update correctly",
         "priority": "high",
         "dependencies": [
-          3,
-          5,
-          7,
-          15,
-          16,
-          17
+          "3",
+          "5",
+          "7",
+          "15",
+          "16",
+          "17"
         ],
         "status": "pending",
         "subtasks": [
@@ -1561,7 +1712,8 @@
             "dependencies": [],
             "details": "In frontend/src/stores/projectStore.ts, replace the TODO in saveProject() method with a PUT request to /projects/{id} endpoint. Implement loadProject() to fetch project data from GET /projects/{id}. Add exportProject() API call to POST /compositions/. Create a debounced autosave mechanism that triggers saveProject() after 2 seconds of inactivity when isDirty is true. Update metadata.updatedAt timestamp on every state change that sets isDirty to true. Add proper error handling with try-catch blocks and loading states.",
             "status": "pending",
-            "testStrategy": "Test that saveProject correctly sends PUT request with project data. Verify autosave triggers after 2 seconds of changes. Test loadProject fetches and updates store state. Verify exportProject sends POST request. Test that metadata.updatedAt updates on changes."
+            "testStrategy": "Test that saveProject correctly sends PUT request with project data. Verify autosave triggers after 2 seconds of changes. Test loadProject fetches and updates store state. Verify exportProject sends POST request. Test that metadata.updatedAt updates on changes.",
+            "parentId": "undefined"
           },
           {
             "id": 2,
@@ -1572,7 +1724,8 @@
             ],
             "details": "In frontend/src/stores/mediaStore.ts, add methods for the upload flow: First call POST /media/upload to get presigned S3 URL and media ID. Use XMLHttpRequest to upload file to S3 with progress events updating uploadQueue progress. After successful S3 upload, confirm with PATCH /media/{id}. Implement asset listing with GET /media endpoint supporting pagination. Add delete functionality with DELETE /media/{id}. Fetch and cache thumbnails from backend thumbnail_url field. Update the queueUpload, updateUploadProgress, and setUploadStatus methods to handle the complete flow.",
             "status": "pending",
-            "testStrategy": "Test presigned URL generation request. Verify XMLHttpRequest upload with progress tracking. Test upload confirmation PATCH request. Verify asset listing with pagination. Test delete functionality removes assets. Verify thumbnail fetching and caching."
+            "testStrategy": "Test presigned URL generation request. Verify XMLHttpRequest upload with progress tracking. Test upload confirmation PATCH request. Verify asset listing with pagination. Test delete functionality removes assets. Verify thumbnail fetching and caching.",
+            "parentId": "undefined"
           },
           {
             "id": 3,
@@ -1584,7 +1737,8 @@
             ],
             "details": "In projectStore, add WebSocket listeners for export job updates (job.update events with jobType='export'). Create a job status map to track export jobs with states: queued, running, succeeded, failed. In mediaStore, add listeners for thumbnail generation jobs and AI generation jobs. When job completes successfully, update the corresponding asset with new data (thumbnails, AI-generated content). Handle job failures by updating UI state and showing error messages. Use the existing WebSocketService and webSocketStore handleJobUpdate method to process incoming messages. Ensure proper cleanup of listeners on store reset.",
             "status": "pending",
-            "testStrategy": "Test WebSocket listeners receive job.update events. Verify export job status updates in projectStore. Test thumbnail generation updates in mediaStore. Verify AI generation job updates. Test error handling for failed jobs. Verify listener cleanup on reset."
+            "testStrategy": "Test WebSocket listeners receive job.update events. Verify export job status updates in projectStore. Test thumbnail generation updates in mediaStore. Verify AI generation job updates. Test error handling for failed jobs. Verify listener cleanup on reset.",
+            "parentId": "undefined"
           },
           {
             "id": 4,
@@ -1595,7 +1749,8 @@
             ],
             "details": "Create a new toast component using Shadcn UI library in frontend/src/components/ui/toast.tsx. Add a useToast hook for managing toast notifications. In projectStore and mediaStore, add loading state flags (isLoading, isSaving, isExporting) as part of the store state. Show success toasts for: successful save, project loaded, export started, upload completed. Show error toasts for: save failure, load failure, upload error, WebSocket disconnection. Update all async methods to set appropriate loading states before operations and clear them after completion/failure. Ensure toast messages are user-friendly and actionable.",
             "status": "pending",
-            "testStrategy": "Test toast component renders correctly. Verify success toasts appear for successful operations. Test error toasts show for failures. Verify loading states update during async operations. Test multiple toasts queue properly. Verify toast auto-dismiss timing."
+            "testStrategy": "Test toast component renders correctly. Verify success toasts appear for successful operations. Test error toasts show for failures. Verify loading states update during async operations. Test multiple toasts queue properly. Verify toast auto-dismiss timing.",
+            "parentId": "undefined"
           },
           {
             "id": 5,
@@ -1606,21 +1761,22 @@
             ],
             "details": "Add retry logic for failed API calls with exponential backoff (max 3 retries). Implement connection error recovery for WebSocket disconnections with auto-reconnect. Add optimistic updates with rollback on failure for better UX. Create error boundary components to catch and display errors gracefully. Test the complete flow: create project -> trigger autosave -> verify save -> upload media files -> verify upload progress -> wait for thumbnail generation -> trigger export -> monitor export progress via WebSocket. Add API request/response logging in development mode. Ensure all Zustand store updates use immer for immutable state updates.",
             "status": "pending",
-            "testStrategy": "Test retry logic triggers on API failures. Verify WebSocket auto-reconnect works. Test optimistic updates and rollback. Verify error boundaries catch errors. Test complete end-to-end flow. Verify immutable state updates with immer."
+            "testStrategy": "Test retry logic triggers on API failures. Verify WebSocket auto-reconnect works. Test optimistic updates and rollback. Verify error boundaries catch errors. Test complete end-to-end flow. Verify immutable state updates with immer.",
+            "parentId": "undefined"
           }
         ]
       },
       {
-        "id": 20,
+        "id": "20",
         "title": "Implement Missing Frontend Stores",
         "description": "Create useAuthStore and useUiStore for user authentication and UI state management per state diagram specification",
         "details": "Create frontend/src/stores/authStore.ts with Zustand vanilla store: manage user identity (userId, email, name), shadow user ID for anonymous sessions using crypto.randomUUID(), authentication tokens (access_token, refresh_token), login/logout actions with API integration, session persistence using persist middleware with IndexedDB, token refresh logic with expiration checking, isAuthenticated computed property. Create frontend/src/stores/uiStore.ts with Zustand vanilla store: manage modal states as Map<string, ModalState> for stacking support (isExportModalOpen, isUploadModalOpen, isSettingsOpen), toast notifications queue (max 5 toasts) with auto-dismiss using setTimeout and cleanup, panel visibility states (isPropertiesPanelOpen, isMediaLibraryOpen, isTimelineExpanded), theme state integration (may overlap with existing dark mode, coordinate carefully), active tool/mode state for editor, keyboard shortcuts Map for customizable bindings. Use Zustand vanilla store pattern with createStore like existing stores. Implement persist middleware for settings persistence. Add TypeScript types to types/stores.ts for AuthState, AuthActions, UiState, UiActions. Integrate authStore with shadow user cookie handling per backend spec. Wire useUiStore to existing UI components (modals, panels, toasts) for centralized state management. Follow patterns from existing projectStore, mediaStore, timelineStore implementations with Context Provider and hooks.",
         "testStrategy": "Test auth store login/logout flow, verify shadow user ID generation, test token persistence and refresh, validate UI store modal management, test toast auto-dismiss and queue limits, verify panel state toggles, test keyboard shortcut registration",
         "priority": "medium",
         "dependencies": [
-          2,
-          3,
-          5
+          "2",
+          "3",
+          "5"
         ],
         "status": "pending",
         "subtasks": [
@@ -1631,7 +1787,8 @@
             "dependencies": [],
             "details": "Create frontend/src/stores/authStore.ts using createStore from zustand/vanilla with immer, persist, and devtools middleware. Implement AuthState interface with userId, email, name, shadowUserId (for anonymous sessions), accessToken, refreshToken, and tokenExpiresAt fields. Add AuthActions including login, logout, refreshToken, setShadowUser actions. Use crypto.randomUUID() for shadow user ID generation. Implement persist middleware with IndexedDB storage using createIndexedDBStorage(STORE_NAMES.AUTH). Add isAuthenticated computed property that checks if accessToken exists and hasn't expired. Follow the same vanilla store pattern as projectStore and mediaStore with proper TypeScript typing",
             "status": "pending",
-            "testStrategy": "Test shadow user ID generation with crypto.randomUUID, verify token persistence in IndexedDB, test login/logout flow with mock API responses, validate token expiration checking logic"
+            "testStrategy": "Test shadow user ID generation with crypto.randomUUID, verify token persistence in IndexedDB, test login/logout flow with mock API responses, validate token expiration checking logic",
+            "parentId": "undefined"
           },
           {
             "id": 2,
@@ -1640,7 +1797,8 @@
             "dependencies": [],
             "details": "Create frontend/src/stores/uiStore.ts using createStore from zustand/vanilla with immer middleware. Implement UiState interface with modalStates as Map<string, ModalState> for modal stacking (isExportModalOpen, isUploadModalOpen, isSettingsOpen), toastQueue as array with max 5 toasts including auto-dismiss timers, panelStates for isPropertiesPanelOpen/isMediaLibraryOpen/isTimelineExpanded, activeTool for editor mode, and keyboardShortcuts as Map<string, KeyboardShortcut>. Add UiActions including openModal, closeModal, addToast, removeToast, togglePanel, setActiveTool, registerShortcut. Implement toast auto-dismiss using setTimeout with cleanup. Use persist middleware for panel states and keyboard shortcuts only. Coordinate with existing ThemeContext to avoid theme state duplication",
             "status": "pending",
-            "testStrategy": "Test modal stacking with multiple modals open, verify toast queue limits and auto-dismiss timing, test panel toggle states, validate keyboard shortcut registration and conflicts"
+            "testStrategy": "Test modal stacking with multiple modals open, verify toast queue limits and auto-dismiss timing, test panel toggle states, validate keyboard shortcut registration and conflicts",
+            "parentId": "undefined"
           },
           {
             "id": 3,
@@ -1652,7 +1810,8 @@
             ],
             "details": "Update frontend/src/types/stores.ts to add AuthState interface with userId: string | null, email: string | null, name: string | null, shadowUserId: string, accessToken: string | null, refreshToken: string | null, tokenExpiresAt: number | null fields. Add AuthActions interface with login(credentials) returning Promise, logout() method, refreshToken() returning Promise, setShadowUser(id: string) method. Add UiState interface with modalStates: Map<string, ModalState>, toastQueue: Toast[], panelStates object, activeTool: string, keyboardShortcuts: Map<string, KeyboardShortcut>. Add UiActions with all modal, toast, panel, and tool methods. Define supporting types like ModalState, Toast (with id, message, type, duration), and ensure compatibility with existing store types",
             "status": "pending",
-            "testStrategy": "Verify TypeScript compilation with new types, test type inference in store hooks, validate interface compatibility with existing components"
+            "testStrategy": "Verify TypeScript compilation with new types, test type inference in store hooks, validate interface compatibility with existing components",
+            "parentId": "undefined"
           },
           {
             "id": 4,
@@ -1665,7 +1824,8 @@
             ],
             "details": "Create frontend/src/stores/index.ts exports for new stores. Implement AuthStoreProvider and UiStoreProvider React Context components following the pattern from existing stores. Create useAuthStore and useUiStore hooks that use useContext to access store state and actions. Add the new providers to the main App component provider tree alongside existing providers. Ensure proper TypeScript typing for context values and hook returns. Export createAuthStore and createUiStore functions for testing purposes. Update STORE_NAMES in indexedDBStorage.ts to include AUTH: 'auth-store' and UI: 'ui-store' entries",
             "status": "pending",
-            "testStrategy": "Test context provider rendering, verify hook access to store state and actions, test store isolation between different provider instances, validate TypeScript type inference"
+            "testStrategy": "Test context provider rendering, verify hook access to store state and actions, test store isolation between different provider instances, validate TypeScript type inference",
+            "parentId": "undefined"
           },
           {
             "id": 5,
@@ -1676,15 +1836,20 @@
             ],
             "details": "Update ExportModal component to use useUiStore for open/close state instead of local state. Create a new ToastContainer component that reads from uiStore.toastQueue and renders toast notifications with auto-dismiss. Update panel components to use uiStore.panelStates for visibility. Integrate useKeyboardShortcuts hook with uiStore.keyboardShortcuts Map. For authStore, create an api/auth.ts service file with login/logout/refresh endpoints. Implement shadow user cookie handling in authStore initialization - check for existing cookie or generate new shadowUserId. Add auth headers to existing API calls using accessToken from authStore. Implement token refresh logic with automatic retry on 401 responses. Ensure all state changes use proper Zustand actions",
             "status": "pending",
-            "testStrategy": "Test modal state synchronization, verify toast rendering and dismissal, test panel visibility toggles, validate API authentication flow with mock responses, test shadow user cookie persistence"
+            "testStrategy": "Test modal state synchronization, verify toast rendering and dismissal, test panel visibility toggles, validate API authentication flow with mock responses, test shadow user cookie persistence",
+            "parentId": "undefined"
           }
         ]
       }
     ],
     "metadata": {
-      "created": "2025-11-16T19:03:27.919Z",
-      "updated": "2025-11-16T23:59:00.000Z",
-      "description": "Tasks for master context"
+      "version": "1.0.0",
+      "lastModified": "2025-11-17T00:36:21.619Z",
+      "taskCount": 20,
+      "completedCount": 16,
+      "tags": [
+        "master"
+      ]
     }
   }
 }

@@ -1,7 +1,6 @@
 import { createStore } from 'zustand/vanilla'
 import { immer } from 'zustand/middleware/immer'
-import { persist, devtools } from 'zustand/middleware'
-import { createIndexedDBStorage, STORE_NAMES } from '../lib/indexedDBStorage'
+import { devtools, persist, createJSONStorage } from 'zustand/middleware'
 import type { MediaStore, MediaAsset, MediaFolder, UploadItem } from '../types/stores'
 import { api } from '../lib/api'
 import { toast } from '../lib/toast'
@@ -90,24 +89,31 @@ export const createMediaStore = () => {
 
       removeFolder: (folderId) =>
         set((state) => {
-          // Move all assets in this folder to root
+          // Helper function to recursively collect all folder IDs to delete
+          const collectFolderIds = (id: string): string[] => {
+            const ids = [id]
+            const children = state.folders.filter((f) => f.parentId === id)
+            children.forEach((child) => {
+              ids.push(...collectFolderIds(child.id))
+            })
+            return ids
+          }
+
+          // Get all folder IDs to delete (including children)
+          const folderIdsToDelete = collectFolderIds(folderId)
+
+          // Move all assets in these folders to root
           state.assets.forEach((asset) => {
-            if (asset.folderId === folderId) {
+            if (asset.folderId && folderIdsToDelete.includes(asset.folderId)) {
               state.assets.set(asset.id, { ...asset, folderId: undefined })
             }
           })
 
-          // Remove child folders recursively
-          const childFolders = state.folders.filter((f) => f.parentId === folderId)
-          childFolders.forEach((child) => {
-            get().removeFolder(child.id)
-          })
-
-          // Remove the folder
-          state.folders = state.folders.filter((f) => f.id !== folderId)
+          // Remove all folders at once
+          state.folders = state.folders.filter((f) => !folderIdsToDelete.includes(f.id))
 
           // Clear current folder if it was deleted
-          if (state.currentFolderId === folderId) {
+          if (state.currentFolderId && folderIdsToDelete.includes(state.currentFolderId)) {
             state.currentFolderId = undefined
           }
         }),
@@ -467,55 +473,23 @@ export const createMediaStore = () => {
         })),
         {
           name: 'media-store',
-          storage: createIndexedDBStorage(STORE_NAMES.MEDIA),
-          // Only persist data, not functions
+          storage: createJSONStorage(() => localStorage),
           partialize: (state) => ({
-            assets: state.assets,
+            assets: Array.from(state.assets.entries()),
             folders: state.folders,
-            thumbnailCache: state.thumbnailCache,
             selectedAssetIds: state.selectedAssetIds,
             currentFolderId: state.currentFolderId,
-            // Don't persist uploadQueue
+            // Don't persist uploadQueue or thumbnailCache
           }),
-          // Custom serialization for Maps and Dates
-          serialize: (state) => {
-            return JSON.stringify({
-              state: {
-                assets: Array.from(state.state.assets.entries()),
-                folders: state.state.folders.map((folder) => ({
-                  ...folder,
-                  createdAt: folder.createdAt.toISOString(),
-                })),
-                thumbnailCache: Array.from(state.state.thumbnailCache.entries()),
-                selectedAssetIds: state.state.selectedAssetIds,
-                currentFolderId: state.state.currentFolderId,
-              },
-              version: state.version,
-            })
-          },
-          deserialize: (str) => {
-            const parsed = JSON.parse(str)
+          merge: (persistedState, currentState) => {
+            // Merge persisted state back into current state
+            const persisted = persistedState as any
             return {
-              state: {
-                ...initialState,
-                assets: new Map(
-                  parsed.state.assets.map(([id, asset]: [string, MediaAsset & { createdAt: string }]) => [
-                    id,
-                    {
-                      ...asset,
-                      createdAt: new Date(asset.createdAt),
-                    },
-                  ])
-                ),
-                folders: parsed.state.folders.map((folder: MediaFolder & { createdAt: string }) => ({
-                  ...folder,
-                  createdAt: new Date(folder.createdAt),
-                })),
-                thumbnailCache: new Map(parsed.state.thumbnailCache),
-                selectedAssetIds: parsed.state.selectedAssetIds,
-                currentFolderId: parsed.state.currentFolderId,
-              },
-              version: parsed.version,
+              ...currentState,
+              assets: new Map(persisted.assets || []),
+              folders: persisted.folders || [],
+              selectedAssetIds: persisted.selectedAssetIds || [],
+              currentFolderId: persisted.currentFolderId,
             }
           },
         }

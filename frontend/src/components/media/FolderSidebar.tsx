@@ -10,7 +10,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../ui/dialog';
-import { shallow } from 'zustand/shallow';
 import type { MediaFolder } from '../../types/stores';
 
 /**
@@ -23,14 +22,9 @@ export function FolderSidebar() {
   const [newFolderName, setNewFolderName] = useState('');
   const [folderToDelete, setFolderToDelete] = useState<string | null>(null);
 
-  const { folders, currentFolderId, assets } = useMediaStore(
-    (state) => ({
-      folders: state.folders,
-      currentFolderId: state.currentFolderId,
-      assets: state.assets,
-    }),
-    shallow
-  );
+  const folders = useMediaStore((state) => state.folders);
+  const currentFolderId = useMediaStore((state) => state.currentFolderId);
+  const assets = useMediaStore((state) => state.assets);
 
   const createFolder = useMediaStore((state) => state.createFolder);
   const removeFolder = useMediaStore((state) => state.removeFolder);

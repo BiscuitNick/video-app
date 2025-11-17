@@ -15,7 +15,6 @@ import {
 } from '../components/ui/dialog';
 import { Button } from '../components/ui/button';
 import { useMediaStore } from '../contexts/StoreContext';
-import { shallow } from 'zustand/shallow';
 import type { MediaAssetType } from '../types/stores';
 
 /**
@@ -31,14 +30,9 @@ export default function MediaLibraryPage() {
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
   // Access MediaStore state and actions
-  const { assets, selectedAssetIds, currentFolderId } = useMediaStore(
-    (state) => ({
-      assets: state.assets,
-      selectedAssetIds: state.selectedAssetIds,
-      currentFolderId: state.currentFolderId,
-    }),
-    shallow
-  );
+  const assets = useMediaStore((state) => state.assets);
+  const selectedAssetIds = useMediaStore((state) => state.selectedAssetIds);
+  const currentFolderId = useMediaStore((state) => state.currentFolderId);
 
   const queueUpload = useMediaStore((state) => state.queueUpload);
   const selectAsset = useMediaStore((state) => state.selectAsset);
