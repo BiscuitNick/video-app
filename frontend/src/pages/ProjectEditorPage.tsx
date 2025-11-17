@@ -1,11 +1,83 @@
 import { useParams } from 'react-router';
+import { useEffect, useCallback } from 'react';
 import { Play, SkipBack, SkipForward } from 'lucide-react';
+import { useShallow } from 'zustand/react/shallow';
+import { Timeline } from '../components/timeline';
+import { useTimelineStore } from '../contexts/StoreContext';
 
 /**
  * Project editor page with basic editor shell and route param handling
  */
 export default function ProjectEditorPage() {
   const { projectId } = useParams();
+  const timelineStore = useTimelineStore();
+
+  // Select Timeline state with useShallow for optimized re-renders
+  const { tracks, clips, selectedClipIds, playhead, zoom, fps } = useTimelineStore(
+    useShallow((state) => ({
+      tracks: state.tracks,
+      clips: state.clips,
+      selectedClipIds: state.selectedClipIds,
+      playhead: state.playhead,
+      zoom: state.zoom,
+      fps: state.fps,
+    }))
+  );
+
+  // Initialize default tracks on component mount
+  useEffect(() => {
+    if (timelineStore.tracks.length === 0) {
+      // Add default video track
+      timelineStore.addTrack({
+        type: 'video',
+        name: 'Video 1',
+        height: 80,
+        locked: false,
+        hidden: false,
+        muted: false,
+        order: 0,
+      });
+
+      // Add default audio track
+      timelineStore.addTrack({
+        type: 'audio',
+        name: 'Audio 1',
+        height: 60,
+        locked: false,
+        hidden: false,
+        muted: false,
+        order: 1,
+      });
+
+      // Add default text track
+      timelineStore.addTrack({
+        type: 'text',
+        name: 'Text/Titles',
+        height: 60,
+        locked: false,
+        hidden: false,
+        muted: false,
+        order: 2,
+      });
+    }
+  }, [timelineStore]);
+
+  // Calculate duration (default to 5 minutes if not set)
+  const duration = timelineStore.duration > 0 ? timelineStore.duration : timelineStore.fps * 300;
+
+  // Event handler for adding tracks
+  const handleAddTrack = useCallback(() => {
+    const trackNumber = timelineStore.tracks.length + 1;
+    timelineStore.addTrack({
+      type: 'video',
+      name: `Track ${trackNumber}`,
+      height: 80,
+      locked: false,
+      hidden: false,
+      muted: false,
+      order: timelineStore.tracks.length,
+    });
+  }, [timelineStore]);
 
   return (
     <div className="h-full flex flex-col bg-zinc-950">
@@ -65,13 +137,22 @@ export default function ProjectEditorPage() {
       </div>
 
       {/* Timeline Area */}
-      <div className="h-64 bg-zinc-900 border-t border-zinc-800 p-4">
-        <div className="h-full flex items-center justify-center bg-zinc-950 rounded-lg border border-zinc-800">
-          <div className="text-center text-zinc-600">
-            <p className="text-lg">Timeline</p>
-            <p className="text-sm mt-2">Drag media here to start editing</p>
-          </div>
-        </div>
+      <div className="h-64 bg-zinc-900 border-t border-zinc-800">
+        <Timeline
+          tracks={tracks}
+          clips={clips}
+          selectedClipIds={selectedClipIds}
+          playhead={playhead}
+          zoom={zoom}
+          duration={duration}
+          fps={fps}
+          onPlayheadChange={timelineStore.setPlayhead}
+          onZoomChange={timelineStore.setZoom}
+          onClipSelect={timelineStore.selectClip}
+          onClipMove={timelineStore.moveClip}
+          onTrackUpdate={timelineStore.updateTrack}
+          onAddTrack={handleAddTrack}
+        />
       </div>
     </div>
   );
