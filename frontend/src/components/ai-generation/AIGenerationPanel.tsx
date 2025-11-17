@@ -1,9 +1,9 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
 import PromptInput from './PromptInput'
 import GenerationQueue from './GenerationQueue'
 import GenerationHistory from './GenerationHistory'
-import { useAIGenerationStore, useMediaStore } from '../../contexts/StoreContext'
+import { useAIGenerationStore, useMediaStore, useWebSocketStore } from '../../contexts/StoreContext'
 import { generateImage, generateVideo, cancelGeneration as cancelGenerationAPI } from '../../services/aiGenerationService'
 import type { GenerationType, QualityTier } from '../../types/stores'
 
@@ -131,6 +131,118 @@ export default function AIGenerationPanel() {
     },
     [handleGenerate]
   )
+
+  // Get WebSocket jobs Map
+  const wsJobs = useWebSocketStore((state) => state.jobs)
+
+  // Track processed job updates to prevent duplicate processing
+  const processedJobsRef = useRef(new Map<string, { status: string; timestamp: number }>())
+
+  // Sync WebSocket job updates to AI generation store
+  useEffect(() => {
+    // For each active generation with a jobId, check if there's a corresponding WebSocket job update
+    activeGenerations.forEach((generation) => {
+      if (!generation.jobId) return
+
+      const job = wsJobs.get(generation.jobId)
+      if (!job) return
+
+      // Check if we've already processed this job update
+      const processed = processedJobsRef.current.get(generation.jobId)
+
+      // Skip if already processed this exact update (except for running jobs which can have progress updates)
+      if (processed && processed.status === job.status && job.status !== 'running') {
+        return
+      }
+
+      // Only update if generation is still in 'generating' or 'queued' status
+      if (generation.status !== 'generating' && generation.status !== 'queued') return
+
+      // Handle successful completion
+      if (job.status === 'succeeded') {
+        const result = job.result as { url?: string; output?: string[] } | undefined
+        const resultUrl = result?.url || result?.output?.[0]
+
+        if (resultUrl) {
+          console.log(`[AIGenerationPanel] Job ${generation.jobId} completed with URL: ${resultUrl}`)
+
+          // Mark as processed
+          processedJobsRef.current.set(generation.jobId, {
+            status: job.status,
+            timestamp: Date.now()
+          })
+
+          // Update generation status to completed
+          updateGenerationStatus(generation.id, 'completed', {
+            resultUrl,
+            progress: 100,
+          })
+
+          // Auto-import to media library
+          addAsset({
+            id: `ai-${generation.id}`,
+            name: `AI ${generation.type === 'image' ? 'Image' : 'Video'}: ${generation.prompt.substring(0, 30)}...`,
+            type: generation.type === 'image' ? 'image' : 'video',
+            url: resultUrl,
+            thumbnailUrl: generation.type === 'image' ? resultUrl : undefined,
+            size: 0, // Size unknown from Replicate API
+            duration: generation.type === 'video' ? 5 : undefined, // Default 5s for videos (in seconds)
+            createdAt: new Date(),
+            metadata: {
+              aiGenerated: true,
+              prompt: generation.prompt,
+              generationType: generation.type,
+              qualityTier: generation.qualityTier,
+            },
+          })
+        }
+      }
+
+      // Handle failure
+      if (job.status === 'failed') {
+        console.error(`[AIGenerationPanel] Job ${generation.jobId} failed:`, job.error)
+
+        // Mark as processed
+        processedJobsRef.current.set(generation.jobId, {
+          status: job.status,
+          timestamp: Date.now()
+        })
+
+        updateGenerationStatus(generation.id, 'failed', {
+          error: job.error || 'Generation failed',
+        })
+      }
+
+      // Handle cancellation
+      if (job.status === 'canceled') {
+        console.log(`[AIGenerationPanel] Job ${generation.jobId} was canceled`)
+
+        // Mark as processed
+        processedJobsRef.current.set(generation.jobId, {
+          status: job.status,
+          timestamp: Date.now()
+        })
+
+        updateGenerationStatus(generation.id, 'cancelled')
+      }
+
+      // Update progress for running jobs (allow repeated updates for progress)
+      if (job.status === 'running' && job.progress !== undefined) {
+        // Only update if progress has changed
+        if (!processed || processed.status !== 'running' || Math.abs((job.progress || 0) - (processed.timestamp || 0)) > 5) {
+          updateGenerationStatus(generation.id, 'generating', {
+            progress: job.progress,
+          })
+
+          // Update processed status for running jobs
+          processedJobsRef.current.set(generation.jobId, {
+            status: job.status,
+            timestamp: job.progress || 0
+          })
+        }
+      }
+    })
+  }, [wsJobs, activeGenerations, updateGenerationStatus, addAsset])
 
   return (
     <div className="flex flex-col h-full bg-zinc-950">

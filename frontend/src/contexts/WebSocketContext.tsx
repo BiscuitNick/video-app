@@ -32,12 +32,20 @@ export function WebSocketProvider({
   const webSocketStore = useWebSocketStore()
 
   useEffect(() => {
-    // Only initialize if URL is provided or available from environment
-    const wsUrl = url || import.meta.env.VITE_WEBSOCKET_URL
+    // Determine WebSocket URL
+    // Default to local WebSocket endpoint for job updates
+    const defaultWsUrl = import.meta.env.VITE_API_URL
+      ? `${import.meta.env.VITE_API_URL.replace('http', 'ws')}/api/v1/ws/jobs`
+      : 'ws://localhost:8000/api/v1/ws/jobs'
+
+    const wsUrl = url || import.meta.env.VITE_WEBSOCKET_URL || defaultWsUrl
+
     if (!wsUrl) {
       console.warn('WebSocket URL not provided, WebSocket will not connect')
       return
     }
+
+    console.log(`[WebSocket] Connecting to: ${wsUrl}`)
 
     // Initialize WebSocket service
     try {

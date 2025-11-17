@@ -1,6 +1,7 @@
 """WebSocket endpoints for real-time composition updates."""
 
 import logging
+from datetime import UTC, datetime
 from typing import Annotated
 from uuid import UUID
 
@@ -365,6 +366,106 @@ async def websocket_composition_updates(
 
             except Exception as e:
                 logger.error(f"Error during WebSocket cleanup: {e}")
+
+
+@router.websocket("/ws/jobs")
+async def websocket_job_updates(
+    websocket: WebSocket,
+    token: Annotated[str | None, Query()] = None,
+) -> None:
+    """
+    WebSocket endpoint for real-time job status updates.
+
+    Clients connect to this endpoint to receive updates for all their AI generation jobs.
+    Messages are published via Redis pub/sub when job status changes.
+
+    Args:
+        websocket: WebSocket connection
+        token: Optional JWT authentication token (not enforced for now)
+
+    Example:
+        ws://localhost:8000/api/v1/ws/jobs
+    """
+    import asyncio
+    import json
+    import redis.asyncio as aioredis
+    from app.config import settings
+
+    try:
+        # Accept WebSocket connection
+        await websocket.accept()
+        logger.info("WebSocket connection accepted for job updates")
+
+        # Send connection confirmation
+        await websocket.send_json({
+            "event": "connected",
+            "message": "Connected to job updates stream",
+            "timestamp": datetime.now(UTC).isoformat()
+        })
+
+        # Create Redis subscriber for AI jobs
+        redis_client = await aioredis.from_url(
+            str(settings.redis_url),
+            encoding="utf-8",
+            decode_responses=True
+        )
+        pubsub = redis_client.pubsub()
+
+        # Subscribe to general AI jobs channel
+        await pubsub.subscribe("ai_jobs:updates")
+
+        logger.info("Subscribed to AI jobs updates channel")
+
+        # Listen for Redis messages and forward to WebSocket
+        async def redis_listener():
+            """Listen to Redis pub/sub and forward messages to WebSocket."""
+            try:
+                async for message in pubsub.listen():
+                    if message["type"] == "message":
+                        try:
+                            # Parse the JSON message
+                            job_update = json.loads(message["data"])
+                            # Forward to WebSocket client
+                            await websocket.send_json(job_update)
+                            logger.debug(f"Forwarded job update: {job_update.get('jobId')}")
+                        except json.JSONDecodeError:
+                            logger.warning(f"Failed to decode Redis message: {message['data']}")
+            except Exception as e:
+                logger.error(f"Redis listener error: {e}")
+
+        # Listen for WebSocket messages (for heartbeat/ping)
+        async def websocket_receiver():
+            """Receive messages from WebSocket (heartbeat, etc.)."""
+            try:
+                while True:
+                    data = await websocket.receive_text()
+                    # Handle ping/pong for keep-alive
+                    if data == "ping":
+                        await websocket.send_text("pong")
+            except WebSocketDisconnect:
+                logger.info("WebSocket disconnected (receiver)")
+
+        # Run both listeners concurrently
+        await asyncio.gather(
+            redis_listener(),
+            websocket_receiver(),
+            return_exceptions=True
+        )
+
+    except WebSocketDisconnect:
+        logger.info("WebSocket disconnected for job updates")
+    except Exception as e:
+        logger.exception(f"Error in job updates WebSocket: {e}")
+    finally:
+        # Cleanup
+        try:
+            if 'pubsub' in locals():
+                await pubsub.unsubscribe()
+                await pubsub.close()
+            if 'redis_client' in locals():
+                await redis_client.close()
+        except Exception as e:
+            logger.error(f"Error during WebSocket cleanup: {e}")
 
 
 @router.get("/ws/stats")
