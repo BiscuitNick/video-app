@@ -66,6 +66,12 @@ class Folder(BaseModel):
     )
 
     # Relationships
+    owner: Mapped["User"] = relationship(
+        "User",
+        back_populates="folders",
+        foreign_keys=[owner_user_id],
+    )
+
     parent: Mapped["Folder | None"] = relationship(
         "Folder",
         remote_side=[id],

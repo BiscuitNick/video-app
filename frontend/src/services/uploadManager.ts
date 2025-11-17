@@ -138,30 +138,22 @@ export class UploadManager {
       // Perform the upload
       const result = await uploadFile(uploadItem.file, onProgress, abortController.signal)
 
-      // Upload succeeded - mark as processing while backend generates thumbnail
-      state.setUploadStatus(uploadId, 'processing')
-
       // Add the asset to the media library
       state.addAsset({
-        id: result.assetId,
-        name: uploadItem.file.name,
-        type: this.getAssetType(uploadItem.file.type),
-        url: result.url,
-        thumbnailUrl: result.thumbnailUrl,
-        size: uploadItem.file.size,
+        id: result.id,
+        name: result.name,
+        type: this.getAssetType(result.file_type),
+        url: '', // URL will be populated from S3 when needed
+        thumbnailUrl: undefined,
+        size: result.file_size,
         createdAt: new Date(),
         metadata: {},
       })
 
-      // Mark as completed
+      // Mark as completed and store the asset ID
       state.setUploadStatus(uploadId, 'completed')
       state.updateUploadProgress(uploadId, 100)
-
-      // Store the asset ID for reference
-      const upload = state.uploadQueue.find((u) => u.id === uploadId)
-      if (upload) {
-        upload.uploadedAssetId = result.assetId
-      }
+      state.updateUpload(uploadId, { uploadedAssetId: result.id })
     } catch (error) {
       await this.handleUploadError(uploadId, error, task)
     } finally {
@@ -197,7 +189,7 @@ export class UploadManager {
       // Update retry count in store
       const upload = state.uploadQueue.find((u) => u.id === uploadId)
       if (upload) {
-        upload.retryCount += 1
+        state.updateUpload(uploadId, { retryCount: upload.retryCount + 1 })
       }
 
       // Wait before retrying
@@ -249,8 +241,7 @@ export class UploadManager {
 
     if (upload && upload.status === 'failed') {
       // Reset status and add to queue
-      upload.retryCount = 0
-      upload.error = undefined
+      state.updateUpload(uploadId, { retryCount: 0, error: undefined })
       state.setUploadStatus(uploadId, 'queued')
       this.queue.push(uploadId)
       this.processQueue()

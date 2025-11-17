@@ -7,6 +7,7 @@ from db.models.folder import Folder
 from db.models.job import JobMetric, JobStatus, JobType, MetricType, ProcessingJob
 from db.models.media import MediaAsset, MediaAssetStatus, MediaAssetType
 from db.models.project import Project
+from db.models.user import User
 
 __all__ = [
     # Composition models
@@ -27,4 +28,6 @@ __all__ = [
     "MediaAssetStatus",
     # Project models
     "Project",
+    # User models
+    "User",
 ]

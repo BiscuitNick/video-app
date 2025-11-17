@@ -128,7 +128,6 @@ class MediaAssetResponse(BaseModel):
         default_factory=dict,
         description="Technical metadata",
         serialization_alias="metadata",
-        validation_alias="metadata"
     )
     folder_id: UUID | None = Field(None, description="Parent folder ID")
     tags: list[str] = Field(default_factory=list, description="Asset tags")
@@ -140,6 +139,7 @@ class MediaAssetResponse(BaseModel):
         """Pydantic configuration."""
 
         from_attributes = True
+        populate_by_name = True
 
 
 class MediaAssetLightResponse(BaseModel):

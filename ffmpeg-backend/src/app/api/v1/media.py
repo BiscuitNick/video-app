@@ -92,15 +92,15 @@ async def initiate_media_upload(
     """
     asset_id = uuid.uuid4()
     # TODO: Get user_id from authenticated session
-    # For now, using a placeholder user_id
-    user_id = uuid.uuid4()  # This should come from auth
+    # For now, using a test user_id that exists in the database
+    user_id = uuid.UUID("00000000-0000-0000-0000-000000000001")  # This should come from auth
 
     logger.info(
         "Initiating media upload",
         extra={
             "asset_id": str(asset_id),
             "user_id": str(user_id),
-            "filename": request.name,
+            "file_name": request.name,
             "file_size": request.size,
             "file_type": request.type,
         },
@@ -255,7 +255,24 @@ async def confirm_media_upload(
             },
         )
 
-        return MediaAssetResponse.model_validate(media_asset)
+        # Manually construct response to avoid SQLAlchemy metadata conflict
+        return MediaAssetResponse(
+            id=media_asset.id,
+            user_id=media_asset.user_id,
+            name=media_asset.name,
+            file_size=media_asset.file_size,
+            file_type=media_asset.file_type,
+            s3_key=media_asset.s3_key,
+            thumbnail_s3_key=media_asset.thumbnail_s3_key,
+            status=media_asset.status,
+            checksum=media_asset.checksum,
+            file_metadata=media_asset.file_metadata,
+            folder_id=media_asset.folder_id,
+            tags=media_asset.tags,
+            is_deleted=media_asset.is_deleted,
+            created_at=media_asset.created_at,
+            updated_at=media_asset.updated_at,
+        )
 
     except HTTPException:
         raise

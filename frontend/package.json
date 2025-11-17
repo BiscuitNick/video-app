@@ -28,6 +28,7 @@
     "tailwind-merge": "^3.4.0",
     "tailwindcss": "^4.1.17",
     "zod": "^4.1.12",
+    "zundo": "^2.3.0",
     "zustand": "^5.0.8"
   },
   "devDependencies": {

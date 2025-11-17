@@ -120,6 +120,11 @@ class MediaAsset(BaseModel):
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
 
     # Relationships
+    user: Mapped["User"] = relationship(
+        "User",
+        back_populates="media_assets",
+        foreign_keys=[user_id],
+    )
     folder: Mapped["Folder | None"] = relationship(
         "Folder",
         back_populates="media_assets",

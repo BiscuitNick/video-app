@@ -146,6 +146,7 @@ export interface MediaActions {
   queueUpload: (file: File) => string // returns upload ID
   updateUploadProgress: (uploadId: string, progress: number) => void
   setUploadStatus: (uploadId: string, status: UploadItem['status'], error?: string) => void
+  updateUpload: (uploadId: string, updates: Partial<UploadItem>) => void
   cancelUpload: (uploadId: string) => void
   removeFromQueue: (uploadId: string) => void
   clearCompletedUploads: () => void

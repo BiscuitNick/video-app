@@ -148,6 +148,14 @@ export const createMediaStore = () => {
           }
         }),
 
+      updateUpload: (uploadId, updates) =>
+        set((state) => {
+          const upload = state.uploadQueue.find((u) => u.id === uploadId)
+          if (upload) {
+            Object.assign(upload, updates)
+          }
+        }),
+
       cancelUpload: (uploadId) =>
         set((state) => {
           const upload = state.uploadQueue.find((u) => u.id === uploadId)
@@ -214,18 +222,27 @@ export const createMediaStore = () => {
         {
           name: 'media-store',
           storage: createIndexedDBStorage(STORE_NAMES.MEDIA),
+          // Only persist data, not functions
+          partialize: (state) => ({
+            assets: state.assets,
+            folders: state.folders,
+            thumbnailCache: state.thumbnailCache,
+            selectedAssetIds: state.selectedAssetIds,
+            currentFolderId: state.currentFolderId,
+            // Don't persist uploadQueue
+          }),
           // Custom serialization for Maps and Dates
           serialize: (state) => {
             return JSON.stringify({
               state: {
-                ...state.state,
                 assets: Array.from(state.state.assets.entries()),
                 folders: state.state.folders.map((folder) => ({
                   ...folder,
                   createdAt: folder.createdAt.toISOString(),
                 })),
                 thumbnailCache: Array.from(state.state.thumbnailCache.entries()),
-                uploadQueue: [], // Don't persist upload queue
+                selectedAssetIds: state.state.selectedAssetIds,
+                currentFolderId: state.state.currentFolderId,
               },
               version: state.version,
             })
@@ -234,7 +251,7 @@ export const createMediaStore = () => {
             const parsed = JSON.parse(str)
             return {
               state: {
-                ...parsed.state,
+                ...initialState,
                 assets: new Map(
                   parsed.state.assets.map(([id, asset]: [string, MediaAsset & { createdAt: string }]) => [
                     id,
@@ -249,7 +266,8 @@ export const createMediaStore = () => {
                   createdAt: new Date(folder.createdAt),
                 })),
                 thumbnailCache: new Map(parsed.state.thumbnailCache),
-                uploadQueue: [],
+                selectedAssetIds: parsed.state.selectedAssetIds,
+                currentFolderId: parsed.state.currentFolderId,
               },
               version: parsed.version,
             }

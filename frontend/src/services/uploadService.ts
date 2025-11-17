@@ -4,17 +4,21 @@
  */
 
 export interface PresignedUrlRequest {
-  fileName: string
-  fileSize: number
-  fileType: string
-  checksum?: string
+  name: string
+  size: number
+  type: 'image' | 'video' | 'audio'
+  checksum: string
 }
 
 export interface PresignedUrlResponse {
-  uploadUrl: string
-  s3Key: string
-  fields?: Record<string, string>
-  expiresAt: string
+  id: string // Asset ID from backend
+  presigned_url: string
+  upload_params: {
+    method: string
+    headers: Record<string, string>
+    fields: Record<string, string>
+  }
+  expires_in: number
 }
 
 export interface UploadProgress {
@@ -108,11 +112,37 @@ export async function requestPresignedUrl(
 }
 
 /**
+ * Calculate MD5 checksum of a file
+ */
+async function calculateChecksum(file: File): Promise<string> {
+  const buffer = await file.arrayBuffer()
+  const hashBuffer = await crypto.subtle.digest('SHA-256', buffer)
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+  return hashHex
+}
+
+/**
+ * Determine media type from file MIME type
+ */
+function getMediaType(mimeType: string): 'image' | 'video' | 'audio' {
+  if (mimeType.startsWith('image/')) return 'image'
+  if (mimeType.startsWith('video/')) return 'video'
+  if (mimeType.startsWith('audio/')) return 'audio'
+  throw new UploadError('Unsupported file type', undefined, false)
+}
+
+/**
  * Uploads a file directly to S3 using a presigned URL
  */
 export async function uploadToS3(
   file: File,
   presignedUrl: string,
+  uploadParams: {
+    method: string
+    headers: Record<string, string>
+    fields: Record<string, string>
+  },
   onProgress?: UploadProgressCallback,
   signal?: AbortSignal
 ): Promise<{ etag: string }> {
@@ -145,7 +175,7 @@ export async function uploadToS3(
 
     xhr.addEventListener('load', () => {
       if (xhr.status >= 200 && xhr.status < 300) {
-        // Extract ETag from response headers
+        // For POST uploads, ETag might not be in headers
         const etag = xhr.getResponseHeader('ETag') || ''
         resolve({ etag: etag.replace(/"/g, '') })
       } else {
@@ -178,11 +208,22 @@ export async function uploadToS3(
       })
     }
 
-    // Start upload
-    xhr.open('PUT', presignedUrl)
-    xhr.setRequestHeader('Content-Type', file.type)
+    // Start upload - use POST method with FormData for presigned POST uploads
+    xhr.open(uploadParams.method, presignedUrl)
     xhr.timeout = 10 * 60 * 1000 // 10 minutes timeout
-    xhr.send(file)
+
+    // Build FormData with all required fields
+    const formData = new FormData()
+
+    // Add all fields from the presigned URL params
+    Object.entries(uploadParams.fields).forEach(([key, value]) => {
+      formData.append(key, value)
+    })
+
+    // File must be the last field
+    formData.append('file', file)
+
+    xhr.send(formData)
   })
 }
 
@@ -190,23 +231,33 @@ export async function uploadToS3(
  * Confirms upload completion with the backend
  */
 export async function confirmUpload(
-  s3Key: string,
-  etag: string,
+  assetId: string,
   metadata: {
-    fileName: string
-    fileSize: number
-    fileType: string
-  }
-): Promise<{ assetId: string; url: string; thumbnailUrl?: string }> {
-  const response = await fetch('/api/v1/media/confirm', {
-    method: 'POST',
+    duration?: number
+    width?: number
+    height?: number
+    frame_rate?: number
+    codec?: string
+    bitrate?: number
+    sample_rate?: number
+    channels?: number
+  } = {}
+): Promise<{
+  id: string
+  name: string
+  file_size: number
+  file_type: string
+  status: string
+  metadata: Record<string, any>
+}> {
+  const response = await fetch(`/api/v1/media/${assetId}`, {
+    method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      s3Key,
-      etag,
-      ...metadata,
+      metadata,
+      status: 'ready',
     }),
   })
 
@@ -228,27 +279,36 @@ export async function uploadFile(
   file: File,
   onProgress?: UploadProgressCallback,
   signal?: AbortSignal
-): Promise<{ assetId: string; url: string; thumbnailUrl?: string }> {
-  // Step 1: Request presigned URL
+): Promise<{
+  id: string
+  name: string
+  file_size: number
+  file_type: string
+  status: string
+}> {
+  // Step 1: Calculate checksum
+  const checksum = await calculateChecksum(file)
+
+  // Step 2: Request presigned URL
   const presignedData = await requestPresignedUrl({
-    fileName: file.name,
-    fileSize: file.size,
-    fileType: file.type,
+    name: file.name,
+    size: file.size,
+    type: getMediaType(file.type),
+    checksum,
   })
 
-  // Step 2: Upload to S3
-  const { etag } = await uploadToS3(
+  // Step 3: Upload to S3
+  await uploadToS3(
     file,
-    presignedData.uploadUrl,
+    presignedData.presigned_url,
+    presignedData.upload_params,
     onProgress,
     signal
   )
 
-  // Step 3: Confirm upload with backend
-  const result = await confirmUpload(presignedData.s3Key, etag, {
-    fileName: file.name,
-    fileSize: file.size,
-    fileType: file.type,
+  // Step 4: Confirm upload with backend
+  const result = await confirmUpload(presignedData.id, {
+    // TODO: Extract metadata using FFmpeg/browser APIs if needed
   })
 
   return result

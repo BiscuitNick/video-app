@@ -39,7 +39,12 @@ class Project(BaseModel):
 
     # Basic fields
     name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
-    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     # Project settings
     thumbnail_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
@@ -67,6 +72,12 @@ class Project(BaseModel):
     )
 
     # Relationships
+    owner: Mapped["User"] = relationship(
+        "User",
+        back_populates="projects",
+        foreign_keys=[user_id],
+    )
+
     composition: Mapped["Composition"] = relationship(  # type: ignore[name-defined]
         "Composition",
         back_populates="project",

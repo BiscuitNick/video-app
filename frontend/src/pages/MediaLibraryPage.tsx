@@ -1,12 +1,14 @@
 import { Upload, Search, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import AIGenerationPanel from '../components/ai-generation/AIGenerationPanel';
+import { MediaLibraryUpload } from '../components/media/MediaLibraryUpload';
 
 /**
  * Media library page for asset management interface
  */
 export default function MediaLibraryPage() {
   const [showAIPanel, setShowAIPanel] = useState(false);
+  const [showUploadDialog, setShowUploadDialog] = useState(false);
 
   return (
     <div className="flex h-full">
@@ -31,7 +33,10 @@ export default function MediaLibraryPage() {
                 <Sparkles className="w-5 h-5" />
                 AI Generate
               </button>
-              <button className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors">
+              <button
+                onClick={() => setShowUploadDialog(true)}
+                className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors"
+              >
                 <Upload className="w-5 h-5" />
                 Upload Media
               </button>
@@ -61,7 +66,10 @@ export default function MediaLibraryPage() {
                   Upload images, videos, or audio files, or generate content with AI
                 </p>
                 <div className="flex gap-2 justify-center">
-                  <button className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors">
+                  <button
+                    onClick={() => setShowUploadDialog(true)}
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors"
+                  >
                     Upload Media
                   </button>
                   <button
@@ -77,6 +85,36 @@ export default function MediaLibraryPage() {
           </div>
         </div>
       </div>
+
+      {/* Upload Panel (Slide-in from right) */}
+      {showUploadDialog && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/50 z-40"
+            onClick={() => setShowUploadDialog(false)}
+          />
+
+          {/* Panel */}
+          <div className="fixed right-0 top-0 bottom-0 w-[550px] bg-zinc-950 border-l border-zinc-800 z-50 shadow-2xl">
+            <div className="flex items-center justify-between p-4 border-b border-zinc-800">
+              <h2 className="text-lg font-semibold text-zinc-100 flex items-center gap-2">
+                <Upload className="w-5 h-5 text-blue-500" />
+                Upload Media
+              </h2>
+              <button
+                onClick={() => setShowUploadDialog(false)}
+                className="p-2 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-zinc-100 transition-colors"
+              >
+                ×
+              </button>
+            </div>
+            <div className="h-[calc(100%-65px)] overflow-auto p-4">
+              <MediaLibraryUpload />
+            </div>
+          </div>
+        </>
+      )}
 
       {/* AI Generation Panel (Slide-in from right) */}
       {showAIPanel && (
