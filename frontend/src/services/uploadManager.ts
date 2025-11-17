@@ -309,12 +309,18 @@ export class UploadManager {
   }
 
   /**
-   * Helper to determine asset type from MIME type
+   * Helper to determine asset type from MIME type or simple type string
    */
-  private getAssetType(mimeType: string): 'image' | 'video' | 'audio' {
-    if (mimeType.startsWith('image/')) return 'image'
-    if (mimeType.startsWith('video/')) return 'video'
-    if (mimeType.startsWith('audio/')) return 'audio'
-    return 'video' // Default fallback
+  private getAssetType(fileType: string): 'image' | 'video' | 'audio' {
+    const lowerType = fileType.toLowerCase()
+
+    // Handle simple type strings from backend (e.g., "image", "video", "audio")
+    if (lowerType === 'image' || lowerType.startsWith('image/')) return 'image'
+    if (lowerType === 'video' || lowerType.startsWith('video/')) return 'video'
+    if (lowerType === 'audio' || lowerType.startsWith('audio/')) return 'audio'
+
+    // Fallback to image for unknown types
+    console.warn(`Unknown file type: ${fileType}, defaulting to image`)
+    return 'image'
   }
 }

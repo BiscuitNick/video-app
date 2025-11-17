@@ -484,10 +484,25 @@ export const createMediaStore = () => {
           merge: (persistedState, currentState) => {
             // Merge persisted state back into current state
             const persisted = persistedState as any
+
+            // Reconstruct assets Map with proper Date objects
+            const assetsMap = new Map(
+              (persisted.assets || []).map(([id, asset]: [string, any]) => [
+                id,
+                {
+                  ...asset,
+                  createdAt: new Date(asset.createdAt),
+                }
+              ])
+            )
+
             return {
               ...currentState,
-              assets: new Map(persisted.assets || []),
-              folders: persisted.folders || [],
+              assets: assetsMap,
+              folders: (persisted.folders || []).map((folder: any) => ({
+                ...folder,
+                createdAt: new Date(folder.createdAt),
+              })),
               selectedAssetIds: persisted.selectedAssetIds || [],
               currentFolderId: persisted.currentFolderId,
             }
