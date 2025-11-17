@@ -1625,7 +1625,7 @@
         "dependencies": [
           "14"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -1686,7 +1686,8 @@
             "testStrategy": "Test WebSocket messages include error_code on failures, verify download_url appears in success notifications, test real-time updates during job cancellation, validate error categorization accuracy across different failure scenarios",
             "parentId": "undefined"
           }
-        ]
+        ],
+        "updatedAt": "2025-11-17T01:03:09.122Z"
       },
       {
         "id": "19",
@@ -1703,7 +1704,7 @@
           "16",
           "17"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -1764,7 +1765,8 @@
             "testStrategy": "Test retry logic triggers on API failures. Verify WebSocket auto-reconnect works. Test optimistic updates and rollback. Verify error boundaries catch errors. Test complete end-to-end flow. Verify immutable state updates with immer.",
             "parentId": "undefined"
           }
-        ]
+        ],
+        "updatedAt": "2025-11-17T01:03:10.338Z"
       },
       {
         "id": "20",
@@ -1844,9 +1846,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-11-17T00:36:21.619Z",
+      "lastModified": "2025-11-17T01:03:10.339Z",
       "taskCount": 20,
-      "completedCount": 16,
+      "completedCount": 18,
       "tags": [
         "master"
       ]
