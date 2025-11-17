@@ -1,5 +1,5 @@
 import { useParams } from 'react-router';
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import { Play, Pause, SkipBack, SkipForward } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { Timeline } from '../components/timeline';
@@ -7,8 +7,13 @@ import { MediaLibraryWidget } from '../components/media/MediaLibraryWidget';
 import { ClipsListPanel } from '../components/timeline/ClipsListPanel';
 import { ClipPropertiesPanel } from '../components/timeline/ClipPropertiesPanel';
 import { PreviewCanvas } from '../components/preview/PreviewCanvas';
-import { useTimelineStore, useMediaStore, useEditorStore } from '../contexts/StoreContext';
+import { ExportDialog } from '../components/ExportDialog';
+import { ExportProgress } from '../components/export/ExportProgress';
+import { useTimelineStore, useMediaStore, useEditorStore, useProjectStore, useWebSocketStore } from '../contexts/StoreContext';
 import type { MediaAsset, Clip } from '../types/stores';
+import type { ExportSettings, CompositionCreateRequest } from '../types/composition';
+import { api } from '../lib/api';
+import { toast } from '../lib/toast';
 
 /**
  * Project editor page with basic editor shell and route param handling
@@ -18,6 +23,19 @@ export default function ProjectEditorPage() {
   const timelineStore = useTimelineStore();
   const mediaStore = useMediaStore();
   const editorStore = useEditorStore();
+  const projectStore = useProjectStore();
+  const webSocketStore = useWebSocketStore();
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+  const [exportPayload, setExportPayload] = useState<{
+    clips: Array<{
+      video_url: string
+      start_time: number
+      end_time: number
+      trim_start: number
+      trim_end: number
+    }>
+    overlays: unknown[]
+  } | null>(null);
 
   // Select Timeline state with useShallow for optimized re-renders
   const { tracks, clips, selectedClipIds, playhead, zoom, fps } = useTimelineStore(
@@ -192,6 +210,143 @@ export default function ProjectEditorPage() {
     ? clips.get(selectedClipIds[0])
     : undefined;
 
+  // Export handlers
+  const handleExport = useCallback(() => {
+    try {
+      // Get all clips from the timeline
+      const allClips = Array.from(clips.values());
+
+      if (allClips.length === 0) {
+        toast.error('No clips to export', {
+          description: 'Add some clips to the timeline before exporting.',
+        });
+        return;
+      }
+
+      // Transform clips to the backend format
+      const transformedClips = allClips.map((clip) => {
+        // Get the asset URL from the media store
+        const asset = mediaStore.assets.get(clip.assetId);
+        if (!asset) {
+          throw new Error(`Asset not found for clip ${clip.id}`);
+        }
+
+        // Convert frames to seconds
+        const startTime = clip.startTime / fps;
+        const duration = clip.duration / fps;
+        const endTime = startTime + duration;
+        const trimStart = clip.inPoint / fps;
+
+        // trim_end is how many seconds to trim from the END of the source
+        // If we have the asset duration, calculate it as: duration - outPoint
+        // Otherwise, default to 0 (no trimming from end)
+        const trimEnd = asset.duration
+          ? Math.max(0, asset.duration - (clip.outPoint / fps))
+          : 0;
+
+        return {
+          video_url: asset.url,
+          start_time: startTime,
+          end_time: endTime,
+          trim_start: trimStart,
+          trim_end: trimEnd,
+        };
+      });
+
+      // Sort clips by start_time
+      transformedClips.sort((a, b) => a.start_time - b.start_time);
+
+      // Prepare the payload
+      const payload = {
+        clips: transformedClips,
+        overlays: [],
+      };
+
+      // Set the payload and open the dialog
+      setExportPayload(payload);
+      setIsExportDialogOpen(true);
+    } catch (error) {
+      console.error('Failed to prepare export:', error);
+      toast.error('Failed to prepare export', {
+        description: error instanceof Error ? error.message : 'Unknown error occurred',
+      });
+    }
+  }, [clips, mediaStore, fps]);
+
+  const handleConfirmExport = useCallback(async (settings: ExportSettings) => {
+    if (!exportPayload) return;
+
+    try {
+      // Get project name for the composition title
+      const projectName = projectStore.metadata.name || 'Untitled Composition';
+
+      // Construct the complete composition request payload
+      const compositionPayload: CompositionCreateRequest = {
+        title: projectName,
+        description: settings.description,
+        clips: exportPayload.clips,
+        overlays: exportPayload.overlays as any[], // TODO: Implement overlay support
+        output: settings.output,
+      };
+
+      // Show loading toast
+      toast.info('Exporting...', {
+        description: 'Sending your composition to the backend.',
+      });
+
+      console.log('[Export] Sending composition payload:', compositionPayload);
+
+      // Send to the backend API
+      const response = await api.post<{
+        jobId: string;
+        status: 'queued' | 'processing' | 'completed' | 'failed';
+        message?: string;
+        createdAt: string;
+      }>('/compositions', compositionPayload);
+
+      console.log('[Export] Response:', response);
+
+      // Add job to WebSocket store for progress tracking
+      webSocketStore.getState().addJob({
+        id: response.jobId,
+        type: 'export',
+        status: response.status === 'processing' ? 'running' : 'queued',
+        message: response.message || 'Export queued',
+        createdAt: new Date(response.createdAt),
+        updatedAt: new Date(),
+      });
+
+      toast.success('Export started successfully!', {
+        description: 'Your video is being processed. Check progress in the bottom right.',
+      });
+    } catch (error) {
+      console.error('[Export] Failed:', error);
+      toast.error('Export failed', {
+        description: error instanceof Error ? error.message : 'Unknown error occurred',
+      });
+      throw error; // Re-throw to let the dialog handle the error state
+    }
+  }, [exportPayload, projectStore.metadata.name, webSocketStore]);
+
+  // Handle download of completed export
+  const handleExportDownload = useCallback((downloadUrl: string, fileName: string) => {
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast.success('Download started', {
+      description: `Downloading ${fileName}`,
+    });
+  }, []);
+
+  // Handle closing export job card
+  const handleExportClose = useCallback((jobId: string) => {
+    webSocketStore.getState().removeJob(jobId);
+  }, [webSocketStore]);
+
   return (
     <div className="h-full w-full flex flex-col bg-zinc-950">
       {/* Main Editor Area - Top Section */}
@@ -288,8 +443,23 @@ export default function ProjectEditorPage() {
           onAddTrack={handleAddTrack}
           onDeleteTrack={handleDeleteTrack}
           onAssetDrop={handleAssetDrop}
+          onExport={handleExport}
         />
       </div>
+
+      {/* Export Dialog */}
+      <ExportDialog
+        open={isExportDialogOpen}
+        onOpenChange={setIsExportDialogOpen}
+        payload={exportPayload}
+        onConfirm={handleConfirmExport}
+      />
+
+      {/* Export Progress Tracker */}
+      <ExportProgress
+        onDownload={handleExportDownload}
+        onClose={handleExportClose}
+      />
     </div>
   );
 }
