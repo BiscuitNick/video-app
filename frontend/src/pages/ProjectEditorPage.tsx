@@ -1,10 +1,13 @@
 import { useParams } from 'react-router';
-import { useEffect, useCallback, useState } from 'react';
-import { Play, SkipBack, SkipForward } from 'lucide-react';
+import { useEffect, useCallback } from 'react';
+import { Play, Pause, SkipBack, SkipForward } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { Timeline } from '../components/timeline';
 import { MediaLibraryWidget } from '../components/media/MediaLibraryWidget';
-import { useTimelineStore, useMediaStore } from '../contexts/StoreContext';
+import { ClipsListPanel } from '../components/timeline/ClipsListPanel';
+import { ClipPropertiesPanel } from '../components/timeline/ClipPropertiesPanel';
+import { PreviewCanvas } from '../components/preview/PreviewCanvas';
+import { useTimelineStore, useMediaStore, useEditorStore } from '../contexts/StoreContext';
 import type { MediaAsset, Clip } from '../types/stores';
 
 /**
@@ -14,6 +17,7 @@ export default function ProjectEditorPage() {
   const { projectId } = useParams();
   const timelineStore = useTimelineStore();
   const mediaStore = useMediaStore();
+  const editorStore = useEditorStore();
 
   // Select Timeline state with useShallow for optimized re-renders
   const { tracks, clips, selectedClipIds, playhead, zoom, fps } = useTimelineStore(
@@ -27,40 +31,25 @@ export default function ProjectEditorPage() {
     }))
   );
 
-  // Initialize default tracks on component mount
+  // Select Editor state
+  const { isPlaying } = useEditorStore(
+    useShallow((state) => ({
+      isPlaying: state.isPlaying,
+    }))
+  );
+
+  // Initialize default track on component mount (single track for mixed media)
   useEffect(() => {
     if (timelineStore.tracks.length === 0) {
-      // Add default video track
+      // Add default track that can handle all media types
       timelineStore.addTrack({
-        type: 'video',
-        name: 'Video 1',
+        type: 'video', // Type is now just cosmetic for color
+        name: 'Track 1',
         height: 80,
         locked: false,
         hidden: false,
         muted: false,
         order: 0,
-      });
-
-      // Add default audio track
-      timelineStore.addTrack({
-        type: 'audio',
-        name: 'Audio 1',
-        height: 60,
-        locked: false,
-        hidden: false,
-        muted: false,
-        order: 1,
-      });
-
-      // Add default text track
-      timelineStore.addTrack({
-        type: 'text',
-        name: 'Text/Titles',
-        height: 60,
-        locked: false,
-        hidden: false,
-        muted: false,
-        order: 2,
       });
     }
 
@@ -120,7 +109,7 @@ export default function ProjectEditorPage() {
   const handleAddTrack = useCallback(() => {
     const trackNumber = timelineStore.tracks.length + 1;
     timelineStore.addTrack({
-      type: 'video',
+      type: 'video', // Type is now just cosmetic for color
       name: `Track ${trackNumber}`,
       height: 80,
       locked: false,
@@ -161,6 +150,28 @@ export default function ProjectEditorPage() {
     console.log('Clip added to timeline');
   }, [timelineStore, fps]);
 
+  // Playback control handlers
+  const handleTogglePlayback = useCallback(() => {
+    editorStore.togglePlayback();
+  }, [editorStore]);
+
+  const handleSkipBack = useCallback(() => {
+    // Skip back 1 second
+    const newPlayhead = Math.max(0, playhead - fps);
+    timelineStore.setPlayhead(newPlayhead);
+  }, [timelineStore, playhead, fps]);
+
+  const handleSkipForward = useCallback(() => {
+    // Skip forward 1 second
+    const newPlayhead = Math.min(duration, playhead + fps);
+    timelineStore.setPlayhead(newPlayhead);
+  }, [timelineStore, playhead, fps, duration]);
+
+  // Get selected clip for properties panel
+  const selectedClip = selectedClipIds.length === 1
+    ? clips.get(selectedClipIds[0])
+    : undefined;
+
   return (
     <div className="h-full w-full flex flex-col bg-zinc-950">
       {/* Editor Header */}
@@ -192,36 +203,63 @@ export default function ProjectEditorPage() {
         <div className="flex-1 flex overflow-hidden">
           {/* Preview Area */}
           <div className="flex-1 flex flex-col bg-zinc-950 p-6">
-            <div className="flex-1 flex items-center justify-center bg-black rounded-lg border border-zinc-800">
-              <div className="text-center text-zinc-600">
-                <Play className="w-16 h-16 mx-auto mb-4" />
-                <p className="text-lg">Preview Area</p>
-                <p className="text-sm mt-2">Timeline clips will appear here</p>
-              </div>
+            {/* Video Preview Canvas */}
+            <div className="flex-1 flex items-center justify-center rounded-lg border border-zinc-800 overflow-hidden">
+              <PreviewCanvas />
             </div>
 
             {/* Playback Controls */}
             <div className="mt-4 flex items-center justify-center gap-4">
-              <button className="p-3 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors">
+              <button
+                onClick={handleSkipBack}
+                className="p-3 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors"
+                title="Skip back 1 second"
+              >
                 <SkipBack className="w-5 h-5 text-zinc-300" />
               </button>
-              <button className="p-4 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors">
-                <Play className="w-6 h-6 text-white" />
+              <button
+                onClick={handleTogglePlayback}
+                className="p-4 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors"
+                title={isPlaying ? 'Pause' : 'Play'}
+              >
+                {isPlaying ? (
+                  <Pause className="w-6 h-6 text-white" />
+                ) : (
+                  <Play className="w-6 h-6 text-white" />
+                )}
               </button>
-              <button className="p-3 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors">
+              <button
+                onClick={handleSkipForward}
+                className="p-3 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors"
+                title="Skip forward 1 second"
+              >
                 <SkipForward className="w-5 h-5 text-zinc-300" />
               </button>
             </div>
           </div>
 
-          {/* Properties Panel */}
-          <div className="w-80 bg-zinc-900 border-l border-zinc-800 p-6">
-            <h3 className="text-lg font-semibold text-zinc-100 mb-4">Properties</h3>
-            <div className="space-y-4">
-              <div className="p-4 bg-zinc-800 rounded-lg text-center text-zinc-500">
-                <p className="text-sm">Select a clip to edit properties</p>
-              </div>
+          {/* Right Panel - Media Details & Properties */}
+          <div className="w-80 bg-zinc-900 border-l border-zinc-800 overflow-hidden flex flex-col">
+            {/* Media Details Panel - Shows all clips with expandable details */}
+            <div className="flex-1 overflow-hidden">
+              <ClipsListPanel
+                clips={clips}
+                fps={fps}
+                selectedClipIds={selectedClipIds}
+                onClipSelect={timelineStore.selectClip}
+              />
             </div>
+
+            {/* Clip Properties Panel - Shows editable properties for selected clip */}
+            {selectedClip && (
+              <div className="border-t border-zinc-800 overflow-hidden">
+                <ClipPropertiesPanel
+                  clip={selectedClip}
+                  fps={fps}
+                  onUpdate={timelineStore.updateClip}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>

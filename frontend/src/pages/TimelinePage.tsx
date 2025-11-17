@@ -14,38 +14,18 @@ export function TimelinePage() {
   const canUndo = pastStates.length > 0
   const canRedo = futureStates.length > 0
 
-  // Initialize with some default tracks for demonstration
+  // Initialize with a single default track for mixed media
   useEffect(() => {
     if (timelineStore.tracks.length === 0) {
-      // Add default tracks
+      // Add default track that can handle all media types
       timelineStore.addTrack({
-        type: 'video' as TrackType,
-        name: 'Video 1',
+        type: 'video' as TrackType, // Type is now just cosmetic for color
+        name: 'Track 1',
         height: 80,
         locked: false,
         hidden: false,
         muted: false,
         order: 0,
-      })
-
-      timelineStore.addTrack({
-        type: 'audio' as TrackType,
-        name: 'Audio 1',
-        height: 60,
-        locked: false,
-        hidden: false,
-        muted: false,
-        order: 1,
-      })
-
-      timelineStore.addTrack({
-        type: 'text' as TrackType,
-        name: 'Text/Titles',
-        height: 60,
-        locked: false,
-        hidden: false,
-        muted: false,
-        order: 2,
       })
 
       // Set initial timeline duration (5 minutes at 30fps)
@@ -59,7 +39,7 @@ export function TimelinePage() {
   const handleAddTrack = () => {
     const trackNumber = timelineStore.tracks.length + 1
     timelineStore.addTrack({
-      type: 'video' as TrackType,
+      type: 'video' as TrackType, // Type is now just cosmetic for color
       name: `Track ${trackNumber}`,
       height: 80,
       locked: false,
