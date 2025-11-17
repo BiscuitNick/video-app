@@ -294,49 +294,8 @@ export const createMediaStore = () => {
             })
           })
 
-          // FALLBACK: Extract metadata client-side for videos without duration
-          const videosNeedingMetadata = response.assets.filter(
-            (item) => item.file_type === 'video' && !item.metadata?.duration
-          )
-
-          if (videosNeedingMetadata.length > 0) {
-            console.log(
-              `[MediaStore] Found ${videosNeedingMetadata.length} videos without metadata, extracting client-side...`
-            )
-
-            // Extract metadata asynchronously for each video (don't block)
-            videosNeedingMetadata.forEach(async (item) => {
-              try {
-                console.log(`[MediaStore] Extracting metadata for: ${item.name}`)
-                const extractedMetadata = await extractVideoMetadataFromUrl(item.url || item.s3_key)
-                console.log(`[MediaStore] Extracted metadata for ${item.name}:`, extractedMetadata)
-
-                // Update the asset in the store with extracted metadata
-                set((state) => {
-                  const asset = state.assets.get(item.id)
-                  if (asset) {
-                    asset.duration = extractedMetadata.duration
-                    asset.width = extractedMetadata.width
-                    asset.height = extractedMetadata.height
-                    asset.metadata = {
-                      ...asset.metadata,
-                      ...extractedMetadata,
-                      clientExtracted: true, // Flag to indicate this was extracted client-side
-                    }
-
-                    console.log(`[MediaStore] Updated asset ${item.name} with metadata:`, {
-                      duration: asset.duration,
-                      width: asset.width,
-                      height: asset.height,
-                    })
-                  }
-                })
-              } catch (error) {
-                console.error(`[MediaStore] Failed to extract metadata for ${item.name}:`, error)
-                // Don't throw - this is a best-effort fallback
-              }
-            })
-          }
+          // Note: Metadata extraction is now on-demand (triggered when dragging assets)
+          // This makes page load instant and only extracts for videos actually used
 
           toast.success(`Loaded ${response.assets.length} assets`)
         } catch (error) {
@@ -527,6 +486,79 @@ export const createMediaStore = () => {
           toast.error('Failed to delete asset')
           throw error
         }
+      },
+
+      // Metadata extraction on-demand
+      ensureMetadataExtracted: async (assetId: string) => {
+        const { assets, extractionPromises } = get()
+        const asset = assets.get(assetId)
+
+        // Skip if asset doesn't exist, already has metadata, or not a video
+        if (!asset || asset.type !== 'video' || asset.duration !== undefined) {
+          console.log(`[MediaStore] Skipping extraction for ${assetId}:`, {
+            exists: !!asset,
+            type: asset?.type,
+            hasDuration: asset?.duration !== undefined,
+          })
+          return
+        }
+
+        // Skip if extraction already in progress for this asset
+        const existingPromise = extractionPromises.get(assetId)
+        if (existingPromise) {
+          console.log(`[MediaStore] Extraction already in progress for ${assetId}, waiting...`)
+          return existingPromise
+        }
+
+        console.log(`[MediaStore] Starting on-demand metadata extraction for: ${asset.name}`)
+
+        // Create extraction promise
+        const promise = (async () => {
+          try {
+            const extractedMetadata = await extractVideoMetadataFromUrl(asset.url)
+            console.log(`[MediaStore] Extracted metadata for ${asset.name}:`, extractedMetadata)
+
+            // Update asset in store with extracted metadata
+            set((state) => {
+              const asset = state.assets.get(assetId)
+              if (asset) {
+                asset.duration = extractedMetadata.duration
+                asset.width = extractedMetadata.width
+                asset.height = extractedMetadata.height
+                asset.metadata = {
+                  ...asset.metadata,
+                  ...extractedMetadata,
+                  clientExtracted: true,
+                }
+
+                console.log(`[MediaStore] Updated asset ${asset.name} with metadata:`, {
+                  duration: asset.duration,
+                  width: asset.width,
+                  height: asset.height,
+                })
+              }
+
+              // Remove promise from cache
+              state.extractionPromises.delete(assetId)
+            })
+          } catch (error) {
+            console.error(`[MediaStore] Failed to extract metadata for ${assetId}:`, error)
+
+            // Remove promise from cache even on error
+            set((state) => {
+              state.extractionPromises.delete(assetId)
+            })
+
+            // Don't throw - this is a best-effort fallback
+          }
+        })()
+
+        // Cache the promise to prevent duplicate extractions
+        set((state) => {
+          state.extractionPromises.set(assetId, promise)
+        })
+
+        return promise
       },
 
       // WebSocket integration

@@ -18,8 +18,9 @@ export function MediaLibraryWidget({ onAssetDragStart }: MediaLibraryWidgetProps
   const [filterType, setFilterType] = useState<MediaAssetType | 'all'>('all');
   const [filterSource, setFilterSource] = useState<'all' | 'uploaded' | 'ai-generated'>('all');
 
-  // Access MediaStore state
+  // Access MediaStore state and actions
   const assets = useMediaStore((state) => state.assets);
+  const ensureMetadataExtracted = useMediaStore((state) => state.ensureMetadataExtracted);
 
   // Filter and search assets
   const filteredAssets = useMemo(() => {
@@ -59,9 +60,17 @@ export function MediaLibraryWidget({ onAssetDragStart }: MediaLibraryWidgetProps
       e.dataTransfer.effectAllowed = 'copy';
       e.dataTransfer.setData('application/json', JSON.stringify(asset));
       e.dataTransfer.setData('text/plain', asset.id);
+
+      // Trigger on-demand metadata extraction for videos without duration
+      if (asset.type === 'video' && !asset.duration) {
+        console.log('[MediaLibrary] Triggering on-demand metadata extraction for:', asset.name);
+        ensureMetadataExtracted(asset.id);
+        // Don't await - let it complete in background during drag gesture
+      }
+
       onAssetDragStart?.(asset);
     },
-    [onAssetDragStart]
+    [onAssetDragStart, ensureMetadataExtracted]
   );
 
   return (
