@@ -946,7 +946,7 @@
         "dependencies": [
           "4"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -954,7 +954,7 @@
             "description": "Create interactive trim handles that allow users to adjust clip start and end points directly on the timeline through drag interactions",
             "dependencies": [],
             "details": "Build TrimHandles component with draggable start/end points. Implement mouse event handlers for drag operations. Update clip duration and position in TimelineStore on drag. Show timecode tooltips during drag. Ensure frame-accurate trimming with snap-to-frame logic. Handle edge cases like minimum clip length and collision with adjacent clips.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test drag interactions with different clip durations, verify frame-accurate trimming, test boundary conditions and clip collisions",
             "parentId": "undefined"
           },
@@ -964,7 +964,7 @@
             "description": "Implement the ability to split clips at the current playhead position, creating two separate clip segments",
             "dependencies": [],
             "details": "Add split action to TimelineStore that divides clip at playhead position. Calculate new clip durations and start/end times based on split point. Preserve all clip properties (effects, transforms) in both segments. Update clip IDs and maintain proper ordering. Handle splitting of clips with transitions. Ensure split respects minimum clip length constraints.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test splitting at various playhead positions, verify property preservation in split clips, test edge cases at clip boundaries",
             "parentId": "undefined"
           },
@@ -974,7 +974,7 @@
             "description": "Implement functionality to duplicate selected clips and delete them from the timeline with proper state management",
             "dependencies": [],
             "details": "Create duplicate action in TimelineStore that clones selected clips with new IDs. Position duplicated clips intelligently (offset or next available space). Implement delete action with confirmation for destructive operations. Support multi-selection for batch operations. Update timeline layout after operations. Handle deletion of clips with dependencies or transitions.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test single and multi-clip duplication, verify proper ID generation, test deletion with confirmation, validate timeline reflow",
             "parentId": "undefined"
           },
@@ -984,7 +984,7 @@
             "description": "Build comprehensive transform control system with visual handles and precise numeric input for clip manipulation",
             "dependencies": [],
             "details": "Create TransformControls component with opacity slider (0-100%), scale controls with aspect ratio lock toggle, X/Y position controls with visual on-canvas handles, rotation control with degree input and visual rotation handle. Implement real-time preview updates. Store transform data in clip properties. Add reset buttons for each transform. Ensure transforms apply correctly in preview renderer.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test each transform control for accuracy, verify aspect ratio lock functionality, test visual handle interactions, validate preview updates",
             "parentId": "undefined"
           },
@@ -996,7 +996,7 @@
               4
             ],
             "details": "Build TransitionManager with fade in/out, cross dissolve, and basic wipe transitions (left, right, up, down). Create transition UI overlay on timeline between clips. Implement transition duration controls (0.5s to 3s). Store transition data in timeline state. Calculate transition regions and affected frames. Ensure transitions render correctly in preview with proper alpha blending.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test each transition type rendering, verify duration adjustments, test transition removal, validate preview accuracy",
             "parentId": "undefined"
           },
@@ -1009,7 +1009,7 @@
               5
             ],
             "details": "Design ClipPropertiesPanel component with sections for basic info (name, duration, source), transform properties with numeric inputs, applied effects list, transition settings. Implement inline editing with validation and immediate preview updates. Add property grouping and collapsible sections. Include preset management for common settings. Sync panel state with selected clip in timeline.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test inline editing with validation, verify immediate preview updates, test panel synchronization with timeline selection",
             "parentId": "undefined"
           },
@@ -1023,7 +1023,7 @@
               3
             ],
             "details": "Create KeyboardShortcutManager using native browser keyboard events. Implement default shortcuts: S for split at playhead, Delete/Backspace for clip deletion, Ctrl/Cmd+D for duplication, Spacebar for play/pause, I/O for in/out points. Add shortcut hint tooltips on hover. Create keyboard shortcut reference panel. Ensure shortcuts don't conflict with browser defaults.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test each shortcut functionality, verify no conflicts with browser shortcuts, test shortcut customization, validate tooltip display",
             "parentId": "undefined"
           },
@@ -1041,7 +1041,7 @@
               7
             ],
             "details": "Configure Zustand temporal middleware for TimelineStore with proper state snapshots. Define undoable actions for all clip operations (trim, split, duplicate, delete, transform, transitions). Implement efficient state diffing to minimize memory usage. Add undo/redo UI buttons with keyboard shortcuts (Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z). Display action history with descriptive labels. Set reasonable history limit (50 actions).",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test undo/redo for each operation type, verify state consistency after multiple undo/redo cycles, test history limit behavior",
             "parentId": "undefined"
           }
@@ -1780,7 +1780,7 @@
           "3",
           "5"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -1788,7 +1788,7 @@
             "description": "Implement authStore.ts with user authentication state management, shadow user ID generation, and token handling following existing store patterns",
             "dependencies": [],
             "details": "Create frontend/src/stores/authStore.ts using createStore from zustand/vanilla with immer, persist, and devtools middleware. Implement AuthState interface with userId, email, name, shadowUserId (for anonymous sessions), accessToken, refreshToken, and tokenExpiresAt fields. Add AuthActions including login, logout, refreshToken, setShadowUser actions. Use crypto.randomUUID() for shadow user ID generation. Implement persist middleware with IndexedDB storage using createIndexedDBStorage(STORE_NAMES.AUTH). Add isAuthenticated computed property that checks if accessToken exists and hasn't expired. Follow the same vanilla store pattern as projectStore and mediaStore with proper TypeScript typing",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test shadow user ID generation with crypto.randomUUID, verify token persistence in IndexedDB, test login/logout flow with mock API responses, validate token expiration checking logic",
             "parentId": "undefined"
           },
@@ -1798,7 +1798,7 @@
             "description": "Implement uiStore.ts with modal, toast, panel, and keyboard shortcut state management using Zustand vanilla store pattern",
             "dependencies": [],
             "details": "Create frontend/src/stores/uiStore.ts using createStore from zustand/vanilla with immer middleware. Implement UiState interface with modalStates as Map<string, ModalState> for modal stacking (isExportModalOpen, isUploadModalOpen, isSettingsOpen), toastQueue as array with max 5 toasts including auto-dismiss timers, panelStates for isPropertiesPanelOpen/isMediaLibraryOpen/isTimelineExpanded, activeTool for editor mode, and keyboardShortcuts as Map<string, KeyboardShortcut>. Add UiActions including openModal, closeModal, addToast, removeToast, togglePanel, setActiveTool, registerShortcut. Implement toast auto-dismiss using setTimeout with cleanup. Use persist middleware for panel states and keyboard shortcuts only. Coordinate with existing ThemeContext to avoid theme state duplication",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test modal stacking with multiple modals open, verify toast queue limits and auto-dismiss timing, test panel toggle states, validate keyboard shortcut registration and conflicts",
             "parentId": "undefined"
           },
@@ -1811,7 +1811,7 @@
               2
             ],
             "details": "Update frontend/src/types/stores.ts to add AuthState interface with userId: string | null, email: string | null, name: string | null, shadowUserId: string, accessToken: string | null, refreshToken: string | null, tokenExpiresAt: number | null fields. Add AuthActions interface with login(credentials) returning Promise, logout() method, refreshToken() returning Promise, setShadowUser(id: string) method. Add UiState interface with modalStates: Map<string, ModalState>, toastQueue: Toast[], panelStates object, activeTool: string, keyboardShortcuts: Map<string, KeyboardShortcut>. Add UiActions with all modal, toast, panel, and tool methods. Define supporting types like ModalState, Toast (with id, message, type, duration), and ensure compatibility with existing store types",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Verify TypeScript compilation with new types, test type inference in store hooks, validate interface compatibility with existing components",
             "parentId": "undefined"
           },
@@ -1825,7 +1825,7 @@
               3
             ],
             "details": "Create frontend/src/stores/index.ts exports for new stores. Implement AuthStoreProvider and UiStoreProvider React Context components following the pattern from existing stores. Create useAuthStore and useUiStore hooks that use useContext to access store state and actions. Add the new providers to the main App component provider tree alongside existing providers. Ensure proper TypeScript typing for context values and hook returns. Export createAuthStore and createUiStore functions for testing purposes. Update STORE_NAMES in indexedDBStorage.ts to include AUTH: 'auth-store' and UI: 'ui-store' entries",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test context provider rendering, verify hook access to store state and actions, test store isolation between different provider instances, validate TypeScript type inference",
             "parentId": "undefined"
           },
@@ -1837,7 +1837,7 @@
               4
             ],
             "details": "Update ExportModal component to use useUiStore for open/close state instead of local state. Create a new ToastContainer component that reads from uiStore.toastQueue and renders toast notifications with auto-dismiss. Update panel components to use uiStore.panelStates for visibility. Integrate useKeyboardShortcuts hook with uiStore.keyboardShortcuts Map. For authStore, create an api/auth.ts service file with login/logout/refresh endpoints. Implement shadow user cookie handling in authStore initialization - check for existing cookie or generate new shadowUserId. Add auth headers to existing API calls using accessToken from authStore. Implement token refresh logic with automatic retry on 401 responses. Ensure all state changes use proper Zustand actions",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test modal state synchronization, verify toast rendering and dismissal, test panel visibility toggles, validate API authentication flow with mock responses, test shadow user cookie persistence",
             "parentId": "undefined"
           }
@@ -1848,7 +1848,7 @@
       "version": "1.0.0",
       "lastModified": "2025-11-17T01:03:10.339Z",
       "taskCount": 20,
-      "completedCount": 18,
+      "completedCount": 20,
       "tags": [
         "master"
       ]

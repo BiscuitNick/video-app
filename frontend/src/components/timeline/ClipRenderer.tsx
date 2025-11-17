@@ -211,17 +211,11 @@ export const ClipRenderer = memo(function ClipRenderer({
       if (isTrimming === 'start') {
         // Trimming the start
         const newStartTime = Math.max(0, Math.round(trimStartRef.current.startTime + frameDelta))
-        const newInPoint = Math.max(0, trimStartRef.current.inPoint + frameDelta)
-        const newDuration = Math.max(1, trimStartRef.current.duration - frameDelta)
 
         setTrimOffset(framesToPixels(newStartTime - clip.startTime, fps, zoom))
       } else if (isTrimming === 'end') {
         // Trimming the end
         const newDuration = Math.max(1, Math.round(trimStartRef.current.duration + frameDelta))
-        const newOutPoint = Math.min(
-          trimStartRef.current.outPoint + frameDelta,
-          trimStartRef.current.inPoint + newDuration
-        )
 
         setTrimOffset(framesToPixels(newDuration - clip.duration, fps, zoom))
       }
@@ -229,13 +223,11 @@ export const ClipRenderer = memo(function ClipRenderer({
 
     const handleMouseUp = () => {
       if (isTrimming) {
-        const deltaX = trimStartRef.current.x - trimStartRef.current.x + pixelsToFrames(trimOffset, fps, zoom) * (fps / zoom)
         const frameDelta = pixelsToFrames(trimOffset, fps, zoom)
 
         const updates: Partial<Clip> = {}
 
         if (isTrimming === 'start') {
-          const newStartTime = Math.max(0, Math.round(trimStartRef.current.startTime + frameDelta))
           const maxFrameDelta = trimStartRef.current.duration - 1
           const clampedFrameDelta = Math.min(frameDelta, maxFrameDelta)
 
