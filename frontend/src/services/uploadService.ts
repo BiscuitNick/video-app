@@ -3,6 +3,9 @@
  * Handles media file uploads to S3 via presigned URLs
  */
 
+// API base URL - should be configured from environment
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+
 export interface PresignedUrlRequest {
   name: string
   size: number
@@ -88,7 +91,7 @@ export async function requestPresignedUrl(
   request: PresignedUrlRequest
 ): Promise<PresignedUrlResponse> {
   const response = await retryWithBackoff(async () => {
-    const res = await fetch('/api/v1/media/upload', {
+    const res = await fetch(`${API_BASE_URL}/api/v1/media/upload`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -250,7 +253,7 @@ export async function confirmUpload(
   status: string
   metadata: Record<string, any>
 }> {
-  const response = await fetch(`/api/v1/media/${assetId}`, {
+  const response = await fetch(`${API_BASE_URL}/api/v1/media/${assetId}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -333,7 +336,11 @@ export async function importFromUrl(
   created_at: string
   metadata: Record<string, any>
 }> {
-  const response = await fetch('/api/v1/media/import-from-url', {
+  console.log(`[UploadService] Importing from URL: ${url}`)
+  console.log(`[UploadService] Asset name: ${name}, type: ${type}`)
+  console.log(`[UploadService] Calling: ${API_BASE_URL}/api/v1/media/import-from-url`)
+
+  const response = await fetch(`${API_BASE_URL}/api/v1/media/import-from-url`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -348,12 +355,20 @@ export async function importFromUrl(
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}))
+    const errorMessage = error.detail || `Failed to import from URL: ${response.statusText}`
+    console.error(`[UploadService] Import failed: ${errorMessage}`, {
+      status: response.status,
+      url,
+      error
+    })
     throw new UploadError(
-      error.detail || `Failed to import from URL: ${response.statusText}`,
+      errorMessage,
       response.status,
       response.status >= 500
     )
   }
 
-  return response.json()
+  const result = await response.json()
+  console.log(`[UploadService] Successfully imported asset:`, result)
+  return result
 }
