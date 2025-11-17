@@ -246,7 +246,20 @@ async def confirm_media_upload(
             )
 
         # Update metadata and status
-        media_asset.file_metadata = metadata_update.metadata.model_dump(exclude_none=True)
+        metadata_dict = metadata_update.metadata.model_dump(exclude_none=True)
+        logger.info(
+            "Updating media asset metadata",
+            extra={
+                "asset_id": str(asset_id),
+                "received_metadata": metadata_update.metadata.model_dump(),
+                "metadata_dict": metadata_dict,
+                "duration": metadata_dict.get("duration"),
+                "width": metadata_dict.get("width"),
+                "height": metadata_dict.get("height"),
+            },
+        )
+
+        media_asset.file_metadata = metadata_dict
         media_asset.status = MediaAssetStatus(metadata_update.status.value)
         media_asset.updated_at = datetime.utcnow()
 
@@ -258,6 +271,7 @@ async def confirm_media_upload(
             extra={
                 "asset_id": str(asset_id),
                 "status": media_asset.status,
+                "stored_metadata": media_asset.file_metadata,
             },
         )
 
@@ -896,6 +910,16 @@ async def get_media_asset(
             thumbnail_url = None
 
         # Build response with presigned URLs
+        logger.info(
+            "Returning media asset",
+            extra={
+                "asset_id": str(asset_id),
+                "name": media_asset.name,
+                "file_metadata": media_asset.file_metadata,
+                "duration": media_asset.file_metadata.get("duration") if media_asset.file_metadata else None,
+            },
+        )
+
         return MediaAssetResponse(
             id=media_asset.id,
             user_id=media_asset.user_id,

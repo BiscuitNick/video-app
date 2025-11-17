@@ -636,16 +636,22 @@ async def get_ai_job_status(
 
         # Try to get from Redis cache first
         job_data_str = redis_conn.get(redis_key)
-        job_data = None
+        job_data = json.loads(job_data_str) if job_data_str else None
 
-        if job_data_str:
-            job_data = json.loads(job_data_str)
-            mapped_status = job_data.get("status", "processing")
-            result_url = job_data.get("result_url")
-            output = job_data.get("output")
-            error = job_data.get("error")
-        else:
-            # If not in cache, query Replicate API
+        # Default values from cache (if present)
+        mapped_status = job_data.get("status", "processing") if job_data else "processing"
+        result_url = job_data.get("result_url") if job_data else None
+        output = job_data.get("output") if job_data else None
+        error = job_data.get("error") if job_data else None
+
+        # Refresh from Replicate when cache is stale (non-terminal) or missing result URL
+        should_refresh = (
+            job_data is None
+            or mapped_status not in {"succeeded", "failed", "canceled"}
+            or (mapped_status == "succeeded" and not result_url)
+        )
+
+        if should_refresh:
             replicate_api_key = os.getenv("REPLICATE_API_TOKEN")
             if not replicate_api_key:
                 return JSONResponse(
@@ -673,22 +679,31 @@ async def get_ai_job_status(
                 output = normalized_output or prediction.output
                 error = prediction.error
 
-                # Store in cache for future requests
+                # Merge with existing metadata so we keep prompt/model info
                 job_data = {
+                    **(job_data or {}),
                     "job_id": job_id,
                     "status": mapped_status,
                     "result_url": result_url,
                     "output": output,
                     "error": error,
+                    "updated_at": datetime.now(UTC).isoformat(),
                 }
                 redis_conn.setex(redis_key, 86400, json.dumps(job_data))
 
             except Exception as e:
                 logger.error(f"Failed to get job from Replicate: {e}")
-                return JSONResponse(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    content={"error": "Job not found"}
-                )
+                # If we have cached data, return it instead of a hard 404
+                if job_data:
+                    mapped_status = job_data.get("status", "processing")
+                    result_url = job_data.get("result_url")
+                    output = job_data.get("output")
+                    error = job_data.get("error")
+                else:
+                    return JSONResponse(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        content={"error": "Job not found"}
+                    )
 
         # Auto-import on first completion detection (polling fallback)
         if auto_import and mapped_status == "succeeded" and result_url:

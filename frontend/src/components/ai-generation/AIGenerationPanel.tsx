@@ -228,8 +228,20 @@ export default function AIGenerationPanel() {
       const job = wsJobs.get(generation.jobId)
       if (!job) return
 
-      // Check if we've already processed this job update
-      const processed = processedJobsRef.current.get(generation.jobId)
+      // CRITICAL: Validate this job actually belongs to this generation
+      // Prevent wrong job results from being applied to different generations
+      if (job.id && job.id !== generation.jobId) {
+        console.warn(
+          `[AIGenerationPanel] Job ID mismatch for generation ${generation.id}:`,
+          { expectedJobId: generation.jobId, actualJobId: job.id }
+        )
+        return
+      }
+
+      // Check if we've already processed this job update for THIS specific generation
+      // Use composite key to prevent cross-generation pollution
+      const processingKey = `${generation.id}:${generation.jobId}`
+      const processed = processedJobsRef.current.get(processingKey)
 
       // Skip if already processed this exact update (except for running jobs which can have progress updates)
       if (processed && processed.status === job.status && job.status !== 'running') {
@@ -258,8 +270,8 @@ export default function AIGenerationPanel() {
           })
           console.log('[AIGenerationPanel] Result URL:', resultUrl)
 
-          // Mark as processed
-          processedJobsRef.current.set(generation.jobId, {
+          // Mark as processed using composite key (generation.id:jobId)
+          processedJobsRef.current.set(processingKey, {
             status: job.status,
             timestamp: Date.now()
           })
@@ -296,7 +308,7 @@ export default function AIGenerationPanel() {
             { result: job.result }
           )
 
-          processedJobsRef.current.set(generation.jobId, {
+          processedJobsRef.current.set(processingKey, {
             status: job.status,
             timestamp: Date.now()
           })
@@ -313,8 +325,8 @@ export default function AIGenerationPanel() {
       if (job.status === 'failed') {
         console.error(`[AIGenerationPanel] Job ${generation.jobId} failed:`, job.error)
 
-        // Mark as processed
-        processedJobsRef.current.set(generation.jobId, {
+        // Mark as processed using composite key
+        processedJobsRef.current.set(processingKey, {
           status: job.status,
           timestamp: Date.now()
         })
@@ -328,8 +340,8 @@ export default function AIGenerationPanel() {
       if (job.status === 'canceled') {
         console.log(`[AIGenerationPanel] Job ${generation.jobId} was canceled`)
 
-        // Mark as processed
-        processedJobsRef.current.set(generation.jobId, {
+        // Mark as processed using composite key
+        processedJobsRef.current.set(processingKey, {
           status: job.status,
           timestamp: Date.now()
         })
@@ -345,8 +357,8 @@ export default function AIGenerationPanel() {
             progress: job.progress,
           })
 
-          // Update processed status for running jobs
-          processedJobsRef.current.set(generation.jobId, {
+          // Update processed status for running jobs using composite key
+          processedJobsRef.current.set(processingKey, {
             status: job.status,
             timestamp: job.progress || 0
           })

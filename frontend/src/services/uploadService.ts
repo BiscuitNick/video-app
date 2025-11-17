@@ -3,6 +3,8 @@
  * Handles media file uploads to S3 via presigned URLs
  */
 
+import { extractMediaMetadata } from './mediaMetadataExtractor'
+
 export interface PresignedUrlRequest {
   name: string
   size: number
@@ -343,10 +345,11 @@ export async function uploadFile(
     signal
   )
 
-  // Step 4: Confirm upload with backend and get full asset details
-  const result = await confirmUpload(presignedData.id, {
-    // TODO: Extract metadata using FFmpeg/browser APIs if needed
-  })
+  // Step 4: Extract metadata from file (client-side)
+  const extractedMetadata = await extractMediaMetadata(file)
+
+  // Step 5: Confirm upload with backend and get full asset details
+  const result = await confirmUpload(presignedData.id, extractedMetadata)
 
   return result
 }

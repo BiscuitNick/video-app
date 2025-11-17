@@ -92,20 +92,33 @@ export const TrackItem = memo(function TrackItem({
       console.log('Asset data from dataTransfer:', assetData)
 
       let asset: MediaAsset | undefined
+      let assetId: string | undefined
 
       if (assetData) {
         try {
-          asset = JSON.parse(assetData)
+          const parsedAsset = JSON.parse(assetData)
+          assetId = parsedAsset.id
+          console.log('Parsed asset ID from dataTransfer:', assetId)
         } catch (parseError) {
-          console.warn('Failed to parse dropped asset JSON, falling back to store lookup:', parseError)
+          console.warn('Failed to parse dropped asset JSON:', parseError)
+          // Try using rawText as asset ID directly
+          assetId = rawText
         }
       }
 
-      // Fallback: if we only received an asset ID in text/plain, resolve it from the media store
-      if (!asset && rawText) {
-        const storeAsset = mediaAssets.get(rawText)
+      // ALWAYS look up asset from store to get latest metadata (including client-extracted duration)
+      if (assetId) {
+        const storeAsset = mediaAssets.get(assetId)
         if (storeAsset) {
+          console.log('Retrieved asset from store with latest metadata:', {
+            id: storeAsset.id,
+            name: storeAsset.name,
+            duration: storeAsset.duration,
+            metadata: storeAsset.metadata,
+          })
           asset = storeAsset
+        } else {
+          console.warn('Asset not found in store:', assetId)
         }
       }
 

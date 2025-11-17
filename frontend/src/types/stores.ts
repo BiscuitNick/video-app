@@ -127,6 +127,7 @@ export interface MediaState {
   thumbnailCache: Map<string, string> // assetId -> blob URL
   selectedAssetIds: string[]
   currentFolderId?: string
+  extractionPromises: Map<string, Promise<void>> // assetId -> metadata extraction promise
 }
 
 export interface MediaActions {
@@ -163,6 +164,9 @@ export interface MediaActions {
   uploadAsset: (file: File, uploadId: string) => Promise<string>
   deleteAsset: (assetId: string) => Promise<void>
   initializeWebSocket: () => void
+
+  // Metadata extraction
+  ensureMetadataExtracted: (assetId: string) => Promise<void>
 
   // Utility
   reset: () => void

@@ -331,7 +331,7 @@ def import_image_from_url_job(
         extra={
             "asset_id": asset_id,
             "url": url,
-            "name": name,
+            "image_name": name,
         },
     )
 
@@ -339,36 +339,11 @@ def import_image_from_url_job(
     db = None
 
     try:
-        # Create database session
-        db = SessionLocal()
-
-        # Create or get MediaAsset record
-        asset = db.query(MediaAsset).filter(MediaAsset.id == asset_id_uuid).first()
-
-        if not asset:
-            asset = MediaAsset(
-                id=asset_id_uuid,
-                user_id=user_id_uuid,
-                name=name,
-                file_size=0,
-                file_type=MediaAssetType.IMAGE,
-                s3_key="",
-                status=MediaAssetStatus.UPLOADING,
-                checksum="",
-                file_metadata=metadata,
-                tags=[],
-                is_deleted=False,
-            )
-            db.add(asset)
-        else:
-            asset.status = MediaAssetStatus.UPLOADING
-            asset.updated_at = datetime.utcnow()
-
-        db.commit()
-
-        # Download image
+        # Download image first
         with tempfile.NamedTemporaryFile(delete=False, suffix=Path(name).suffix) as temp_file:
             temp_image_path = Path(temp_file.name)
+
+        logger.info("Downloading image from URL", extra={"url": url})
 
         with httpx.Client(timeout=120.0) as client:
             response = client.get(url)
@@ -385,6 +360,8 @@ def import_image_from_url_job(
 
             checksum = hasher.hexdigest()
 
+        logger.info("Image downloaded", extra={"size_bytes": total_size})
+
         # Upload to S3
         s3_key = f"media/{user_id}/{asset_id}/{name}"
         s3_url = s3_manager.upload_file(
@@ -393,7 +370,14 @@ def import_image_from_url_job(
             extra_args={"ContentType": "image/jpeg"},
         )
 
-        # Update asset
+        logger.info("Image uploaded to S3", extra={"s3_key": s3_key})
+
+        # Create database session and asset record with complete data
+        db = SessionLocal()
+
+        # Check if asset already exists
+        asset = db.query(MediaAsset).filter(MediaAsset.id == asset_id_uuid).first()
+
         final_metadata = {
             **metadata,
             "source": "ai_generation",
@@ -401,16 +385,35 @@ def import_image_from_url_job(
             "imported_at": datetime.utcnow().isoformat(),
         }
 
-        asset.file_size = total_size
-        asset.s3_key = s3_key
-        asset.checksum = checksum
-        asset.file_metadata = final_metadata
-        asset.status = MediaAssetStatus.READY
-        asset.updated_at = datetime.utcnow()
-
+        tags = []
         if metadata.get("aiGenerated") or metadata.get("prompt"):
-            if "ai-generated" not in asset.tags:
-                asset.tags.append("ai-generated")
+            tags.append("ai-generated")
+
+        if not asset:
+            logger.info("Creating new MediaAsset", extra={"asset_id": asset_id})
+            asset = MediaAsset(
+                id=asset_id_uuid,
+                user_id=user_id_uuid,
+                name=name,
+                file_size=total_size,
+                file_type=MediaAssetType.IMAGE,
+                s3_key=s3_key,
+                status=MediaAssetStatus.READY,
+                checksum=checksum,
+                file_metadata=final_metadata,
+                tags=tags,
+                is_deleted=False,
+            )
+            db.add(asset)
+        else:
+            logger.info("Updating existing MediaAsset", extra={"asset_id": asset_id})
+            asset.file_size = total_size
+            asset.s3_key = s3_key
+            asset.checksum = checksum
+            asset.file_metadata = final_metadata
+            asset.status = MediaAssetStatus.READY
+            asset.tags = tags
+            asset.updated_at = datetime.utcnow()
 
         db.commit()
 

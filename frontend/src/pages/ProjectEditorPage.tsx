@@ -127,10 +127,22 @@ export default function ProjectEditorPage() {
 
   // Handle dropping media asset onto timeline track
   const handleAssetDrop = useCallback((asset: MediaAsset, trackId: string, startFrame: number) => {
-    console.log('Asset dropped:', { asset, trackId, startFrame });
+    console.log('=== ASSET DROP DEBUG ===');
+    console.log('Asset dropped:', asset);
+    console.log('Asset.duration (raw):', asset.duration);
+    console.log('Asset.duration type:', typeof asset.duration);
+    console.log('Asset.duration truthy?:', !!asset.duration);
+    console.log('Asset metadata:', asset.metadata);
+    console.log('FPS:', fps);
 
     // Convert duration from seconds to frames
     const durationInFrames = asset.duration ? Math.floor(asset.duration * fps) : fps * 2; // Default 2 seconds for images
+
+    console.log('Duration calculation:');
+    console.log('  - asset.duration:', asset.duration);
+    console.log('  - fps:', fps);
+    console.log('  - durationInFrames (calculated):', durationInFrames);
+    console.log('  - Used fallback?:', !asset.duration);
 
     // Create a new clip from the media asset
     const newClip: Clip = {
@@ -148,12 +160,14 @@ export default function ProjectEditorPage() {
       rotation: 0,
     };
 
-    console.log('Creating clip:', newClip);
+    console.log('Created clip:', newClip);
+    console.log('Clip duration (frames):', newClip.duration);
+    console.log('Clip outPoint (frames):', newClip.outPoint);
+    console.log('Clip duration (seconds):', newClip.duration / fps);
+    console.log('======================');
 
     // Add the clip to the timeline
     timelineStore.addClip(newClip);
-
-    console.log('Clip added to timeline');
   }, [timelineStore, fps]);
 
   // Playback control handlers

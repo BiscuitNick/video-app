@@ -6,6 +6,7 @@ import { api } from '../lib/api'
 import { toast } from '../lib/toast'
 import { getWebSocketService } from '../services/WebSocketService'
 import type { WebSocketMessage, JobUpdateMessage } from '../types/websocket'
+import { extractMediaMetadata, extractVideoMetadataFromUrl } from '../services/mediaMetadataExtractor'
 
 // Initial state
 const initialState = {
@@ -15,6 +16,7 @@ const initialState = {
   thumbnailCache: new Map<string, string>(),
   selectedAssetIds: [] as string[],
   currentFolderId: undefined as string | undefined,
+  extractionPromises: new Map<string, Promise<void>>(),
 }
 
 // Create the vanilla store with devtools, persist, and immer middleware
@@ -246,22 +248,95 @@ export const createMediaStore = () => {
           })
 
           set((state) => {
-            response.assets.forEach((item) => {
+            // Convert to MediaAsset objects
+            const newAssets = response.assets.map((item) => {
+              console.log('[MediaStore] Loading asset from API:', {
+                id: item.id,
+                name: item.name,
+                type: item.file_type,
+                metadata: item.metadata,
+                'metadata.duration': item.metadata?.duration,
+              })
+
               const asset: MediaAsset = {
                 id: item.id,
                 name: item.name,
                 type: item.file_type as 'image' | 'video' | 'audio',
                 url: item.url || item.s3_key, // Use presigned URL from backend, fallback to s3_key
                 thumbnailUrl: item.thumbnail_url,
-                duration: 0, // TODO: Extract from metadata
+                duration: (item.metadata?.duration as number) || undefined,
+                width: (item.metadata?.width as number) || undefined,
+                height: (item.metadata?.height as number) || undefined,
                 size: item.file_size,
                 createdAt: new Date(item.created_at),
                 metadata: item.metadata || {},
                 tags: item.tags || [],
               }
+
+              console.log('[MediaStore] Created asset object:', {
+                id: asset.id,
+                name: asset.name,
+                duration: asset.duration,
+                'duration type': typeof asset.duration,
+                width: asset.width,
+                height: asset.height,
+              })
+
+              return asset
+            })
+
+            // Sort by creation date (newest first) to ensure consistent Map ordering
+            newAssets.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+
+            // Add to Map in sorted order
+            newAssets.forEach((asset) => {
               state.assets.set(asset.id, asset)
             })
           })
+
+          // FALLBACK: Extract metadata client-side for videos without duration
+          const videosNeedingMetadata = response.assets.filter(
+            (item) => item.file_type === 'video' && !item.metadata?.duration
+          )
+
+          if (videosNeedingMetadata.length > 0) {
+            console.log(
+              `[MediaStore] Found ${videosNeedingMetadata.length} videos without metadata, extracting client-side...`
+            )
+
+            // Extract metadata asynchronously for each video (don't block)
+            videosNeedingMetadata.forEach(async (item) => {
+              try {
+                console.log(`[MediaStore] Extracting metadata for: ${item.name}`)
+                const extractedMetadata = await extractVideoMetadataFromUrl(item.url || item.s3_key)
+                console.log(`[MediaStore] Extracted metadata for ${item.name}:`, extractedMetadata)
+
+                // Update the asset in the store with extracted metadata
+                set((state) => {
+                  const asset = state.assets.get(item.id)
+                  if (asset) {
+                    asset.duration = extractedMetadata.duration
+                    asset.width = extractedMetadata.width
+                    asset.height = extractedMetadata.height
+                    asset.metadata = {
+                      ...asset.metadata,
+                      ...extractedMetadata,
+                      clientExtracted: true, // Flag to indicate this was extracted client-side
+                    }
+
+                    console.log(`[MediaStore] Updated asset ${item.name} with metadata:`, {
+                      duration: asset.duration,
+                      width: asset.width,
+                      height: asset.height,
+                    })
+                  }
+                })
+              } catch (error) {
+                console.error(`[MediaStore] Failed to extract metadata for ${item.name}:`, error)
+                // Don't throw - this is a best-effort fallback
+              }
+            })
+          }
 
           toast.success(`Loaded ${response.assets.length} assets`)
         } catch (error) {
@@ -340,15 +415,22 @@ export const createMediaStore = () => {
             xhr.send(formData)
           })
 
-          // Step 3: Confirm upload - PATCH /media/{id}
+          // Step 3: Extract metadata from file (client-side)
+          console.log('[MediaStore] Extracting metadata from file:', file.name)
+          const extractedMetadata = await extractMediaMetadata(file)
+          console.log('[MediaStore] Extracted metadata:', extractedMetadata)
+          console.log('[MediaStore] Metadata duration:', extractedMetadata.duration)
+          console.log('[MediaStore] Metadata type:', typeof extractedMetadata.duration)
+
+          // Step 4: Confirm upload - PATCH /media/{id} with extracted metadata
+          console.log('[MediaStore] Sending PATCH with metadata:', extractedMetadata)
           await api.patch(`/media/${assetId}`, {
             status: 'ready',
-            metadata: {
-              // Extract metadata using FFprobe or similar on client if needed
-            },
+            metadata: extractedMetadata,
           })
+          console.log('[MediaStore] PATCH completed')
 
-          // Step 4: Fetch the complete asset with presigned URL
+          // Step 5: Fetch the complete asset with presigned URL
           const assetResponse = await api.get<{
             id: string
             name: string
@@ -362,6 +444,10 @@ export const createMediaStore = () => {
             tags?: string[]
             created_at: string
           }>(`/media/${assetId}`)
+
+          console.log('[MediaStore] Asset response from API:', assetResponse)
+          console.log('[MediaStore] Response metadata:', assetResponse.metadata)
+          console.log('[MediaStore] Response metadata.duration:', assetResponse.metadata?.duration)
 
           // Update upload status and add asset with complete data
           set((state) => {
@@ -379,12 +465,25 @@ export const createMediaStore = () => {
               type: assetResponse.file_type as 'image' | 'video' | 'audio',
               url: assetResponse.url || assetResponse.s3_key,
               thumbnailUrl: assetResponse.thumbnail_url,
-              duration: 0,
+              duration: (assetResponse.metadata?.duration as number) || undefined,
+              width: (assetResponse.metadata?.width as number) || undefined,
+              height: (assetResponse.metadata?.height as number) || undefined,
               size: assetResponse.file_size,
               createdAt: new Date(assetResponse.created_at),
               metadata: assetResponse.metadata || {},
               tags: assetResponse.tags || [],
             }
+
+            console.log('[MediaStore] Created asset from upload:', {
+              id: asset.id,
+              name: asset.name,
+              duration: asset.duration,
+              'duration type': typeof asset.duration,
+              width: asset.width,
+              height: asset.height,
+              metadata: asset.metadata,
+            })
+
             state.assets.set(assetId, asset)
           })
 
