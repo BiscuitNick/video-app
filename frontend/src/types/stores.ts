@@ -157,6 +157,12 @@ export interface MediaActions {
   // Search and filter
   searchAssets: (query: string) => MediaAsset[]
 
+  // Backend API integration
+  loadAssets: (page?: number, perPage?: number) => Promise<void>
+  uploadAsset: (file: File, uploadId: string) => Promise<string>
+  deleteAsset: (assetId: string) => Promise<void>
+  initializeWebSocket: () => void
+
   // Utility
   reset: () => void
 }
@@ -195,6 +201,14 @@ export interface ProjectState {
   autosaveInterval: number // milliseconds
   isAutoSaveEnabled: boolean
 
+  // Loading states
+  isLoading: boolean
+  isSaving: boolean
+  isExporting: boolean
+
+  // Export job tracking
+  exportJobStatus: Map<string, { status: string; progress?: number; error?: string }>
+
   // Project collection management
   projects: Map<string, ProjectMetadata>
   currentProjectId?: string
@@ -224,6 +238,9 @@ export interface ProjectActions {
   getProjects: () => ProjectMetadata[]
   getCurrentProject: () => ProjectMetadata | undefined
   setCurrentProject: (projectId: string) => void
+
+  // WebSocket integration
+  initializeWebSocket: () => void
 
   // Utility
   reset: () => void
