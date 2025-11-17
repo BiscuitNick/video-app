@@ -109,9 +109,10 @@ export const MediaAssetCard = memo(
       >
         {/* Thumbnail */}
         <div className="aspect-square bg-zinc-950 flex items-center justify-center relative overflow-hidden">
-          {asset.thumbnailUrl ? (
+          {/* For images, use main URL if thumbnail not available. For videos, only show thumbnail. */}
+          {asset.thumbnailUrl || (asset.type === 'image' && asset.url) ? (
             <img
-              src={asset.thumbnailUrl}
+              src={asset.thumbnailUrl || asset.url}
               alt={asset.name}
               className="w-full h-full object-cover"
               loading="lazy"

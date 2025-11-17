@@ -348,7 +348,22 @@ export const createMediaStore = () => {
             },
           })
 
-          // Update upload status
+          // Step 4: Fetch the complete asset with presigned URL
+          const assetResponse = await api.get<{
+            id: string
+            name: string
+            file_type: string
+            file_size: number
+            s3_key: string
+            url?: string
+            thumbnail_url?: string
+            status: string
+            metadata?: Record<string, unknown>
+            tags?: string[]
+            created_at: string
+          }>(`/media/${assetId}`)
+
+          // Update upload status and add asset with complete data
           set((state) => {
             const upload = state.uploadQueue.find((u) => u.id === uploadId)
             if (upload) {
@@ -357,16 +372,18 @@ export const createMediaStore = () => {
               upload.assetId = assetId
             }
 
-            // Add asset to store
+            // Add asset to store with presigned URLs
             const asset: MediaAsset = {
-              id: assetId,
-              name: file.name,
-              type: file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : 'audio',
-              url: '', // Will be populated when fetching
-              size: file.size,
-              createdAt: new Date(),
-              metadata: {},
-              tags: [],
+              id: assetResponse.id,
+              name: assetResponse.name,
+              type: assetResponse.file_type as 'image' | 'video' | 'audio',
+              url: assetResponse.url || assetResponse.s3_key,
+              thumbnailUrl: assetResponse.thumbnail_url,
+              duration: 0,
+              size: assetResponse.file_size,
+              createdAt: new Date(assetResponse.created_at),
+              metadata: assetResponse.metadata || {},
+              tags: assetResponse.tags || [],
             }
             state.assets.set(assetId, asset)
           })

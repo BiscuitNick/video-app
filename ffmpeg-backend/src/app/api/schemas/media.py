@@ -121,7 +121,9 @@ class MediaAssetResponse(BaseModel):
     file_size: int = Field(..., description="File size in bytes")
     file_type: MediaType = Field(..., description="Type of media asset")
     s3_key: str = Field(..., description="S3 object key")
+    url: str | None = Field(None, description="Presigned URL or S3 URL for accessing the asset")
     thumbnail_s3_key: str | None = Field(None, description="Thumbnail S3 object key")
+    thumbnail_url: str | None = Field(None, description="Presigned URL for thumbnail")
     status: MediaStatus = Field(..., description="Current processing status")
     checksum: str = Field(..., description="File checksum")
     file_metadata: dict[str, Any] = Field(

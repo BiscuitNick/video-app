@@ -261,6 +261,22 @@ async def confirm_media_upload(
             },
         )
 
+        # Generate presigned URLs for the response
+        try:
+            url = s3_manager.generate_presigned_url(media_asset.s3_key, expiration=3600)
+            thumbnail_url = None
+            if media_asset.thumbnail_s3_key:
+                thumbnail_url = s3_manager.generate_presigned_url(
+                    media_asset.thumbnail_s3_key, expiration=3600
+                )
+        except Exception as e:
+            logger.warning(
+                f"Failed to generate presigned URL for asset {asset_id}: {e}",
+                extra={"asset_id": str(asset_id), "s3_key": media_asset.s3_key}
+            )
+            url = None
+            thumbnail_url = None
+
         # Manually construct response to avoid SQLAlchemy metadata conflict
         return MediaAssetResponse(
             id=media_asset.id,
@@ -269,7 +285,9 @@ async def confirm_media_upload(
             file_size=media_asset.file_size,
             file_type=media_asset.file_type,
             s3_key=media_asset.s3_key,
+            url=url,
             thumbnail_s3_key=media_asset.thumbnail_s3_key,
+            thumbnail_url=thumbnail_url,
             status=media_asset.status,
             checksum=media_asset.checksum,
             file_metadata=media_asset.file_metadata,
@@ -861,7 +879,42 @@ async def get_media_asset(
                 detail=f"Media asset {asset_id} not found",
             )
 
-        return MediaAssetResponse.model_validate(media_asset)
+        # Generate presigned URLs for the asset
+        try:
+            url = s3_manager.generate_presigned_url(media_asset.s3_key, expiration=3600)
+            thumbnail_url = None
+            if media_asset.thumbnail_s3_key:
+                thumbnail_url = s3_manager.generate_presigned_url(
+                    media_asset.thumbnail_s3_key, expiration=3600
+                )
+        except Exception as e:
+            logger.warning(
+                f"Failed to generate presigned URL for asset {asset_id}: {e}",
+                extra={"asset_id": str(asset_id), "s3_key": media_asset.s3_key}
+            )
+            url = None
+            thumbnail_url = None
+
+        # Build response with presigned URLs
+        return MediaAssetResponse(
+            id=media_asset.id,
+            user_id=media_asset.user_id,
+            name=media_asset.name,
+            file_size=media_asset.file_size,
+            file_type=media_asset.file_type,
+            s3_key=media_asset.s3_key,
+            url=url,
+            thumbnail_s3_key=media_asset.thumbnail_s3_key,
+            thumbnail_url=thumbnail_url,
+            status=media_asset.status,
+            checksum=media_asset.checksum,
+            file_metadata=media_asset.file_metadata,
+            folder_id=media_asset.folder_id,
+            tags=media_asset.tags,
+            is_deleted=media_asset.is_deleted,
+            created_at=media_asset.created_at,
+            updated_at=media_asset.updated_at,
+        )
 
     except HTTPException:
         raise
