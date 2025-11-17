@@ -21,7 +21,15 @@ import {
   createAIGenerationStore,
   type AIGenerationStoreInstance,
 } from '../stores/aiGenerationStore'
-import type { TimelineStore, MediaStore, ProjectStore, EditorStore, WebSocketStore, AIGenerationStore } from '../types/stores'
+import {
+  createAuthStore,
+  type AuthStoreInstance,
+} from '../stores/authStore'
+import {
+  createUiStore,
+  type UiStoreInstance,
+} from '../stores/uiStore'
+import type { TimelineStore, MediaStore, ProjectStore, EditorStore, WebSocketStore, AIGenerationStore, AuthStore, UiStore } from '../types/stores'
 import type { StoreApi } from 'zustand/vanilla'
 
 // Type for WebSocket store instance
@@ -34,6 +42,8 @@ const ProjectStoreContext = createContext<ProjectStoreInstance | null>(null)
 const EditorStoreContext = createContext<EditorStoreInstance | null>(null)
 const WebSocketStoreContext = createContext<WebSocketStoreInstance | null>(null)
 const AIGenerationStoreContext = createContext<AIGenerationStoreInstance | null>(null)
+const AuthStoreContext = createContext<AuthStoreInstance | null>(null)
+const UiStoreContext = createContext<UiStoreInstance | null>(null)
 
 // Provider props
 interface StoreProviderProps {
@@ -49,6 +59,8 @@ export function StoreProvider({ children }: StoreProviderProps) {
   const editorStore = useRef<EditorStoreInstance>()
   const webSocketStore = useRef<WebSocketStoreInstance>()
   const aiGenerationStore = useRef<AIGenerationStoreInstance>()
+  const authStore = useRef<AuthStoreInstance>()
+  const uiStore = useRef<UiStoreInstance>()
 
   if (!timelineStore.current) {
     timelineStore.current = createTimelineStore()
@@ -68,21 +80,31 @@ export function StoreProvider({ children }: StoreProviderProps) {
   if (!aiGenerationStore.current) {
     aiGenerationStore.current = createAIGenerationStore()
   }
+  if (!authStore.current) {
+    authStore.current = createAuthStore()
+  }
+  if (!uiStore.current) {
+    uiStore.current = createUiStore()
+  }
 
   return (
-    <TimelineStoreContext.Provider value={timelineStore.current}>
-      <MediaStoreContext.Provider value={mediaStore.current}>
-        <ProjectStoreContext.Provider value={projectStore.current}>
-          <EditorStoreContext.Provider value={editorStore.current}>
-            <WebSocketStoreContext.Provider value={webSocketStore.current}>
-              <AIGenerationStoreContext.Provider value={aiGenerationStore.current}>
-                {children}
-              </AIGenerationStoreContext.Provider>
-            </WebSocketStoreContext.Provider>
-          </EditorStoreContext.Provider>
-        </ProjectStoreContext.Provider>
-      </MediaStoreContext.Provider>
-    </TimelineStoreContext.Provider>
+    <AuthStoreContext.Provider value={authStore.current}>
+      <UiStoreContext.Provider value={uiStore.current}>
+        <TimelineStoreContext.Provider value={timelineStore.current}>
+          <MediaStoreContext.Provider value={mediaStore.current}>
+            <ProjectStoreContext.Provider value={projectStore.current}>
+              <EditorStoreContext.Provider value={editorStore.current}>
+                <WebSocketStoreContext.Provider value={webSocketStore.current}>
+                  <AIGenerationStoreContext.Provider value={aiGenerationStore.current}>
+                    {children}
+                  </AIGenerationStoreContext.Provider>
+                </WebSocketStoreContext.Provider>
+              </EditorStoreContext.Provider>
+            </ProjectStoreContext.Provider>
+          </MediaStoreContext.Provider>
+        </TimelineStoreContext.Provider>
+      </UiStoreContext.Provider>
+    </AuthStoreContext.Provider>
   )
 }
 
@@ -214,6 +236,48 @@ export function useAIGenerationStore<T = AIGenerationStore>(
   return useStore(store, selector || ((state) => state as T))
 }
 
+/**
+ * Hook to access the Auth store
+ * @param selector - Optional selector function to pick specific state
+ * @returns Selected state or entire store
+ * @example
+ * // Get entire store
+ * const authStore = useAuthStore()
+ *
+ * // Get specific state with selector
+ * const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+ */
+export function useAuthStore<T = AuthStore>(
+  selector?: (state: AuthStore) => T
+): T {
+  const store = useContext(AuthStoreContext)
+  if (!store) {
+    throw new Error('useAuthStore must be used within StoreProvider')
+  }
+  return useStore(store, selector || ((state) => state as T))
+}
+
+/**
+ * Hook to access the UI store
+ * @param selector - Optional selector function to pick specific state
+ * @returns Selected state or entire store
+ * @example
+ * // Get entire store
+ * const uiStore = useUiStore()
+ *
+ * // Get specific state with selector
+ * const toastQueue = useUiStore((state) => state.toastQueue)
+ */
+export function useUiStore<T = UiStore>(
+  selector?: (state: UiStore) => T
+): T {
+  const store = useContext(UiStoreContext)
+  if (!store) {
+    throw new Error('useUiStore must be used within StoreProvider')
+  }
+  return useStore(store, selector || ((state) => state as T))
+}
+
 // Export context for advanced use cases
 export {
   TimelineStoreContext,
@@ -222,4 +286,6 @@ export {
   EditorStoreContext,
   WebSocketStoreContext,
   AIGenerationStoreContext,
+  AuthStoreContext,
+  UiStoreContext,
 }

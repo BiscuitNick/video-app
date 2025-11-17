@@ -6,7 +6,7 @@ import type { StateStorage } from 'zustand/middleware'
  */
 
 const DB_NAME = 'chronos-editor-storage'
-const DB_VERSION = 2 // Incremented for AI generation store
+const DB_VERSION = 3 // Incremented for auth and ui stores
 
 // Store names in IndexedDB
 export const STORE_NAMES = {
@@ -15,6 +15,8 @@ export const STORE_NAMES = {
   TIMELINE: 'timeline-store',
   EDITOR: 'editor-store',
   AI_GENERATION: 'ai-generation-store',
+  AUTH: 'auth-store',
+  UI: 'ui-store',
 } as const
 
 let dbInstance: IDBDatabase | null = null
