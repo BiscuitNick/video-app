@@ -1,15 +1,161 @@
-import { Upload, Search, Sparkles } from 'lucide-react';
-import { useState } from 'react';
+import { Upload, Search, Sparkles, Trash2 } from 'lucide-react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import AIGenerationPanel from '../components/ai-generation/AIGenerationPanel';
+import { MediaUpload } from '../components/media/MediaUpload';
+import { UploadProgressList } from '../components/media/UploadProgressList';
+import { MediaAssetCard } from '../components/media/MediaAssetCard';
+import { FolderSidebar } from '../components/media/FolderSidebar';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../components/ui/dialog';
+import { Button } from '../components/ui/button';
+import { useMediaStore } from '../contexts/StoreContext';
+import { shallow } from 'zustand/shallow';
+import type { MediaAssetType } from '../types/stores';
 
 /**
  * Media library page for asset management interface
  */
 export default function MediaLibraryPage() {
   const [showAIPanel, setShowAIPanel] = useState(false);
+  const [lastSelectedIndex, setLastSelectedIndex] = useState<number>(-1);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState<MediaAssetType | 'all'>('all');
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const uploadInputRef = useRef<HTMLInputElement>(null);
+
+  // Access MediaStore state and actions
+  const { assets, selectedAssetIds, currentFolderId } = useMediaStore(
+    (state) => ({
+      assets: state.assets,
+      selectedAssetIds: state.selectedAssetIds,
+      currentFolderId: state.currentFolderId,
+    }),
+    shallow
+  );
+
+  const queueUpload = useMediaStore((state) => state.queueUpload);
+  const selectAsset = useMediaStore((state) => state.selectAsset);
+  const clearAssetSelection = useMediaStore((state) => state.clearAssetSelection);
+  const removeAsset = useMediaStore((state) => state.removeAsset);
+  const searchAssets = useMediaStore((state) => state.searchAssets);
+
+  // Convert assets Map to array and apply filters
+  const assetsArray = useMemo(() => {
+    let arr = Array.from(assets.values());
+
+    // Filter by current folder
+    if (currentFolderId) {
+      arr = arr.filter((asset) => asset.folderId === currentFolderId);
+    }
+
+    // Filter by type
+    if (filterType !== 'all') {
+      arr = arr.filter((asset) => asset.type === filterType);
+    }
+
+    // Apply search query
+    if (searchQuery.trim()) {
+      const lowerQuery = searchQuery.toLowerCase();
+      arr = arr.filter(
+        (asset) =>
+          asset.name.toLowerCase().includes(lowerQuery) ||
+          JSON.stringify(asset.metadata).toLowerCase().includes(lowerQuery)
+      );
+    }
+
+    return arr;
+  }, [assets, currentFolderId, filterType, searchQuery]);
+
+  // Handle file selection from MediaUpload component
+  const handleFilesSelected = useCallback((files: File[]) => {
+    files.forEach((file) => {
+      queueUpload(file);
+    });
+  }, [queueUpload]);
+
+  // Trigger file picker programmatically
+  const triggerUpload = useCallback(() => {
+    uploadInputRef.current?.click();
+  }, []);
+
+  // Handle asset click with multi-select support
+  const handleAssetClick = useCallback(
+    (assetId: string, index: number, event: React.MouseEvent) => {
+      if (event.shiftKey && lastSelectedIndex !== -1) {
+        // Shift-click: range selection
+        const start = Math.min(lastSelectedIndex, index);
+        const end = Math.max(lastSelectedIndex, index);
+        const selectedRange = assetsArray.slice(start, end + 1);
+
+        // Clear current selection and select range
+        clearAssetSelection();
+        selectedRange.forEach((asset) => selectAsset(asset.id, true));
+      } else if (event.ctrlKey || event.metaKey) {
+        // Ctrl/Cmd-click: toggle individual selection
+        selectAsset(assetId, true);
+        setLastSelectedIndex(index);
+      } else {
+        // Regular click: single selection
+        selectAsset(assetId, false);
+        setLastSelectedIndex(index);
+      }
+    },
+    [assetsArray, lastSelectedIndex, selectAsset, clearAssetSelection]
+  );
+
+  // Handle asset deletion
+  const handleDeleteAssets = useCallback(() => {
+    if (selectedAssetIds.length === 0) {
+      setShowDeleteDialog(false);
+      return;
+    }
+
+    // Optimistic update - remove from UI immediately
+    selectedAssetIds.forEach((assetId) => {
+      removeAsset(assetId);
+    });
+
+    clearAssetSelection();
+    setShowDeleteDialog(false);
+
+    // Show success message (console log for now, could be replaced with toast)
+    console.log(`Successfully deleted ${selectedAssetIds.length} asset(s)`);
+  }, [selectedAssetIds, removeAsset, clearAssetSelection]);
+
+  // Handle individual asset delete
+  const handleDeleteSingleAsset = useCallback(
+    (assetId: string) => {
+      removeAsset(assetId);
+      console.log('Successfully deleted asset');
+    },
+    [removeAsset]
+  );
+
+  // Keyboard shortcut for select all (Ctrl/Cmd+A)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+        e.preventDefault();
+        clearAssetSelection();
+        assetsArray.forEach((asset) => selectAsset(asset.id, true));
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [assetsArray, selectAsset, clearAssetSelection]);
 
   return (
     <div className="flex h-full">
+      {/* Folder Sidebar */}
+      <FolderSidebar />
+
       {/* Main Content Area */}
       <div className="flex-1 p-8 overflow-auto">
         <div className="max-w-7xl mx-auto">
@@ -17,9 +163,25 @@ export default function MediaLibraryPage() {
           <div className="flex items-center justify-between mb-8">
             <div>
               <h1 className="text-3xl font-bold text-zinc-100">Media Library</h1>
-              <p className="text-zinc-400 mt-2">Manage your media assets</p>
+              <p className="text-zinc-400 mt-2">
+                {assetsArray.length} {assetsArray.length === 1 ? 'asset' : 'assets'}
+                {selectedAssetIds.length > 0 && (
+                  <span className="ml-2 text-blue-400">
+                    • {selectedAssetIds.length} selected
+                  </span>
+                )}
+              </p>
             </div>
             <div className="flex gap-2">
+              {selectedAssetIds.length > 0 && (
+                <button
+                  onClick={() => setShowDeleteDialog(true)}
+                  className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors"
+                >
+                  <Trash2 className="w-5 h-5" />
+                  Delete ({selectedAssetIds.length})
+                </button>
+              )}
               <button
                 onClick={() => setShowAIPanel(!showAIPanel)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
@@ -31,7 +193,10 @@ export default function MediaLibraryPage() {
                 <Sparkles className="w-5 h-5" />
                 AI Generate
               </button>
-              <button className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors">
+              <button
+                onClick={triggerUpload}
+                className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors"
+              >
                 <Upload className="w-5 h-5" />
                 Upload Media
               </button>
@@ -39,21 +204,33 @@ export default function MediaLibraryPage() {
           </div>
 
           {/* Search and Filters */}
-          <div className="mb-6">
-            <div className="relative">
+          <div className="mb-6 flex gap-4">
+            <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
               <input
                 type="text"
                 placeholder="Search media..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full bg-zinc-900 border border-zinc-800 rounded-lg pl-10 pr-4 py-3 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value as MediaAssetType | 'all')}
+              className="bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-3 text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">All Types</option>
+              <option value="image">Images</option>
+              <option value="video">Videos</option>
+              <option value="audio">Audio</option>
+            </select>
           </div>
 
-          {/* Media Grid Placeholder */}
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {/* Empty State */}
-            <div className="col-span-full flex flex-col items-center justify-center py-16 text-center">
+          {/* Media Grid */}
+          {assetsArray.length === 0 ? (
+            /* Empty State */
+            <div className="flex flex-col items-center justify-center py-16 text-center">
               <div className="bg-zinc-900 border-2 border-dashed border-zinc-800 rounded-lg p-12 max-w-md">
                 <Upload className="w-16 h-16 text-zinc-700 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-zinc-300 mb-2">No media yet</h3>
@@ -61,7 +238,10 @@ export default function MediaLibraryPage() {
                   Upload images, videos, or audio files, or generate content with AI
                 </p>
                 <div className="flex gap-2 justify-center">
-                  <button className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors">
+                  <button
+                    onClick={triggerUpload}
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors"
+                  >
                     Upload Media
                   </button>
                   <button
@@ -74,7 +254,39 @@ export default function MediaLibraryPage() {
                 </div>
               </div>
             </div>
-          </div>
+          ) : (
+            /* Asset Grid */
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {assetsArray.map((asset, index) => (
+                <MediaAssetCard
+                  key={asset.id}
+                  asset={asset}
+                  isSelected={selectedAssetIds.includes(asset.id)}
+                  onClick={(e) => handleAssetClick(asset.id, index, e)}
+                  onDelete={() => handleDeleteSingleAsset(asset.id)}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Hidden file input for upload */}
+          <input
+            ref={uploadInputRef}
+            type="file"
+            className="hidden"
+            accept="image/*,video/*,audio/*"
+            multiple
+            onChange={(e) => {
+              const files = e.target.files ? Array.from(e.target.files) : [];
+              if (files.length > 0) {
+                handleFilesSelected(files);
+              }
+              // Reset input value to allow selecting the same file again
+              if (uploadInputRef.current) {
+                uploadInputRef.current.value = '';
+              }
+            }}
+          />
         </div>
       </div>
 
@@ -107,6 +319,31 @@ export default function MediaLibraryPage() {
           </div>
         </>
       )}
+
+      {/* Upload Progress List */}
+      <UploadProgressList />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Assets</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete {selectedAssetIds.length}{' '}
+              {selectedAssetIds.length === 1 ? 'asset' : 'assets'}? This action cannot be
+              undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteAssets}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
