@@ -5,6 +5,7 @@ import GenerationQueue from './GenerationQueue'
 import GenerationHistory from './GenerationHistory'
 import { useAIGenerationStore, useMediaStore, useWebSocketStore } from '../../contexts/StoreContext'
 import { generateImage, generateVideo, cancelGeneration as cancelGenerationAPI } from '../../services/aiGenerationService'
+import { importFromUrl } from '../../services/uploadService'
 import type { GenerationType, QualityTier } from '../../types/stores'
 
 export default function AIGenerationPanel() {
@@ -178,23 +179,62 @@ export default function AIGenerationPanel() {
             progress: 100,
           })
 
-          // Auto-import to media library
-          addAsset({
-            id: `ai-${generation.id}`,
-            name: `AI ${generation.type === 'image' ? 'Image' : 'Video'}: ${generation.prompt.substring(0, 30)}...`,
-            type: generation.type === 'image' ? 'image' : 'video',
-            url: resultUrl,
-            thumbnailUrl: generation.type === 'image' ? resultUrl : undefined,
-            size: 0, // Size unknown from Replicate API
-            duration: generation.type === 'video' ? 5 : undefined, // Default 5s for videos (in seconds)
-            createdAt: new Date(),
-            metadata: {
+          // Import to S3 and persist to database
+          const assetName = `AI ${generation.type === 'image' ? 'Image' : 'Video'}: ${generation.prompt.substring(0, 30)}...`
+
+          // Start import process (async, don't block UI)
+          importFromUrl(
+            resultUrl,
+            assetName,
+            generation.type === 'image' ? 'image' : 'video',
+            {
               aiGenerated: true,
               prompt: generation.prompt,
               generationType: generation.type,
               qualityTier: generation.qualityTier,
-            },
-          })
+              aspectRatio: generation.aspectRatio,
+              replicateJobId: generation.jobId,
+            }
+          )
+            .then((importedAsset) => {
+              console.log(`[AIGenerationPanel] Successfully imported asset to S3: ${importedAsset.id}`)
+
+              // Add the persisted asset to media store with permanent S3 URL
+              addAsset({
+                id: importedAsset.id,
+                name: importedAsset.name,
+                type: generation.type === 'image' ? 'image' : 'video',
+                url: importedAsset.url, // Permanent S3 URL
+                thumbnailUrl: importedAsset.thumbnail_url || (generation.type === 'image' ? importedAsset.url : undefined),
+                size: importedAsset.size,
+                duration: generation.type === 'video' ? 5 : undefined, // Default 5s for videos
+                createdAt: new Date(importedAsset.created_at),
+                metadata: importedAsset.metadata,
+              })
+            })
+            .catch((error) => {
+              console.error(`[AIGenerationPanel] Failed to import asset:`, error)
+
+              // Fallback: Add temporary asset with Replicate URL
+              addAsset({
+                id: `ai-${generation.id}`,
+                name: assetName,
+                type: generation.type === 'image' ? 'image' : 'video',
+                url: resultUrl,
+                thumbnailUrl: generation.type === 'image' ? resultUrl : undefined,
+                size: 0,
+                duration: generation.type === 'video' ? 5 : undefined,
+                createdAt: new Date(),
+                metadata: {
+                  aiGenerated: true,
+                  prompt: generation.prompt,
+                  generationType: generation.type,
+                  qualityTier: generation.qualityTier,
+                  importFailed: true,
+                  importError: error instanceof Error ? error.message : 'Unknown error',
+                },
+              })
+            })
         }
       }
 

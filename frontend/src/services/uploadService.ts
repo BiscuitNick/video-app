@@ -313,3 +313,47 @@ export async function uploadFile(
 
   return result
 }
+
+/**
+ * Import media from external URL (e.g., Replicate CDN)
+ * Downloads from URL, uploads to S3, and creates media asset record
+ */
+export async function importFromUrl(
+  url: string,
+  name: string,
+  type: 'image' | 'video' | 'audio',
+  metadata: Record<string, any> = {}
+): Promise<{
+  id: string
+  name: string
+  type: string
+  url: string
+  thumbnail_url: string | null
+  size: number
+  created_at: string
+  metadata: Record<string, any>
+}> {
+  const response = await fetch('/api/v1/media/import-from-url', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      url,
+      name,
+      type,
+      metadata,
+    }),
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}))
+    throw new UploadError(
+      error.detail || `Failed to import from URL: ${response.statusText}`,
+      response.status,
+      response.status >= 500
+    )
+  }
+
+  return response.json()
+}

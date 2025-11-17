@@ -1,10 +1,14 @@
 """Media asset endpoints."""
 
+import hashlib
 import logging
+import tempfile
 import uuid
 from datetime import datetime
+from pathlib import Path
 from typing import Annotated
 
+import httpx
 from db.models.media import MediaAsset, MediaAssetStatus, MediaAssetType
 from db.session import get_db
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -21,6 +25,8 @@ from app.api.schemas.media import (
     MediaBatchMoveResponse,
     MediaBatchTagRequest,
     MediaBatchTagResponse,
+    MediaImportFromUrlRequest,
+    MediaImportFromUrlResponse,
     MediaListResponse,
     MediaMetadataUpdate,
     MediaStatus,
@@ -287,11 +293,311 @@ async def confirm_media_upload(
         ) from e
 
 
-@router.get("/", response_model=MediaListResponse)
+@router.post(
+    "/import-from-url",
+    status_code=status.HTTP_201_CREATED,
+    response_model=MediaImportFromUrlResponse,
+    summary="Import media from external URL",
+    description="""
+    Import and persist media from an external URL (e.g., Replicate CDN, temporary storage).
+
+    **Use cases:**
+    - Persist AI-generated images from Replicate to permanent S3 storage
+    - Import media from temporary CDN URLs
+    - Migrate media from external sources
+
+    **Process:**
+    1. Downloads file from provided URL (with streaming for large files)
+    2. Calculates SHA256 checksum for integrity
+    3. Uploads to S3 with permanent storage
+    4. Creates database record with metadata
+    5. Returns permanent S3 URL
+
+    **Example:**
+    ```json
+    {
+      "url": "https://replicate.delivery/pbxt/abc123.png",
+      "name": "AI Image: beautiful sunset.png",
+      "type": "image",
+      "metadata": {
+        "aiGenerated": true,
+        "prompt": "beautiful sunset over mountains",
+        "model": "google/nano-banana"
+      }
+    }
+    ```
+    """,
+    responses={
+        201: {
+            "description": "Successfully imported and created media asset",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "id": "ac058d8a-0f6f-4014-957f-887f89887c24",
+                        "name": "AI Image: beautiful sunset.png",
+                        "type": "image",
+                        "url": "https://my-bucket.s3.amazonaws.com/media/user123/asset456/image.png",
+                        "thumbnail_url": None,
+                        "size": 148753,
+                        "created_at": "2025-11-17T01:47:18.592560Z",
+                        "metadata": {
+                            "aiGenerated": True,
+                            "prompt": "beautiful sunset over mountains",
+                            "source": "ai_generation",
+                            "source_url": "https://replicate.delivery/pbxt/abc123.png",
+                            "imported_at": "2025-11-17T01:47:18Z"
+                        }
+                    }
+                }
+            }
+        },
+        400: {"description": "Invalid URL or download failed"},
+        500: {"description": "Server error (S3 upload or database failure)"}
+    }
+)
+async def import_media_from_url(
+    request: MediaImportFromUrlRequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> MediaImportFromUrlResponse:
+    """Import media asset from external URL (e.g., Replicate CDN).
+
+    Downloads file from URL, uploads to S3, and creates MediaAsset record.
+    Useful for persisting AI-generated images/videos from temporary CDN URLs.
+
+    Args:
+        request: Import request with URL, name, type, and metadata
+        db: Database session (injected)
+
+    Returns:
+        MediaImportFromUrlResponse: Created media asset with S3 URL
+
+    Raises:
+        HTTPException: 400 for validation/download errors
+        HTTPException: 500 for server errors
+    """
+    asset_id = uuid.uuid4()
+    # TODO: Get user_id from authenticated session
+    user_id = uuid.UUID("00000000-0000-0000-0000-000000000001")
+
+    logger.info(
+        "Importing media from URL",
+        extra={
+            "asset_id": str(asset_id),
+            "url": request.url,
+            "name": request.name,
+            "type": request.type,
+        },
+    )
+
+    temp_file_path = None
+
+    try:
+        # Create temporary file for download
+        with tempfile.NamedTemporaryFile(delete=False, suffix=Path(request.name).suffix) as temp_file:
+            temp_file_path = Path(temp_file.name)
+
+        logger.debug(f"Downloading from {request.url} to {temp_file_path}")
+
+        # Download file from URL using httpx with streaming
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            try:
+                async with client.stream("GET", request.url) as response:
+                    response.raise_for_status()
+
+                    # Calculate checksum while downloading
+                    hasher = hashlib.sha256()
+                    total_size = 0
+
+                    with open(temp_file_path, "wb") as f:
+                        async for chunk in response.aiter_bytes(chunk_size=8192):
+                            f.write(chunk)
+                            hasher.update(chunk)
+                            total_size += len(chunk)
+
+                    checksum = hasher.hexdigest()
+
+                    logger.info(
+                        f"Downloaded {total_size} bytes from URL",
+                        extra={"size": total_size, "checksum": checksum},
+                    )
+
+            except httpx.HTTPStatusError as e:
+                logger.error(f"HTTP error downloading from URL: {e}")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Failed to download from URL: HTTP {e.response.status_code}",
+                ) from e
+            except httpx.TimeoutException as e:
+                logger.error(f"Timeout downloading from URL: {e}")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Download timeout - URL took too long to respond",
+                ) from e
+            except Exception as e:
+                logger.exception(f"Error downloading from URL: {e}")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Failed to download from URL: {str(e)}",
+                ) from e
+
+        # Generate S3 key for the asset
+        s3_key = generate_s3_key(user_id, asset_id, request.name)
+
+        # Upload to S3
+        try:
+            s3_url = s3_manager.upload_file(
+                local_path=temp_file_path,
+                s3_key=s3_key,
+                extra_args={
+                    "ContentType": CONTENT_TYPE_MAP.get(request.type, "application/octet-stream"),
+                },
+            )
+
+            logger.info(
+                f"Uploaded to S3: {s3_key}",
+                extra={"s3_url": s3_url},
+            )
+
+        except Exception as e:
+            logger.exception(f"Failed to upload to S3: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to upload to S3",
+            ) from e
+
+        # Create MediaAsset record in database
+        try:
+            # Merge AI generation metadata with source URL
+            file_metadata = {
+                **request.metadata,
+                "source": "ai_generation",
+                "source_url": request.url,
+                "imported_at": datetime.utcnow().isoformat(),
+            }
+
+            # Determine if this is AI-generated based on metadata
+            is_ai_generated = request.metadata.get("aiGenerated", False) or \
+                              request.metadata.get("prompt") is not None or \
+                              "ai_generation" in file_metadata.get("source", "")
+
+            tags = []
+            if is_ai_generated:
+                tags.append("ai-generated")
+
+            media_asset = MediaAsset(
+                id=asset_id,
+                user_id=user_id,
+                name=request.name,
+                file_size=total_size,
+                file_type=MediaAssetType(request.type.value),
+                s3_key=s3_key,
+                status=MediaAssetStatus.READY,
+                checksum=checksum,
+                file_metadata=file_metadata,
+                tags=tags,
+                is_deleted=False,
+            )
+
+            db.add(media_asset)
+            await db.commit()
+            await db.refresh(media_asset)
+
+            logger.info(
+                "Media asset created from import",
+                extra={
+                    "asset_id": str(asset_id),
+                    "s3_key": s3_key,
+                },
+            )
+
+            return MediaImportFromUrlResponse(
+                id=asset_id,
+                name=request.name,
+                type=request.type,
+                url=s3_url,
+                thumbnail_url=None,  # TODO: Generate thumbnail for videos
+                size=total_size,
+                created_at=media_asset.created_at,
+                metadata=file_metadata,
+            )
+
+        except Exception as e:
+            logger.exception(f"Failed to create media asset: {e}")
+            # Try to cleanup S3 upload
+            try:
+                s3_manager.delete_file(s3_key)
+            except Exception:
+                pass
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to create media asset record",
+            ) from e
+
+    finally:
+        # Cleanup temporary file
+        if temp_file_path and temp_file_path.exists():
+            try:
+                temp_file_path.unlink()
+                logger.debug(f"Cleaned up temp file: {temp_file_path}")
+            except Exception as e:
+                logger.warning(f"Failed to cleanup temp file: {e}")
+
+
+@router.get(
+    "/",
+    response_model=MediaListResponse,
+    summary="List all media assets",
+    description="""
+    List all media assets with pagination and filtering.
+
+    **Features:**
+    - Pagination support (max 100 items per page)
+    - Filter by user_id (defaults to test user if not provided)
+    - Filter by media type (image/video/audio)
+    - Search by filename
+    - Filter by folder or tags
+    - Sort by created_at, updated_at, or name
+
+    **Example queries:**
+    - All images: `?type=image`
+    - Recent uploads: `?sort_by=created_at&sort_desc=true`
+    - Search for "ai": `?search=ai`
+    - AI-generated only: `?tag=ai-generated`
+    - Specific user: `?user_id=00000000-0000-0000-0000-000000000001`
+    - Large page: `?per_page=100`
+    """,
+    responses={
+        200: {
+            "description": "Successfully retrieved media assets",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "assets": [
+                            {
+                                "id": "ac058d8a-0f6f-4014-957f-887f89887c24",
+                                "name": "AI Image: beautiful sunset...",
+                                "file_type": "image",
+                                "file_size": 148753,
+                                "status": "ready",
+                                "tags": ["ai-generated"],
+                                "created_at": "2025-11-17T01:47:18.592560Z"
+                            }
+                        ],
+                        "total": 22,
+                        "page": 1,
+                        "per_page": 20,
+                        "total_pages": 2
+                    }
+                }
+            }
+        }
+    }
+)
 async def list_media_assets(
     db: Annotated[AsyncSession, Depends(get_db)],
     page: int = 1,
     per_page: int = 20,
+    user_id: uuid.UUID | None = None,
     type: MediaType | None = None,
     folder_id: uuid.UUID | None = None,
     tag: str | None = None,
@@ -305,6 +611,7 @@ async def list_media_assets(
         db: Database session (injected)
         page: Page number (1-indexed)
         per_page: Items per page (max 100)
+        user_id: Filter by user ID (defaults to test user if not provided)
         type: Filter by media type
         folder_id: Filter by folder
         tag: Filter by tag
@@ -323,9 +630,16 @@ async def list_media_assets(
     per_page = min(per_page, 100)
     offset = (page - 1) * per_page
 
+    # Default to test user if no user_id provided (TODO: get from auth session)
+    if user_id is None:
+        user_id = uuid.UUID("00000000-0000-0000-0000-000000000001")
+
     try:
-        # Build base query - exclude deleted assets
-        query = select(MediaAsset).where(MediaAsset.is_deleted == False)  # noqa: E712
+        # Build base query - exclude deleted assets and filter by user
+        query = select(MediaAsset).where(
+            MediaAsset.is_deleted == False,  # noqa: E712
+            MediaAsset.user_id == user_id
+        )
 
         # Apply filters
         if type:
@@ -335,7 +649,8 @@ async def list_media_assets(
             query = query.where(MediaAsset.folder_id == folder_id)
 
         if tag:
-            query = query.where(MediaAsset.tags.contains([tag]))
+            # Use PostgreSQL array operator for tag filtering
+            query = query.where(MediaAsset.tags.any(tag))
 
         if search:
             query = query.where(MediaAsset.name.ilike(f"%{search}%"))
@@ -359,8 +674,40 @@ async def list_media_assets(
         result = await db.execute(query)
         assets = result.scalars().all()
 
-        # Build lightweight responses
-        asset_responses = [MediaAssetLightResponse.model_validate(asset) for asset in assets]
+        # Build lightweight responses with presigned URLs
+        asset_responses = []
+        for asset in assets:
+            # Generate presigned URL (valid for 1 hour)
+            try:
+                url = s3_manager.generate_presigned_url(asset.s3_key, expiration=3600)
+                thumbnail_url = None
+                if asset.thumbnail_s3_key:
+                    thumbnail_url = s3_manager.generate_presigned_url(
+                        asset.thumbnail_s3_key, expiration=3600
+                    )
+            except Exception as e:
+                logger.warning(
+                    f"Failed to generate presigned URL for asset {asset.id}: {e}",
+                    extra={"asset_id": str(asset.id), "s3_key": asset.s3_key}
+                )
+                url = None
+                thumbnail_url = None
+
+            # Build response with URLs
+            asset_response = MediaAssetLightResponse(
+                id=asset.id,
+                name=asset.name,
+                file_type=MediaType(asset.file_type.value),
+                file_size=asset.file_size,
+                status=MediaStatus(asset.status.value),
+                s3_key=asset.s3_key,
+                url=url,
+                thumbnail_s3_key=asset.thumbnail_s3_key,
+                thumbnail_url=thumbnail_url,
+                tags=asset.tags,
+                created_at=asset.created_at,
+            )
+            asset_responses.append(asset_response)
 
         total_pages = (total + per_page - 1) // per_page
 
@@ -380,7 +727,19 @@ async def list_media_assets(
         ) from e
 
 
-@router.get("/{asset_id}", response_model=MediaAssetResponse)
+@router.get(
+    "/{asset_id}",
+    response_model=MediaAssetResponse,
+    summary="Get media asset details",
+    description="""
+    Get detailed information about a specific media asset including:
+    - Full metadata (dimensions, duration, codec, etc.)
+    - S3 keys and URLs
+    - Processing status
+    - Tags and folder information
+    - AI generation metadata (if applicable)
+    """,
+)
 async def get_media_asset(
     asset_id: uuid.UUID,
     db: Annotated[AsyncSession, Depends(get_db)],

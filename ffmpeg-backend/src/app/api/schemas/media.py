@@ -150,7 +150,10 @@ class MediaAssetLightResponse(BaseModel):
     file_type: MediaType = Field(..., description="Type of media asset")
     file_size: int = Field(..., description="File size in bytes")
     status: MediaStatus = Field(..., description="Current processing status")
+    s3_key: str = Field(..., description="S3 object key for the main file")
+    url: str | None = Field(None, description="Presigned URL or S3 URL for accessing the asset")
     thumbnail_s3_key: str | None = Field(None, description="Thumbnail S3 object key")
+    thumbnail_url: str | None = Field(None, description="Presigned URL for thumbnail")
     tags: list[str] = Field(default_factory=list, description="Asset tags")
     created_at: datetime = Field(..., description="When asset was created")
 
@@ -279,6 +282,56 @@ class ThumbnailGenerationResponse(BaseModel):
     asset_id: UUID = Field(..., description="Media asset ID")
     job_id: str = Field(..., description="Worker job ID for tracking")
     message: str = Field(..., description="Status message")
+
+    class Config:
+        """Pydantic configuration."""
+
+        from_attributes = True
+
+
+class MediaImportFromUrlRequest(BaseModel):
+    """Request model for importing media from external URL."""
+
+    url: str = Field(
+        ...,
+        min_length=1,
+        max_length=2048,
+        description="URL to download media from (e.g., Replicate CDN)",
+    )
+    name: str = Field(
+        ...,
+        min_length=1,
+        max_length=500,
+        description="Filename for the imported asset",
+    )
+    type: MediaType = Field(..., description="Type of media asset (image/video/audio)")
+    metadata: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Additional metadata (AI generation info, prompt, etc.)",
+    )
+
+    @field_validator("url")
+    @classmethod
+    def validate_url(cls, url: str) -> str:
+        """Validate URL format."""
+        if not url.startswith(("http://", "https://")):
+            raise ValueError("URL must start with http:// or https://")
+        return url
+
+
+class MediaImportFromUrlResponse(BaseModel):
+    """Response model for media import from URL."""
+
+    id: UUID = Field(..., description="Created media asset ID")
+    name: str = Field(..., description="Asset name")
+    type: MediaType = Field(..., description="Type of media asset")
+    url: str = Field(..., description="S3 URL for the imported asset")
+    thumbnail_url: str | None = Field(None, description="Thumbnail URL if available")
+    size: int = Field(..., description="File size in bytes")
+    created_at: datetime = Field(..., description="When asset was created")
+    metadata: dict[str, Any] = Field(
+        default_factory=dict, description="Asset metadata including AI generation info"
+    )
 
     class Config:
         """Pydantic configuration."""
