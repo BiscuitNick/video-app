@@ -329,6 +329,9 @@ export default function AIGenerationPanel() {
           // Import to S3 and persist to database
           const assetName = `AI ${generation.type === 'image' ? 'Image' : 'Video'}: ${generation.prompt.substring(0, 30)}...`
 
+          console.log(`[AIGenerationPanel] Starting import for ${generation.type}: ${assetName}`)
+          console.log(`[AIGenerationPanel] Replicate URL: ${resultUrl}`)
+
           // Start import process (async, don't block UI)
           importFromUrl(
             resultUrl,
@@ -344,29 +347,39 @@ export default function AIGenerationPanel() {
             }
           )
             .then((importedAsset) => {
-              console.log(`[AIGenerationPanel] Successfully imported asset to S3: ${importedAsset.id}`)
+              console.log(`[AIGenerationPanel] ✅ Successfully imported ${generation.type} to S3 and database`)
+              console.log(`[AIGenerationPanel] Asset ID: ${importedAsset.id}`)
+              console.log(`[AIGenerationPanel] S3 URL: ${importedAsset.url}`)
 
               // Add the persisted asset to media store with permanent S3 URL
-              addAsset({
+              const newAsset = {
                 id: importedAsset.id,
                 name: importedAsset.name,
-                type: generation.type === 'image' ? 'image' : 'video',
+                type: generation.type === 'image' ? 'image' : 'video' as 'image' | 'video',
                 url: importedAsset.url, // Permanent S3 URL
                 thumbnailUrl: importedAsset.thumbnail_url || (generation.type === 'image' ? importedAsset.url : undefined),
                 size: importedAsset.size,
                 duration: generation.type === 'video' ? 5 : undefined, // Default 5s for videos
                 createdAt: new Date(importedAsset.created_at),
                 metadata: importedAsset.metadata,
-              })
+              }
+
+              addAsset(newAsset)
+              console.log(`[AIGenerationPanel] ✅ Added asset to media library:`, newAsset)
             })
             .catch((error) => {
-              console.error(`[AIGenerationPanel] Failed to import asset:`, error)
+              console.error(`[AIGenerationPanel] ❌ Failed to import ${generation.type}:`, error)
+              console.error(`[AIGenerationPanel] Error details:`, {
+                message: error instanceof Error ? error.message : 'Unknown error',
+                stack: error instanceof Error ? error.stack : undefined,
+              })
 
               // Fallback: Add temporary asset with Replicate URL
-              addAsset({
+              console.warn(`[AIGenerationPanel] Using fallback: Adding temporary asset with Replicate URL`)
+              const fallbackAsset = {
                 id: `ai-${generation.id}`,
                 name: assetName,
-                type: generation.type === 'image' ? 'image' : 'video',
+                type: generation.type === 'image' ? 'image' : 'video' as 'image' | 'video',
                 url: resultUrl,
                 thumbnailUrl: generation.type === 'image' ? resultUrl : undefined,
                 size: 0,
@@ -379,8 +392,12 @@ export default function AIGenerationPanel() {
                   qualityTier: generation.qualityTier,
                   importFailed: true,
                   importError: error instanceof Error ? error.message : 'Unknown error',
+                  replicateUrl: resultUrl,
                 },
-              })
+              }
+
+              addAsset(fallbackAsset)
+              console.warn(`[AIGenerationPanel] ⚠️ Added temporary fallback asset:`, fallbackAsset)
             })
         } else {
           console.warn(
