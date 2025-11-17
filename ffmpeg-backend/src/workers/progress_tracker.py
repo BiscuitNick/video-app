@@ -182,6 +182,7 @@ class ProgressTracker:
         message: str | None = None,
         error: str | None = None,
         ttl: int = 86400,
+        **extra_data,
     ) -> None:
         """Update job status in Redis.
 
@@ -190,6 +191,7 @@ class ProgressTracker:
             message: Optional status message
             error: Optional error message if failed
             ttl: TTL for status key in seconds (default 24 hours)
+            **extra_data: Additional data to include (e.g., output_url)
         """
         try:
             status_data = {
@@ -205,6 +207,9 @@ class ProgressTracker:
             if error:
                 status_data["error"] = error
 
+            # Add any extra data
+            status_data.update(extra_data)
+
             # Store status in Redis with TTL
             self._redis.setex(
                 self.status_key,
@@ -213,18 +218,29 @@ class ProgressTracker:
             )
 
             # Also publish status change to progress channel
+            publish_data = {
+                "job_id": self.job_id,
+                "type": "status_update",
+                "status": status,
+                "message": message,
+                "error": error,
+                "timestamp": datetime.now(UTC).isoformat(),
+            }
+            if self.composition_id:
+                publish_data["composition_id"] = self.composition_id
+
+            # Add extra data (like output_url) to the published message
+            publish_data.update(extra_data)
+
+            # LOG THE FULL MESSAGE BEING SENT
+            logger.info(
+                f"Publishing WebSocket message: {json.dumps(publish_data, indent=2)}",
+                extra={"job_id": self.job_id, "has_output_url": "output_url" in publish_data}
+            )
+
             self._redis.publish(
                 self.channel_name,
-                json.dumps(
-                    {
-                        "job_id": self.job_id,
-                        "type": "status_update",
-                        "status": status,
-                        "message": message,
-                        "error": error,
-                        "timestamp": datetime.now(UTC).isoformat(),
-                    }
-                ),
+                json.dumps(publish_data),
             )
 
             logger.info(

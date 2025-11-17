@@ -24,7 +24,8 @@ export default function ProjectEditorPage() {
   const mediaStore = useMediaStore();
   const editorStore = useEditorStore();
   const projectStore = useProjectStore();
-  const webSocketStore = useWebSocketStore();
+  const addJob = useWebSocketStore((state) => state.addJob);
+  const removeJob = useWebSocketStore((state) => state.removeJob);
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [exportPayload, setExportPayload] = useState<{
     clips: Array<{
@@ -235,14 +236,13 @@ export default function ProjectEditorPage() {
         const startTime = clip.startTime / fps;
         const duration = clip.duration / fps;
         const endTime = startTime + duration;
+
+        // trim_start: where to start in the source video (in seconds)
         const trimStart = clip.inPoint / fps;
 
-        // trim_end is how many seconds to trim from the END of the source
-        // If we have the asset duration, calculate it as: duration - outPoint
-        // Otherwise, default to 0 (no trimming from end)
-        const trimEnd = asset.duration
-          ? Math.max(0, asset.duration - (clip.outPoint / fps))
-          : 0;
+        // trim_end: where to end in the source video (in seconds)
+        // This is the outPoint converted to seconds
+        const trimEnd = clip.outPoint / fps;
 
         return {
           video_url: asset.url,
@@ -307,7 +307,7 @@ export default function ProjectEditorPage() {
       console.log('[Export] Response:', response);
 
       // Add job to WebSocket store for progress tracking
-      webSocketStore.getState().addJob({
+      addJob({
         id: response.jobId,
         type: 'export',
         status: response.status === 'processing' ? 'running' : 'queued',
@@ -326,7 +326,7 @@ export default function ProjectEditorPage() {
       });
       throw error; // Re-throw to let the dialog handle the error state
     }
-  }, [exportPayload, projectStore.metadata.name, webSocketStore]);
+  }, [exportPayload, projectStore.metadata.name, addJob]);
 
   // Handle download of completed export
   const handleExportDownload = useCallback((downloadUrl: string, fileName: string) => {
@@ -344,8 +344,8 @@ export default function ProjectEditorPage() {
 
   // Handle closing export job card
   const handleExportClose = useCallback((jobId: string) => {
-    webSocketStore.getState().removeJob(jobId);
-  }, [webSocketStore]);
+    removeJob(jobId);
+  }, [removeJob]);
 
   return (
     <div className="h-full w-full flex flex-col bg-zinc-950">

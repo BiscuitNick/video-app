@@ -403,7 +403,7 @@ async def websocket_job_updates(
             "timestamp": datetime.now(UTC).isoformat()
         })
 
-        # Create Redis subscriber for AI jobs
+        # Create Redis subscriber for job progress updates
         redis_client = await aioredis.from_url(
             str(settings.redis_url),
             encoding="utf-8",
@@ -411,17 +411,18 @@ async def websocket_job_updates(
         )
         pubsub = redis_client.pubsub()
 
-        # Subscribe to general AI jobs channel
-        await pubsub.subscribe("ai_jobs:updates")
+        # Subscribe to ALL job progress channels using pattern matching
+        await pubsub.psubscribe("job:progress:*")
 
-        logger.info("Subscribed to AI jobs updates channel")
+        logger.info("Subscribed to job progress updates (pattern: job:progress:*)")
 
         # Listen for Redis messages and forward to WebSocket
         async def redis_listener():
             """Listen to Redis pub/sub and forward messages to WebSocket."""
             try:
                 async for message in pubsub.listen():
-                    if message["type"] == "message":
+                    # Pattern subscriptions use "pmessage" type
+                    if message["type"] == "pmessage":
                         try:
                             # Check if WebSocket is still connected before sending
                             if websocket.client_state.value != 1:  # 1 = CONNECTED
@@ -432,7 +433,7 @@ async def websocket_job_updates(
                             job_update = json.loads(message["data"])
                             # Forward to WebSocket client
                             await websocket.send_json(job_update)
-                            logger.debug(f"Forwarded job update: {job_update.get('jobId')}")
+                            logger.debug(f"Forwarded job update: {job_update.get('job_id')}")
                         except json.JSONDecodeError:
                             logger.warning(f"Failed to decode Redis message: {message['data']}")
                         except RuntimeError as e:

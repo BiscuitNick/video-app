@@ -1,13 +1,28 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTemporalStore } from 'zundo'
 import { Timeline } from '../components/timeline'
 import { ClipPropertiesPanel } from '../components/timeline/ClipPropertiesPanel'
-import { useTimelineStore } from '../contexts/StoreContext'
+import { ExportDialog } from '../components/ExportDialog'
+import { useTimelineStore, useMediaStore } from '../contexts/StoreContext'
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts'
 import type { TrackType } from '../types/stores'
+import { api } from '../lib/api'
+import { toast } from '../lib/toast'
 
 export function TimelinePage() {
   const timelineStore = useTimelineStore()
+  const mediaStore = useMediaStore()
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false)
+  const [exportPayload, setExportPayload] = useState<{
+    clips: Array<{
+      video_url: string
+      start_time: number
+      end_time: number
+      trim_start: number
+      trim_end: number
+    }>
+    overlays: unknown[]
+  } | null>(null)
 
   // Get temporal store actions for undo/redo
   const { undo, redo, futureStates, pastStates } = useTemporalStore(timelineStore as any)
@@ -65,6 +80,95 @@ export function TimelinePage() {
     })
     // Clear selection after deletion
     timelineStore.clearSelection()
+  }
+
+  const handleExport = () => {
+    try {
+      // Get all clips from the timeline
+      const clips = Array.from(timelineStore.clips.values())
+
+      if (clips.length === 0) {
+        toast.error('No clips to export', {
+          description: 'Add some clips to the timeline before exporting.',
+        })
+        return
+      }
+
+      // Transform clips to the backend format
+      const transformedClips = clips.map((clip) => {
+        // Get the asset URL from the media store
+        const asset = mediaStore.assets.get(clip.assetId)
+        if (!asset) {
+          throw new Error(`Asset not found for clip ${clip.id}`)
+        }
+
+        // Convert frames to seconds
+        const fps = timelineStore.fps
+        const startTime = clip.startTime / fps
+        const duration = clip.duration / fps
+        const endTime = startTime + duration
+        const trimStart = clip.inPoint / fps
+
+        // trim_end is how many seconds to trim from the END of the source
+        // If we have the asset duration, calculate it as: duration - outPoint
+        // Otherwise, default to 0 (no trimming from end)
+        const trimEnd = asset.duration
+          ? Math.max(0, asset.duration - (clip.outPoint / fps))
+          : 0
+
+        return {
+          video_url: asset.url,
+          start_time: startTime,
+          end_time: endTime,
+          trim_start: trimStart,
+          trim_end: trimEnd,
+        }
+      })
+
+      // Sort clips by start_time
+      transformedClips.sort((a, b) => a.start_time - b.start_time)
+
+      // Prepare the payload
+      const payload = {
+        clips: transformedClips,
+        overlays: [],
+      }
+
+      // Set the payload and open the dialog
+      setExportPayload(payload)
+      setIsExportDialogOpen(true)
+    } catch (error) {
+      console.error('Failed to prepare export:', error)
+      toast.error('Failed to prepare export', {
+        description: error instanceof Error ? error.message : 'Unknown error occurred',
+      })
+    }
+  }
+
+  const handleConfirmExport = async () => {
+    if (!exportPayload) return
+
+    try {
+      // Show loading toast
+      toast.info('Exporting...', {
+        description: 'Sending your composition to the backend.',
+      })
+
+      // Send to the backend API
+      const response = await api.post('/compositions', exportPayload)
+
+      toast.success('Export started successfully!', {
+        description: 'Your video is being processed.',
+      })
+
+      console.log('Export response:', response)
+    } catch (error) {
+      console.error('Export failed:', error)
+      toast.error('Export failed', {
+        description: error instanceof Error ? error.message : 'Unknown error occurred',
+      })
+      throw error // Re-throw to let the dialog handle the error state
+    }
   }
 
   // Calculate duration (use stored duration or default to 5 minutes)
@@ -158,39 +262,50 @@ export function TimelinePage() {
   useKeyboardShortcuts({ shortcuts, enabled: true })
 
   return (
-    <div className="h-full flex">
-      <div className="flex-1 flex flex-col">
-        <Timeline
-          tracks={timelineStore.tracks}
-          clips={timelineStore.clips}
-          selectedClipIds={timelineStore.selectedClipIds}
-          playhead={timelineStore.playhead}
-          zoom={timelineStore.zoom}
-          duration={duration}
-          fps={timelineStore.fps}
-          onPlayheadChange={timelineStore.setPlayhead}
-          onZoomChange={timelineStore.setZoom}
-          onClipSelect={timelineStore.selectClip}
-          onClipMove={timelineStore.moveClip}
-          onClipTrim={timelineStore.updateClip}
-          onSplitClip={handleSplitClip}
-          onDuplicateClips={handleDuplicateClips}
-          onDeleteClips={handleDeleteClips}
-          onTrackUpdate={timelineStore.updateTrack}
-          onAddTrack={handleAddTrack}
-        />
-      </div>
-
-      {/* Clip Properties Panel */}
-      {selectedClip && (
-        <div className="w-80 flex-shrink-0">
-          <ClipPropertiesPanel
-            clip={selectedClip}
+    <>
+      <div className="h-full flex">
+        <div className="flex-1 flex flex-col">
+          <Timeline
+            tracks={timelineStore.tracks}
+            clips={timelineStore.clips}
+            selectedClipIds={timelineStore.selectedClipIds}
+            playhead={timelineStore.playhead}
+            zoom={timelineStore.zoom}
+            duration={duration}
             fps={timelineStore.fps}
-            onUpdate={timelineStore.updateClip}
+            onPlayheadChange={timelineStore.setPlayhead}
+            onZoomChange={timelineStore.setZoom}
+            onClipSelect={timelineStore.selectClip}
+            onClipMove={timelineStore.moveClip}
+            onClipTrim={timelineStore.updateClip}
+            onSplitClip={handleSplitClip}
+            onDuplicateClips={handleDuplicateClips}
+            onDeleteClips={handleDeleteClips}
+            onTrackUpdate={timelineStore.updateTrack}
+            onAddTrack={handleAddTrack}
+            onExport={handleExport}
           />
         </div>
-      )}
-    </div>
+
+        {/* Clip Properties Panel */}
+        {selectedClip && (
+          <div className="w-80 flex-shrink-0">
+            <ClipPropertiesPanel
+              clip={selectedClip}
+              fps={timelineStore.fps}
+              onUpdate={timelineStore.updateClip}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Export Dialog */}
+      <ExportDialog
+        open={isExportDialogOpen}
+        onOpenChange={setIsExportDialogOpen}
+        payload={exportPayload}
+        onConfirm={handleConfirmExport}
+      />
+    </>
   )
 }

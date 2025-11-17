@@ -289,6 +289,7 @@ class CompositionJobHandler:
                 status=status.value,
                 message=operation,
                 error=error,
+                **metadata,  # Pass metadata (includes output_url when completed)
             )
 
         # Log context update
@@ -393,6 +394,7 @@ class CompositionJobHandler:
                     status=JobStatus.COMPLETED,
                     operation="Job completed successfully",
                     progress=100.0,
+                    output_url=result.get("output_url"),  # Pass the download URL
                 )
 
                 return result

@@ -94,7 +94,9 @@ export function WebSocketProvider({
   // Handle incoming WebSocket messages
   const handleMessage = (message: WebSocketMessage) => {
     // Route job update messages to the store
-    if (message.event.startsWith('job.')) {
+    // Backend sends messages with "type" field, not "event"
+    const eventType = message.event || message.type || ''
+    if (eventType.startsWith('job.') || message.type === 'status_update' || message.job_id) {
       webSocketStore.handleJobUpdate(message as JobUpdateMessage)
     }
 

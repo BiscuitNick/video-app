@@ -24,6 +24,7 @@ interface TimelineProps {
   onAddTrack?: () => void
   onDeleteTrack?: (trackId: string) => void
   onAssetDrop?: (asset: MediaAsset, trackId: string, startFrame: number) => void
+  onExport?: () => void
 }
 
 export function Timeline({
@@ -46,6 +47,7 @@ export function Timeline({
   onAddTrack,
   onDeleteTrack,
   onAssetDrop,
+  onExport,
 }: TimelineProps) {
   const rulerScrollRef = useRef<HTMLDivElement>(null)
   const tracksScrollRef = useRef<HTMLDivElement>(null)
@@ -115,6 +117,7 @@ export function Timeline({
         onSplitAtPlayhead={handleSplitAtPlayhead}
         onDuplicateClips={handleDuplicateClips}
         onDeleteClips={handleDeleteClips}
+        onExport={onExport}
       />
 
       {/* Timeline ruler (scrollable horizontally) */}
