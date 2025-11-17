@@ -1,7 +1,6 @@
 import { createStore } from 'zustand/vanilla'
 import { immer } from 'zustand/middleware/immer'
-import { persist, devtools } from 'zustand/middleware'
-import { createIndexedDBStorage, STORE_NAMES } from '../lib/indexedDBStorage'
+import { devtools } from 'zustand/middleware'
 import type {
   AIGenerationStore,
   GenerationRequest,
@@ -16,12 +15,11 @@ const initialState = {
   maxConcurrentGenerations: 3, // MAX_GENERATIONS concurrency limit
 }
 
-// Create the vanilla store with devtools, persist, and immer middleware
+// Create the vanilla store with devtools and immer middleware (persist temporarily disabled)
 export const createAIGenerationStore = () => {
   return createStore<AIGenerationStore>()(
     devtools(
-      persist(
-        immer((set, get) => ({
+      immer((set, get) => ({
           ...initialState,
 
           // Generation operations
@@ -146,70 +144,6 @@ export const createAIGenerationStore = () => {
           // Utility
           reset: () => set(initialState),
         })),
-        {
-          name: 'ai-generation-store',
-          storage: createIndexedDBStorage(STORE_NAMES.AI_GENERATION),
-          // Custom serialization for Maps and Dates
-          serialize: (state) => {
-            return JSON.stringify({
-              state: {
-                ...state.state,
-                activeGenerations: Array.from(state.state.activeGenerations.entries()),
-                generationHistory: state.state.generationHistory.map((item) => ({
-                  ...item,
-                  request: {
-                    ...item.request,
-                    createdAt: item.request.createdAt.toISOString(),
-                    completedAt: item.request.completedAt?.toISOString(),
-                  },
-                })),
-              },
-              version: state.version,
-            })
-          },
-          deserialize: (str) => {
-            const parsed = JSON.parse(str)
-            return {
-              state: {
-                ...parsed.state,
-                activeGenerations: new Map(
-                  parsed.state.activeGenerations.map(
-                    ([
-                      id,
-                      req,
-                    ]: [
-                      string,
-                      GenerationRequest & { createdAt: string; completedAt?: string }
-                    ]) => [
-                      id,
-                      {
-                        ...req,
-                        createdAt: new Date(req.createdAt),
-                        completedAt: req.completedAt ? new Date(req.completedAt) : undefined,
-                      },
-                    ]
-                  )
-                ),
-                generationHistory: parsed.state.generationHistory.map(
-                  (item: GenerationHistory & {
-                    request: { createdAt: string; completedAt?: string }
-                  }) => ({
-                    ...item,
-                    request: {
-                      ...item.request,
-                      createdAt: new Date(item.request.createdAt),
-                      completedAt: item.request.completedAt
-                        ? new Date(item.request.completedAt)
-                        : undefined,
-                    },
-                  })
-                ),
-              },
-              version: parsed.version,
-            }
-          },
-        }
-      ),
       { name: 'AIGenerationStore' }
     )
   )

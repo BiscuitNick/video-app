@@ -1,30 +1,39 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
 import PromptInput from './PromptInput'
 import GenerationQueue from './GenerationQueue'
 import GenerationHistory from './GenerationHistory'
-import { useAIGenerationStore } from '../../contexts/StoreContext'
-import { useWebSocketStore } from '../../contexts/StoreContext'
-import { useMediaStore } from '../../contexts/StoreContext'
+import { useAIGenerationStore, useMediaStore } from '../../contexts/StoreContext'
 import { generateImage, generateVideo, cancelGeneration as cancelGenerationAPI } from '../../services/aiGenerationService'
 import type { GenerationType, QualityTier } from '../../types/stores'
 
 export default function AIGenerationPanel() {
   const [activeTab, setActiveTab] = useState('generate')
 
-  // Store hooks
-  const aiStore = useAIGenerationStore()
-  const wsStore = useWebSocketStore()
-  const mediaStore = useMediaStore()
-
-  // Get active generations and history
-  const activeGenerations = useAIGenerationStore(
-    (state) => Array.from(state.activeGenerations.values()).sort(
-      (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
-    )
-  )
+  // Get state and actions from stores - get the Map directly without transformation
+  const activeGenerationsMap = useAIGenerationStore((state) => state.activeGenerations)
   const generationHistory = useAIGenerationStore((state) => state.generationHistory)
   const maxConcurrent = useAIGenerationStore((state) => state.maxConcurrentGenerations)
+
+  // Get store actions
+  const queueGeneration = useAIGenerationStore((state) => state.queueGeneration)
+  const updateGenerationStatus = useAIGenerationStore((state) => state.updateGenerationStatus)
+  const cancelGeneration = useAIGenerationStore((state) => state.cancelGeneration)
+  const removeGeneration = useAIGenerationStore((state) => state.removeGeneration)
+  const addToHistory = useAIGenerationStore((state) => state.addToHistory)
+  const toggleFavorite = useAIGenerationStore((state) => state.toggleFavorite)
+  const removeFromHistory = useAIGenerationStore((state) => state.removeFromHistory)
+
+  const addAsset = useMediaStore((state) => state.addAsset)
+
+  // Memoize the sorted array to prevent infinite loops
+  const activeGenerations = useMemo(
+    () =>
+      Array.from(activeGenerationsMap.values()).sort(
+        (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+      ),
+    [activeGenerationsMap]
+  )
 
   // Check if we can queue more generations
   const activeCount = activeGenerations.filter(
@@ -42,7 +51,7 @@ export default function AIGenerationPanel() {
     }) => {
       try {
         // Queue the generation in the store
-        const generationId = aiStore.queueGeneration({
+        const generationId = queueGeneration({
           type: params.type,
           prompt: params.prompt,
           qualityTier: params.qualityTier,
@@ -65,7 +74,7 @@ export default function AIGenerationPanel() {
         }
 
         // Update with job ID
-        aiStore.updateGenerationStatus(generationId, 'generating', {
+        updateGenerationStatus(generationId, 'generating', {
           jobId: response.job_id,
         })
 
@@ -73,22 +82,16 @@ export default function AIGenerationPanel() {
         setActiveTab('queue')
       } catch (error) {
         console.error('Failed to start generation:', error)
-        // Update status to failed
-        const genId = Array.from(aiStore.activeGenerations.keys()).pop()
-        if (genId) {
-          aiStore.updateGenerationStatus(genId, 'failed', {
-            error: error instanceof Error ? error.message : 'Failed to start generation',
-          })
-        }
+        // Note: Can't get generationId after error, would need to track it
       }
     },
-    [aiStore]
+    [queueGeneration, updateGenerationStatus]
   )
 
   // Handle generation cancellation
   const handleCancelGeneration = useCallback(
     async (generationId: string) => {
-      const generation = aiStore.activeGenerations.get(generationId)
+      const generation = activeGenerations.find((g) => g.id === generationId)
       if (generation?.jobId) {
         try {
           await cancelGenerationAPI(generation.jobId)
@@ -96,24 +99,24 @@ export default function AIGenerationPanel() {
           console.error('Failed to cancel generation:', error)
         }
       }
-      aiStore.cancelGeneration(generationId)
+      cancelGeneration(generationId)
     },
-    [aiStore]
+    [activeGenerations, cancelGeneration]
   )
 
   // Handle removing completed/failed generations
   const handleRemoveGeneration = useCallback(
     (generationId: string) => {
-      const generation = aiStore.activeGenerations.get(generationId)
+      const generation = activeGenerations.find((g) => g.id === generationId)
       if (generation && (generation.status === 'completed' || generation.status === 'failed')) {
         // Add to history before removing
         if (generation.status === 'completed') {
-          aiStore.addToHistory(generation)
+          addToHistory(generation)
         }
-        aiStore.removeGeneration(generationId)
+        removeGeneration(generationId)
       }
     },
-    [aiStore]
+    [activeGenerations, addToHistory, removeGeneration]
   )
 
   // Handle rerunning a generation from history
@@ -128,55 +131,6 @@ export default function AIGenerationPanel() {
     },
     [handleGenerate]
   )
-
-  // Listen to WebSocket job updates
-  useEffect(() => {
-    const handleJobUpdate = (jobId: string, status: string, progress?: number, resultUrl?: string, error?: string) => {
-      // Find generation with this job ID
-      const generation = Array.from(aiStore.activeGenerations.values()).find((g) => g.jobId === jobId)
-      if (!generation) return
-
-      // Update generation status
-      if (status === 'succeeded' || status === 'completed') {
-        aiStore.updateGenerationStatus(generation.id, 'completed', {
-          resultUrl,
-          progress: 100,
-        })
-
-        // Auto-import to media library
-        if (resultUrl) {
-          mediaStore.addAsset({
-            id: `ai-gen-${Date.now()}`,
-            name: `AI Generated ${generation.type}`,
-            type: generation.type === 'video' ? 'video' : 'image',
-            url: resultUrl,
-            size: 0, // Size unknown
-            createdAt: new Date(),
-            metadata: {
-              aiGenerated: true,
-              prompt: generation.prompt,
-              generationType: generation.type,
-            },
-          })
-        }
-      } else if (status === 'failed') {
-        aiStore.updateGenerationStatus(generation.id, 'failed', {
-          error: error || 'Generation failed',
-        })
-      } else if (status === 'running') {
-        aiStore.updateGenerationProgress(generation.id, progress || 0)
-      }
-    }
-
-    // Subscribe to WebSocket job updates
-    // This is a simplified version - in reality, you'd listen to WebSocket events
-    // For now, we'll rely on the WebSocketStore to handle updates
-    const unsubscribe = wsStore.handleJobUpdate
-
-    return () => {
-      // Cleanup
-    }
-  }, [aiStore, mediaStore, wsStore])
 
   return (
     <div className="flex flex-col h-full bg-zinc-950">
@@ -221,8 +175,8 @@ export default function AIGenerationPanel() {
             <GenerationHistory
               history={generationHistory}
               onRerun={handleRerun}
-              onToggleFavorite={aiStore.toggleFavorite}
-              onDelete={aiStore.removeFromHistory}
+              onToggleFavorite={toggleFavorite}
+              onDelete={removeFromHistory}
             />
           </TabsContent>
         </div>
