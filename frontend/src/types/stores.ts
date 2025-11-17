@@ -100,6 +100,7 @@ export interface MediaAsset {
   createdAt: Date
   folderId?: string
   metadata: Record<string, unknown>
+  tags?: string[]
 }
 
 export interface MediaFolder {

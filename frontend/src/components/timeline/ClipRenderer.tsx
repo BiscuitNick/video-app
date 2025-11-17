@@ -272,11 +272,24 @@ export const ClipRenderer = memo(function ClipRenderer({
   const visualLeft = isTrimming === 'start' ? left + trimOffset : left
   const visualWidth = isTrimming === 'end' ? width + trimOffset : isTrimming === 'start' ? width - trimOffset : width
 
+  // Handle drop events to allow media to be dropped on clips
+  const handleDragOver = (e: React.DragEvent) => {
+    // Prevent default to allow drop
+    e.preventDefault()
+    // Don't stop propagation - let parent track also handle this
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    // Prevent default but don't stop propagation
+    // This allows the parent TrackItem to also receive the drop event
+    e.preventDefault()
+  }
+
   return (
     <div
       ref={clipRef}
       className={`
-        absolute top-1 bottom-1 rounded
+        absolute top-1 bottom-1 rounded pointer-events-auto
         ${clipColor}
         ${isSelected ? 'ring-2 ring-blue-400 ring-offset-1 ring-offset-zinc-950' : ''}
         ${isDragging || isTrimming ? 'opacity-70 z-50' : 'cursor-pointer hover:brightness-110'}
@@ -292,6 +305,8 @@ export const ClipRenderer = memo(function ClipRenderer({
       }}
       onClick={handleClick}
       onMouseDown={handleMouseDown}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
     >
       {/* Clip content */}
       {showThumbnail && (

@@ -4,7 +4,6 @@ import AIGenerationPanel from '../components/ai-generation/AIGenerationPanel';
 import { MediaLibraryUpload } from '../components/media/MediaLibraryUpload';
 import { UploadProgressList } from '../components/media/UploadProgressList';
 import { MediaAssetCard } from '../components/media/MediaAssetCard';
-import { FolderSidebar } from '../components/media/FolderSidebar';
 import {
   Dialog,
   DialogContent,
@@ -32,7 +31,6 @@ export default function MediaLibraryPage() {
   // Access MediaStore state and actions
   const assets = useMediaStore((state) => state.assets);
   const selectedAssetIds = useMediaStore((state) => state.selectedAssetIds);
-  const currentFolderId = useMediaStore((state) => state.currentFolderId);
 
   const queueUpload = useMediaStore((state) => state.queueUpload);
   const selectAsset = useMediaStore((state) => state.selectAsset);
@@ -43,11 +41,6 @@ export default function MediaLibraryPage() {
   // Convert assets Map to array and apply filters
   const assetsArray = useMemo(() => {
     let arr = Array.from(assets.values());
-
-    // Filter by current folder
-    if (currentFolderId) {
-      arr = arr.filter((asset) => asset.folderId === currentFolderId);
-    }
 
     // Filter by type
     if (filterType !== 'all') {
@@ -65,7 +58,7 @@ export default function MediaLibraryPage() {
     }
 
     return arr;
-  }, [assets, currentFolderId, filterType, searchQuery]);
+  }, [assets, filterType, searchQuery]);
 
   // Handle file selection from file input
   const handleFilesSelected = useCallback((files: File[]) => {
@@ -148,9 +141,6 @@ export default function MediaLibraryPage() {
 
   return (
     <div className="flex h-full">
-      {/* Folder Sidebar */}
-      <FolderSidebar />
-
       {/* Main Content Area */}
       <div className="flex-1 p-8 overflow-auto">
         <div className="max-w-7xl mx-auto">

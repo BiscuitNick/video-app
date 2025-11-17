@@ -1,8 +1,9 @@
 import { Lock, LockOpen, Eye, EyeOff, Volume2, VolumeX } from 'lucide-react'
-import type { Track, Clip } from '../../types/stores'
-import { framesToPixels } from '../../lib/timebase'
+import type { Track, Clip, MediaAsset } from '../../types/stores'
+import { framesToPixels, pixelsToFrames } from '../../lib/timebase'
 import { ClipRenderer } from './ClipRenderer'
-import { memo } from 'react'
+import { memo, useState, useCallback } from 'react'
+import { useMediaStore } from '../../contexts/StoreContext'
 
 interface TrackItemProps {
   track: Track
@@ -18,6 +19,7 @@ interface TrackItemProps {
   onClipMove?: (clipId: string, trackId: string, startTime: number) => void
   onClipTrim?: (clipId: string, updates: Partial<Clip>) => void
   onTrackUpdate?: (trackId: string, updates: Partial<Track>) => void
+  onAssetDrop?: (asset: MediaAsset, trackId: string, startFrame: number) => void
 }
 
 export const TrackItem = memo(function TrackItem({
@@ -29,12 +31,16 @@ export const TrackItem = memo(function TrackItem({
   duration,
   playhead,
   allClips,
+  scrollLeft,
   onClipSelect,
   onClipMove,
   onClipTrim,
   onTrackUpdate,
+  onAssetDrop,
 }: TrackItemProps) {
+  const mediaAssets = useMediaStore((state) => state.assets)
   const totalWidth = framesToPixels(duration, fps, zoom)
+  const [isDragOver, setIsDragOver] = useState(false)
 
   const handleToggleLock = () => {
     onTrackUpdate?.(track.id, { locked: !track.locked })
@@ -49,6 +55,69 @@ export const TrackItem = memo(function TrackItem({
       onTrackUpdate?.(track.id, { muted: !track.muted })
     }
   }
+
+  // Drag and drop handlers for media assets
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    e.dataTransfer.dropEffect = 'copy'
+    setIsDragOver(true)
+    console.log('Drag over track:', track.id)
+  }, [track.id])
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOver(false)
+  }, [])
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOver(false)
+
+    console.log('Drop event triggered on track:', track.id)
+
+    const rawJson = e.dataTransfer.getData('application/json')
+    const rawText = e.dataTransfer.getData('text/plain')
+
+    try {
+      const assetData = rawJson || rawText
+      console.log('Asset data from dataTransfer:', assetData)
+
+      let asset: MediaAsset | undefined
+
+      if (assetData) {
+        try {
+          asset = JSON.parse(assetData)
+        } catch (parseError) {
+          console.warn('Failed to parse dropped asset JSON, falling back to store lookup:', parseError)
+        }
+      }
+
+      // Fallback: if we only received an asset ID in text/plain, resolve it from the media store
+      if (!asset && rawText) {
+        const storeAsset = mediaAssets.get(rawText)
+        if (storeAsset) {
+          asset = storeAsset
+        }
+      }
+
+      if (!asset) {
+        console.log('No asset data found')
+        return
+      }
+
+      // Calculate drop position in frames
+      const rect = e.currentTarget.getBoundingClientRect()
+      const x = e.clientX - rect.left + scrollLeft
+      const startFrame = pixelsToFrames(x, fps, zoom)
+
+      console.log('Drop position:', { x, startFrame, rect })
+
+      onAssetDrop?.(asset, track.id, Math.max(0, Math.round(startFrame)))
+    } catch (error) {
+      console.error('Failed to parse dropped asset:', error)
+    }
+  }, [track.id, fps, zoom, scrollLeft, onAssetDrop, mediaAssets])
 
   // Track type icon color
   const trackColor = track.color || (
@@ -119,7 +188,16 @@ export const TrackItem = memo(function TrackItem({
       </div>
 
       {/* Track content area */}
-      <div className="flex-1 relative bg-zinc-950 overflow-hidden">
+      <div
+        className={`flex-1 relative bg-zinc-950 overflow-hidden transition-colors ${
+          isDragOver ? 'bg-blue-950/30 ring-2 ring-blue-500 ring-inset' : ''
+        }`}
+        onDragOver={handleDragOver}
+        onDragEnter={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        style={{ minHeight: '60px' }}
+      >
         <div
           className="absolute inset-0"
           style={{ width: `${totalWidth}px` }}

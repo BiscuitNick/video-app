@@ -3,7 +3,7 @@ import { TimelineRuler } from './TimelineRuler'
 import { TrackList } from './TrackList'
 import { ZoomControls } from './ZoomControls'
 import { TimelineToolbar } from './TimelineToolbar'
-import type { Track, Clip } from '../../types/stores'
+import type { Track, Clip, MediaAsset } from '../../types/stores'
 import { Plus } from 'lucide-react'
 import { Button } from '../ui/button'
 
@@ -25,6 +25,7 @@ interface TimelineProps {
   onDeleteClips?: (clipIds: string[]) => void
   onTrackUpdate?: (trackId: string, updates: Partial<Track>) => void
   onAddTrack?: () => void
+  onAssetDrop?: (asset: MediaAsset, trackId: string, startFrame: number) => void
 }
 
 export function Timeline({
@@ -45,6 +46,7 @@ export function Timeline({
   onDeleteClips,
   onTrackUpdate,
   onAddTrack,
+  onAssetDrop,
 }: TimelineProps) {
   const rulerScrollRef = useRef<HTMLDivElement>(null)
   const tracksScrollRef = useRef<HTMLDivElement>(null)
@@ -105,9 +107,9 @@ export function Timeline({
   }, [selectedClipIds, onDeleteClips])
 
   return (
-    <div className="flex flex-col h-full bg-zinc-950 border-t border-zinc-700">
+    <div className="flex flex-col h-full w-full bg-zinc-950 border-t border-zinc-700">
       {/* Timeline header with controls */}
-      <div className="flex items-center justify-between px-4 py-2 bg-zinc-900 border-b border-zinc-700">
+      <div className="w-full flex items-center justify-between px-4 py-2 bg-zinc-900 border-b border-zinc-700">
         <div className="flex items-center gap-2">
           <h3 className="text-sm font-medium text-zinc-200">Timeline</h3>
           {onAddTrack && (
@@ -171,6 +173,7 @@ export function Timeline({
             onClipMove={onClipMove}
             onClipTrim={onClipTrim}
             onTrackUpdate={onTrackUpdate}
+            onAssetDrop={onAssetDrop}
           />
         </div>
       </div>

@@ -1,5 +1,4 @@
-import { Virtuoso } from 'react-virtuoso'
-import type { Track, Clip } from '../../types/stores'
+import type { Track, Clip, MediaAsset } from '../../types/stores'
 import { TrackItem } from './TrackItem'
 
 interface TrackListProps {
@@ -15,6 +14,7 @@ interface TrackListProps {
   onClipMove?: (clipId: string, trackId: string, startTime: number) => void
   onClipTrim?: (clipId: string, updates: Partial<Clip>) => void
   onTrackUpdate?: (trackId: string, updates: Partial<Track>) => void
+  onAssetDrop?: (asset: MediaAsset, trackId: string, startFrame: number) => void
 }
 
 export function TrackList({
@@ -30,6 +30,7 @@ export function TrackList({
   onClipMove,
   onClipTrim,
   onTrackUpdate,
+  onAssetDrop,
 }: TrackListProps) {
   // Get clips for a specific track
   const getClipsForTrack = (trackId: string): Clip[] => {
@@ -51,35 +52,30 @@ export function TrackList({
   }
 
   return (
-    <div className="flex-1 overflow-hidden">
-      <Virtuoso
-        data={tracks}
-        itemContent={(_index, track) => {
-          const trackClips = getClipsForTrack(track.id)
+    <div className="flex flex-col">
+      {tracks.map((track) => {
+        const trackClips = getClipsForTrack(track.id)
 
-          return (
-            <TrackItem
-              key={track.id}
-              track={track}
-              clips={trackClips}
-              selectedClipIds={selectedClipIds}
-              fps={fps}
-              zoom={zoom}
-              duration={duration}
-              playhead={playhead}
-              scrollLeft={scrollLeft}
-              allClips={clips}
-              onClipSelect={onClipSelect}
-              onClipMove={onClipMove}
-              onClipTrim={onClipTrim}
-              onTrackUpdate={onTrackUpdate}
-            />
-          )
-        }}
-        computeItemKey={(_index, track) => track.id}
-        style={{ height: '100%' }}
-        overscan={2}
-      />
+        return (
+          <TrackItem
+            key={track.id}
+            track={track}
+            clips={trackClips}
+            selectedClipIds={selectedClipIds}
+            fps={fps}
+            zoom={zoom}
+            duration={duration}
+            playhead={playhead}
+            scrollLeft={scrollLeft}
+            allClips={clips}
+            onClipSelect={onClipSelect}
+            onClipMove={onClipMove}
+            onClipTrim={onClipTrim}
+            onTrackUpdate={onTrackUpdate}
+            onAssetDrop={onAssetDrop}
+          />
+        )
+      })}
     </div>
   )
 }
